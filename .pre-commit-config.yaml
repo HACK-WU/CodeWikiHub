@@ -1,0 +1,35 @@
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      # 检查 merge conflict 标记
+      - id: check-merge-conflict
+      # 检测私钥泄露（SSH/DSA/EC/RSA private keys）
+      - id: detect-private-key
+
+  # 本地敏感信息检查
+  - repo: local
+    hooks:
+      # 检测 API Key / Token 等敏感信息
+      - id: detect-sensitive-info
+        name: 检查敏感信息（API Key / Token）
+        description: 检测 sk-、Bearer token 等常见敏感信息模式
+        entry: python3 scripts/pre-commit/check_sensitive.py
+        language: python
+        # 排除本身就是用来存敏感信息的文件（当前暂无，后续按需添加）
+        # exclude: |
+        #   (?x)^(
+        #     knowledge-indexer/memories\.json|
+        #     knowledge-indexer/backup/.*\.bak\.json|
+        #     wiki/metadata\.json
+        #   )$
+        additional_dependencies: []
+
+      # 提交信息格式检查
+      - id: check-commit-message
+        name: 检查提交信息格式
+        description: 确保 commit message 符合 Conventional Commits 规范
+        entry: python3 scripts/pre-commit/check_commit_message.py
+        language: python
+        stages: [commit-msg]
