@@ -1,0 +1,6 @@
+{
+  "向量集合": "【数据流｜向量集合（zvec collection）】\n- 实体类型：文件（zvec 持久化目录，单进程独占锁）\n- 结构：集合名固定 kisearch；关键字段 dense(4096 维向量)/content(FTS，jieba 分词)/tag/scope/group(indexed 标量，支撑过滤隔离)\n- 生产方：ZvecEngine.create/write/writeBatch @ src/zvec-engine/engine.ts；上层调用方：vector-client.vectorStore/vectorBulkStore @ src/lib/vector-client.ts、导入批量向量化 batchVectorize/bulkVectorize @ src/lib/batch-vectorize.ts、sync-relation 写关系向量\n- 主要消费方：vector-client.vectorSearch（ki_search 检索）、rebuild-vector（restore 后清空重写并回写 docId）、doctor/probe 探测\n- 业务用途：语义检索 + 全文检索 + 混合检索的向量与标量数据源\n- 详细流向：见 .module-experts/向量引擎专家/C4-数据流向与消费.md",
+  "version": 1,
+  "updatedAt": "2026-08-28T04:24:43.349Z",
+  "Embedding向量": "【数据流｜Embedding 向量】\n- 实体类型：数据结构（内存 Float32Array，不落盘）\n- 结构：Float32Array，维度 4096（必须与集合 dimension 一致，否则 DimensionMismatchError）\n- 生产方：SiliconFlowProvider.embed @ src/zvec-engine/embedding/siliconflow.ts（OpenAI 兼容端点，EMBED_BATCH_SIZE=64）\n- 主要消费方：engine.write（写入集合 dense 字段）、engine.search（查询文本向量化）；主线程 embed 后经 Transferable 零拷贝传 worker 线程\n- 业务用途：文本 → 向量，语义检索的基础\n- 详细流向：见 .module-experts/向量引擎专家/C4-数据流向与消费.md"
+}

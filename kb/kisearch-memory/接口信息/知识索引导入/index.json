@@ -1,0 +1,7 @@
+{
+  "文档导入": "【接口信息｜文档导入 CLI】\n- 子功能：文档导入\n- 所属模块：知识索引导入\n- 接口列表：\n  - CLI ki scan-kb import <source> → handleDirectImport @ src/lib/import.ts：把目录或单文件 Markdown 幂等导入知识库（--group 指定落点、--tags 自定义标签、--scope 目标知识库、--dry-run 试运行）",
+  "version": 1,
+  "updatedAt": "2026-08-28T04:31:32.283Z",
+  "HTTP导入": "【接口信息｜HTTP导入】\n- 子功能：HTTP 导入\n- 所属模块：知识索引导入\n- 接口列表：\n  - POST /api/import/upload → handleImportUpload @ src/lib/mcp-http-api.ts：接收 base64 文档落盘 ~/.ki/import-uploads/<uploadId>/，返回 uploadId\n  - POST /api/import/run → handleImportRun @ src/lib/mcp-http-api.ts：按 scope/sourcePath/group 异步执行导入，202 返回 jobId（group 缺省传 undefined，与 CLI 推断语义一致）\n  - GET /api/import/status → handleImportStatus @ src/lib/mcp-http-api.ts：查询导入 job 进度与结果（job 为内存态，服务重启后查询返回 404）",
+  "向量重建": "【接口信息｜向量重建】\n- 子功能：向量重建\n- 所属模块：知识索引导入\n- 接口列表：\n  - CLI ki restore --rebuild-vector → rebuildScopeVectors @ src/lib/rebuild-vector.ts：中断或异常后按 local KB 原文重建向量，支持 --group 子树局部重建与 --tags 合并打标\n  - 函数签名 rebuildScopeVectors(scope, deps?, opts?) → RebuildVectorResult @ src/lib/rebuild-vector.ts：deps 可注入 bulkStore/deleteScope 供测试；opts 为 RebuildVectorOptions（groupFilter/tags/tagsProvided）"
+}
