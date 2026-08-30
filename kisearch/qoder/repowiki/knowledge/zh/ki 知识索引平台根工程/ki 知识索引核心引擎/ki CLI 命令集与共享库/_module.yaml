@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: core_engine/cli_commands
+title: ki CLI 命令集与共享库
+scope:
+    - src/
+source_files: []
+depends_on: []
+related_to: []

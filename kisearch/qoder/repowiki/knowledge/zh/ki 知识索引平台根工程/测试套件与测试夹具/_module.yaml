@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: tests_and_fixtures
+title: 测试套件与测试夹具
+scope:
+    - test/
+    - test_data/
+    - .e2e-run/
+source_files: []
+depends_on: []
+related_to:
+    - path: core_engine/cli_commands/backup_restore_commands
+    - path: core_engine/zvec_engine

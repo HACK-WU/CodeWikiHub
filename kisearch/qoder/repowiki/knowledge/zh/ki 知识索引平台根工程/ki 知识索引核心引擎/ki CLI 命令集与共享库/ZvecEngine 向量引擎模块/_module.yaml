@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: core_engine/cli_commands/vector_engine
+title: ZvecEngine 向量引擎模块
+scope:
+    - src/zvec-engine/
+source_files: []
+depends_on: []
+related_to: []
