@@ -67,7 +67,7 @@ kisearch 的**关系（Relation）与索引管理**：关系回写（四层联�
 |------|----------|----------|
 | `query-group` 拿不到结构化数据 | 期望返回 JSON 对象 | 返回的 `output` 是**已渲染纯文本**；要结构化数据直读 `relations-cache.json` |
 | relation 含 `/`、`\`、`..` 被拒 | wiki 文件名直接用 relation | 改用扁平命名；写入前即拒绝，无半成品 |
-| Wiki 未写回 | 无 source 块且无 `wikiSync`，或 `enabled:false` | 配置 `wikiSync.sourceDir` 或先 `scan-kb import --source`；再 `ki wiki-backfill` |
+| Wiki 未写回 | 无 source 块且无 `wikiSync`，或 `enabled:false` | 配置 `wikiSync.sourceDir` 或先 `ki import --source`；再 `ki wiki-backfill` |
 | 开启 wikiSync 后历史关系没落盘 | wikiSync 事件驱动，只写新增 | `ki wiki-backfill <scope>`；或依赖 autoBackfill（目录为空自动触发） |
 | backfill 产生全量 git 脏 diff | 用了 `--force` | 缺省执行即可（跳过已存在文件） |
 | 模糊路径兜底"没生效" | 调 `resolveGroupPath` 未传 `scope` | 向量兜底**仅传 scope 时启用**（`manage-index` 内部即未启用） |

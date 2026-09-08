@@ -2,10 +2,10 @@
 
 **一句话职责**：kisearch 的知识导入链路——外部 Markdown 目录/单文件原文直导（无 AI 依赖），幂等追加承载增量更新，含导入锁/中断自愈、四类向量写入、HTTP 导入接口与向量重建。
 
-**负责的模块**：`src/lib/{import,interrupt,batch-vectorize,path-vectorize,rebuild-vector,ai-results,progress}.ts` + `src/scan-kb.ts` + `src/lib/mcp-http-api.ts`（`/api/import/*` 三接口部分）
+**负责的模块**：`src/lib/{import,interrupt,batch-vectorize,path-vectorize,rebuild-vector,ai-results,progress}.ts` + `src/import.ts` + `src/lib/mcp-http-api.ts`（`/api/import/*` 三接口部分）
 
 **何时找这个专家**：
-- 需要 / 排查 `ki scan-kb import`（目录/单文件导入、幂等重导、--group 落点、--tags 打标）
+- 需要 / 排查 `ki import`（目录/单文件导入、幂等重导、--group 落点、--tags 打标）
 - 需要排查 HTTP 导入链路（/api/import/upload|run|status、异步 job）
 - 需要排查导入中断 / 并发导入锁问题（import-interrupt.json / .import.lock）
 - 需要理解向量内容与落点契约（chunk 切分、清洗、ki-path/ki-relation、memoryIds 多值）

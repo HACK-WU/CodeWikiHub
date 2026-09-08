@@ -94,18 +94,18 @@
 
 ## 测试状态
 
-6 个测试文件 / **79 例，实测 78 通过 + 1 过期失败**（2026-08-28，commit `9841255`）。
+6 个测试文件 / **83 例全绿**（2026-09-07 实测）。原记录为 79 例 / 78 通过 + 1 过期失败（2026-08-28，commit `9841255`）；差异来源：① 计数漂移（vector-cli-functions 实为 32 非 28、relation-map 实为 9 非 8，与本次改造无关）② 2026-09-07 删除了那条过期用例（cli-aliases 22→21）。
 
 | 文件 | 用例数 | 状态 |
 |------|--------|------|
-| `test/vector-cli-functions.test.ts` | 28 | ✅ |
+| `test/vector-cli-functions.test.ts` | 32 | ✅ |
 | `test/scope-doc.test.ts` | 14 | ✅ |
-| `test/relation-map.test.ts` | 8 | ✅ |
+| `test/relation-map.test.ts` | 9 | ✅ |
 | `test/search-original.test.ts` | 6 | ✅ |
 | `test/vector-idle-race.test.ts` | 1 | ✅ |
-| `test/cli-aliases.test.ts` | 22 | ⚠️ 21 通过 / 1 过期失败 |
+| `test/cli-aliases.test.ts` | 21 | ✅ |
 
-**唯一失败**：`cli-aliases` 断言 `ki scan-kb diff -h` 帮助含 `-o, --output`，但该子命令已于 2026-08-14（`fce0b57`）移除。与本模块功能无关，详见 `test/known-failures.md`。
+**已无失败用例**：原「唯一失败」（`cli-aliases` 断言 `ki scan-kb diff -h` 帮助含 `-o, --output`，而该子命令已于 2026-08-14 `fce0b57` 移除）已于 2026-09-07 随 `ki scan-kb import` → `ki import` 扁平化改造删除该用例而解决，历史记录见 `test/known-failures.md`。
 
 **覆盖缺口**：`ensureVectorAvailable.fastFail`、`probeWithRetry` 撞锁重试、`vectorDeleteScope` 无进展保护、`vectorDelete` 的 `NOT_FOUND` 语义、`generateDocId` tag 参与回归保护、`runWithVectorSource` 来源透传、`vectorListScopes`/`vectorCountScope`、`ki doc` scope 护栏。详见 `implementation/06-测试.md`。
 

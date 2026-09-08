@@ -36,10 +36,10 @@
 - 匹配关键词：混合检索, VectorAdapter, vector-client, memoryId, docId, tag, search, 原文定位, 召回, includeOriginal, TAG_PRIORITY, idle close, 撞锁重试, 独占锁, getRelationMap, 管理面
 - 契约层：C0-使用总览, C1-能力契约, C2-使用流程, C4-数据流向与消费
 - 实现层：implementation/01-架构, 02-实现, 03-数据流转, 04-模型, 06-测试, 07-运维
-- 测试状态：⚠️ 6 文件 / 79 例，实测 78 通过 + 1 过期失败（`cli-aliases` 断言已删除的 `ki scan-kb diff`，与本模块无关，详见 `test/known-failures.md`）；运行需 `env -u NODE_OPTIONS -u BASH_ENV npx jiti test/<name>.test.ts`，真实召回需 embedding API Key
+- 测试状态：✅ 6 文件 / **83 例全绿**（2026-09-07 实测：vector-cli-functions 32 / scope-doc 14 / relation-map 9 / search-original 6 / vector-idle-race 1 / cli-aliases 21）。原登记的「1 例过期失败（`cli-aliases` 断言已删除的 `ki scan-kb diff`）」已于 2026-09-07 随 CLI 扁平化改造清理，详见 `test/known-failures.md`。⚠️ 早期记录的 79 例含计数漂移（vector-cli-functions 实为 32 非 28、relation-map 实为 9 非 8），与本次改造无关；运行需 `env -u NODE_OPTIONS -u BASH_ENV npx jiti test/<name>.test.ts`，真实召回需 embedding API Key
 
 ## 知识索引导入专家 ✅
-- 模块根：`src/lib/{import,interrupt,batch-vectorize,path-vectorize,rebuild-vector,ai-results,progress}.ts` + `src/scan-kb.ts` + `src/lib/mcp-http-api.ts`（/api/import/* 部分）
+- 模块根：`src/lib/{import,interrupt,batch-vectorize,path-vectorize,rebuild-vector,ai-results,progress}.ts` + `src/import.ts` + `src/lib/mcp-http-api.ts`（/api/import/* 部分）
 - 生成日期：2026-08-06（更新 2026-08-28）  git commit：54b035b 基准
 - 匹配关键词：导入, import, 幂等追加, 直导, chunk 切分, group 落点, tags 标签, 中断标记, 导入锁, interrupt, rebuild, 向量重建, HTTP导入, import upload, 单文件导入, memoryIds
 - 契约层：C0-使用总览, C1-能力契约, C2-使用流程, C4-数据流向与消费
