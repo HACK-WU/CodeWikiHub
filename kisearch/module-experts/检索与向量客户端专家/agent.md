@@ -2,7 +2,7 @@
 
 ## 简介
 
-**一句话职责**：kisearch 的检索与向量写入入口——`vector-client.ts` 把 ZvecEngine 封装为 async Vector Adapter，`relation-map.ts` 提供 memoryId 反查，`search.ts` 编排"检索 + 反查 + 原文召回 + 两级去重"，`store/bulk-store/doc/tag.ts` 是向量层管理面。
+**一句话职责**：kisearch 的检索与索引写入入口——`vector-client.ts` 封装 dense/hybrid 与 FTS-only 两条 Zvec 链路，`relation-map.ts` 提供 memoryId 反查，`search.ts` 编排 hybrid/fulltext 检索、原文召回与去重。
 
 **模块根**：`src/lib/{vector-client,relation-map}.ts` + `src/{search,store,doc,tag,bulk-store}.ts`
 
@@ -18,6 +18,7 @@
 | 能力 | 说明 | 入口 |
 |------|------|------|
 | 语义检索 | hybrid（语义 + FTS + RRF）；默认搜全部只做 **1 次 embedding** | `vectorSearch` / `executeSearch` |
+| 纯全文检索 | 按 scope fan-out 查询 hybrid FTS 与独立 FTS-only Collection；不调用 query embedding | `fullTextSearch` / `executeSearch({mode:'fulltext'})` |
 | 原文召回（REQ-09） | 显式开启时从 local KB 取文件级原文；取不到降级为向量文档 + hint | `fetchOriginal` |
 | memoryId 反查 | memoryId → `{group, relation}`，TTL + mtime/size 双失效缓存 | `relation-map.ts` |
 | 引擎生命周期 | 进程内单例、原生操作串行化、open 超时自愈、空闲释放锁、撞锁重试 | `vector-client.ts` |

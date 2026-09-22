@@ -25,7 +25,7 @@
 ## 向量引擎专家 ✅
 - 模块根：`src/zvec-engine/`（14 文件，独立子项目）
 - 生成日期：2026-08-06（更新 2026-08-28）  git commit：8adc487
-- 匹配关键词：向量引擎, ZvecEngine, hybridSearch, embedding, SiliconFlow, RRF, worker, 向量库, schema, filter, WorkerUnavailableError, idle close, 在途打断, 异常体系
+- 匹配关键词：向量引擎, ZvecEngine, hybridSearch, embedding, SiliconFlow, RRF, worker, 向量库, schema, filter, WorkerUnavailableError, idle close, 在途打断, 异常体系, 进程锁, 跨进程并发, MCP CLI 锁冲突
 - 契约层：C0-使用总览, C1-能力契约, C4-数据流向与消费
 - 实现层：implementation/01-架构, 02-实现, 04-模型, 05-接口, 06-测试
 - 测试状态：✅ 可跑（`npm run test:zvec-engine`；⚠️ embedding 用例需 API Key；前置需 `npm run build:zvec-engine`）

@@ -120,9 +120,9 @@
         {
           "id": "rel_004",
           "text": "SKILL.md文件规范",
-          "score": 0,
-          "useCount": 0,
-          "lastUsedTime": null,
+          "score": 2,
+          "useCount": 2,
+          "lastUsedTime": 1789380367112,
           "isImported": true,
           "memoryIds": [
             "af8d2ad11d7d622c8c5f985acde4e96a",
@@ -137,9 +137,9 @@
         {
           "id": "rel_005",
           "text": "实战示例",
-          "score": 1,
-          "useCount": 1,
-          "lastUsedTime": 1787889894990,
+          "score": 3,
+          "useCount": 3,
+          "lastUsedTime": 1789371273628,
           "isImported": true,
           "memoryIds": [
             "521078ddcb58f09bbd8726937901ce49",
@@ -154,9 +154,9 @@
         {
           "id": "rel_006",
           "text": "开发工作流程",
-          "score": 0,
-          "useCount": 0,
-          "lastUsedTime": null,
+          "score": 1,
+          "useCount": 1,
+          "lastUsedTime": 1789379734360,
           "isImported": true,
           "memoryIds": [
             "768d135c1417511e7a0eba11257e9687",
@@ -171,9 +171,9 @@
         {
           "id": "rel_007",
           "text": "技能开发指南",
-          "score": 0,
-          "useCount": 0,
-          "lastUsedTime": null,
+          "score": 1,
+          "useCount": 1,
+          "lastUsedTime": 1789378645016,
           "isImported": true,
           "memoryIds": [
             "e48dcd909f0f7777fa0c75f95dae85e8",
@@ -423,9 +423,9 @@
         {
           "id": "rel_022",
           "text": "归档策略配置",
-          "score": 0,
-          "useCount": 0,
-          "lastUsedTime": null,
+          "score": 1,
+          "useCount": 1,
+          "lastUsedTime": 1789371278909,
           "isImported": true,
           "memoryIds": [
             "942aafad4573c70b902be07654023ad0",
@@ -458,9 +458,9 @@
         {
           "id": "rel_024",
           "text": "自动沉淀机制",
-          "score": 0,
-          "useCount": 0,
-          "lastUsedTime": null,
+          "score": 1,
+          "useCount": 1,
+          "lastUsedTime": 1789371279741,
           "isImported": true,
           "memoryIds": [
             "7e751e7ed408587ff89547ce5bb4b380",
@@ -1782,9 +1782,9 @@
         {
           "id": "rel_091",
           "text": "Scope隔离配置",
-          "score": 1,
-          "useCount": 1,
-          "lastUsedTime": 1787883751437,
+          "score": 2,
+          "useCount": 2,
+          "lastUsedTime": 1789373312965,
           "isImported": true,
           "memoryIds": [
             "d17a88d22b9e3bffb12d0a9a5faaf5c1",
@@ -3195,5 +3195,5 @@
       "max_hot_count": 10
     }
   },
-  "updatedAt": "2026-08-28T04:04:54.990Z"
+  "updatedAt": "2026-09-14T10:06:07.112Z"
 }

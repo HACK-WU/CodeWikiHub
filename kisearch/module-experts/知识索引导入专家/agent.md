@@ -1,6 +1,6 @@
 # 知识索引导入专家
 
-**一句话职责**：kisearch 的知识导入链路——外部 Markdown 目录/单文件原文直导（无 AI 依赖），幂等追加承载增量更新，含导入锁/中断自愈、四类向量写入、HTTP 导入接口与向量重建。
+**一句话职责**：kisearch 的知识导入链路——外部 Markdown 目录/单文件原文直导（无 AI 依赖），幂等追加承载增量更新；按显式模式写入 dense/hybrid 或 FTS-only Collection，并维护导入锁、HTTP 导入与恢复重建。
 
 **负责的模块**：`src/lib/{import,interrupt,batch-vectorize,path-vectorize,rebuild-vector,ai-results,progress}.ts` + `src/import.ts` + `src/lib/mcp-http-api.ts`（`/api/import/*` 三接口部分）
 
@@ -9,6 +9,7 @@
 - 需要排查 HTTP 导入链路（/api/import/upload|run|status、异步 job）
 - 需要排查导入中断 / 并发导入锁问题（import-interrupt.json / .import.lock）
 - 需要理解向量内容与落点契约（chunk 切分、清洗、ki-path/ki-relation、memoryIds 多值）
+- 需要理解 `--no-vector` 的 FTS-only 写入（清洗 chunk、按 scope 的 `ftsIds`、不调用 embedding）
 - 需要从还原的 KB 重建向量（全量 / --group 子树 / --tags 打标）
 
 **契约层就绪**：`C0 + C1 + C2 + C4` 就绪
@@ -21,4 +22,4 @@
 
 **历史版本注意**：2026-08-06 初版描述的 full/incremental 双模式、`incremental.ts`/`diff.ts`、ai-results.json 输入契约、进度文件断点续跑、git commit 基线**均已废弃/删除**（2026-08-07/14 重构，commit a373606 / fce0b57 / 54b035b）。以本版为准。
 
-**出处行**：生成日期 2026-08-06，更新日期 2026-08-28（基于 commit 54b035b）
+**出处行**：生成日期 2026-08-06，更新日期 2026-08-28；增量同步日期 2026-09-22（FTS-only 导入与恢复）

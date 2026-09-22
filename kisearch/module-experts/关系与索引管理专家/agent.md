@@ -10,8 +10,8 @@ kisearch 的**关系（Relation）与索引管理**：关系回写（四层联�
 
 | 能力 | 说明 | 入口 |
 |------|------|------|
-| 关系回写 | 四层写入（relations-cache + local KB + 向量 + Wiki）；支持自定义 tags、非向量化模式 | `sync-relation.ts` |
-| 批量关系回写 | 一次 embedding + 一次 upsert，含同批去重与逐条容错 | `executeBulkSyncRelation` |
+| 关系回写 | 四层写入（relations-cache + local KB + dense/FTS-only 索引 + Wiki）；支持自定义 tags、非向量化模式 | `sync-relation.ts` |
+| 批量关系回写 | vector=true 时一次 embedding + 一次 upsert；vector=false 时不调用 embedding，写按 scope 隔离的 FTS-only Collection | `executeBulkSyncRelation` |
 | 评分引擎 | 使用密度评分 + 5 分钟防刷 + 新兴识别 + 冷热分区 + 边界衰减 | `scoring.ts` |
 | Group 树 CRUD | create / delete（空节点 + `--force` 级联）/ list-scopes | `manage-index.ts` |
 | Group 查询 | 词云已移除；hot/warm/cold/emerging 分区 + 树渲染（**纯文本输出**） | `query-group.ts` |
@@ -73,7 +73,7 @@ kisearch 的**关系（Relation）与索引管理**：关系回写（四层联�
 | 模糊路径兜底"没生效" | 调 `resolveGroupPath` 未传 `scope` | 向量兜底**仅传 scope 时启用**（`manage-index` 内部即未启用） |
 | 删除后仍能搜到 | 向量删除失败（`vectorRemoved:false`） | 残留为孤儿向量，看 `reason`；可用 `rebuild-vector` 恢复一致 |
 | MCP 删节点被拒（非空） | 有子节点 / relation / KB 内容 | MCP 仅限空节点；改 `ki delete-relation -g <group>` 或 `--force` |
-| 非向量化模式写入后搜不到 | `vector:false` / `--no-vector` | 该模式不产生 memoryId，属预期 |
+| 非向量化模式写入后搜不到 | 用默认 hybrid 查询 `vector:false` / `--no-vector` 文档 | 该模式不产生 memoryId；检查 `ftsIds`，改用 `ki search --mode fulltext` |
 | 评分不涨 | 5 分钟内重复读取 | 防刷间隔 5 分钟；`useCount` 上限 10 |
 | 批量顶层 `vectorStored:false` 但逐条有成功 | 存在部分失败 | 顶层语义为"全部完全成功"，看逐条 `vectorReason` |
 | rootName 相关行为消失 | 沿用旧文档/脚本 | 概念已移除，group 即完整相对路径；分隔符仅 `/` |
@@ -100,7 +100,7 @@ kisearch 的**关系（Relation）与索引管理**：关系回写（四层联�
 | `test/get-module-info.test.ts` | 7 | ✅ |
 | `test/delete-group.test.ts` | 7 | ✅ |
 
-**覆盖缺口**：文档级删除、`boundaryDecay` / `partitionByScore` 上限截断、`resolveGroupPath` 四级降级、`--no-vector` 单条路径、`manage-index --force`、MCP 工具层。详见 `implementation/06-测试.md`。
+**覆盖缺口**：文档级删除、`boundaryDecay` / `partitionByScore` 上限截断、`resolveGroupPath` 四级降级、FTS-only 单条删除/恢复边界、`manage-index --force`、MCP 工具层。FTS-only 批量回写与删除 Group 已有回归覆盖。详见 `implementation/06-测试.md`。
 
 ## Root Cause 记录
 
@@ -123,6 +123,8 @@ kisearch 的**关系（Relation）与索引管理**：关系回写（四层联�
 - **修复**：`executeDeleteGroup` 用前缀匹配收集级联范围；向量失败时以 `vectorRemoved:false` 显式暴露残留而非静默。
 
 ## 最近更新
+
+- **2026-09-22**：增量同步 FTS-only 关系回写：`vector=false` 写 `fts-client` 的按 scope FTS-only Collection，relations-cache 回填 `ftsIds`；删除与切回 dense 模式均需清理 FTS ID。
 
 - **2026-08-28**（git `9841255`）：全量合并补全更新。修正 C1 中 12 处过期签名（`calculateScore` / `recordUse` / `hybridPartition` / `partitionByScore` / `boundaryDecay` / `resolveGroupPath` / `executeQueryGroup` / `executeGetModuleInfo` 等）；新增目录级删除、批量回写、Wiki 补齐与 autoBackfill、回收站、多标签、非向量化模式；新增 `implementation/07-运维.md`；实测 77 例全绿。
 
