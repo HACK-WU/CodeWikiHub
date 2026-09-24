@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>R-03 demo · 侧边栏 AI 对话（三栏布局 + SSE 流式）</title>
+    <style>
+      /* 模拟真实 ki-shell：232 左导航 + 主区（Browse 双栏）+ 右侧对话面板 */
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; font: 13px/1.5 system-ui, sans-serif; }
+      .shell { display: flex; height: 100vh; overflow: hidden; }
+      .nav { width: 232px; min-width: 232px; background: #f6f7f9; border-right: 1px solid #e3e5e9; padding: 10px; }
+      .nav h1 { font-size: 14px; margin: 4px 0 14px; }
+      .nav a { display: block; padding: 7px 9px; border-radius: 6px; color: #333; text-decoration: none; }
+      .nav a.on { background: #e6efff; color: #1d4ed8; }
+      .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      .topbar { height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid #e3e5e9; }
+      .topbar .sp { flex: 1; }
+      .content { flex: 1; min-height: 0; padding: 12px; overflow: hidden; }
+      .split { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 12px; height: 100%; }
+      .side, .doc, .chat { border: 1px solid #e3e5e9; border-radius: 10px; background: #fff; }
+      .side { padding: 10px; overflow: auto; }
+      .doc { padding: 14px; overflow: auto; }
+      .doc .ruler { position: sticky; top: 0; background: #fffbe6; border: 1px solid #ffe08a; border-radius: 6px; padding: 6px 9px; margin-bottom: 10px; }
+
+      /* 对话面板 */
+      .chat { width: 360px; min-width: 360px; display: flex; flex-direction: column; margin: 10px 10px 10px 0; overflow: hidden; }
+      .chat.hide { display: none; }
+      .chat__head { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-bottom: 1px solid #e3e5e9; }
+      .chat__head b { font-size: 13px; }
+      .chat__head .sp { flex: 1; }
+      button { font: inherit; padding: 4px 9px; border: 1px solid #d5d8de; background: #fff; border-radius: 6px; cursor: pointer; }
+      button:hover { background: #f2f4f7; }
+      button.primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+      button:disabled { opacity: .5; cursor: not-allowed; }
+      .chat__bar { display: flex; gap: 6px; padding: 8px 11px; border-bottom: 1px solid #eef0f3; }
+      select, textarea, input { font: inherit; border: 1px solid #d5d8de; border-radius: 6px; padding: 4px 7px; width: 100%; }
+      .prompt { padding: 8px 11px; border-bottom: 1px solid #eef0f3; }
+      .prompt label { color: #666; }
+      .msgs { flex: 1; min-height: 0; overflow: auto; padding: 11px; }
+      .msg { margin-bottom: 11px; }
+      .msg .who { font-size: 11px; color: #888; margin-bottom: 3px; }
+      .msg .body { white-space: pre-wrap; word-break: break-word; }
+      .msg.user .body { background: #eef4ff; padding: 7px 9px; border-radius: 8px; }
+      .reason { margin: 6px 0; border: 1px dashed #d9c8a0; background: #fffdf5; border-radius: 8px; padding: 6px 8px; }
+      .reason summary { cursor: pointer; color: #8a6d3b; font-size: 12px; }
+      .reason .body { white-space: pre-wrap; color: #6b6357; margin-top: 5px; max-height: 200px; overflow: auto; }
+      .meta { font-size: 11px; color: #7a8593; margin-top: 4px; }
+      .composer { border-top: 1px solid #e3e5e9; padding: 9px 11px; display: flex; gap: 7px; align-items: flex-end; }
+      .composer textarea { resize: none; height: 62px; }
+      .err { color: #b91c1c; }
+      .badge { font-size: 11px; background: #eef0f3; border-radius: 10px; padding: 1px 7px; color: #555; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="nav">
+        <h1>ki 知识库</h1>
+        <a class="on" href="#">☰ 知识库浏览</a>
+        <a href="#">⌕ 语义搜索</a>
+        <a href="#">⇪ 上传导入</a>
+        <a href="#">✎ 知识写入</a>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <span>◁</span><b>ki 知识库</b><span class="sp"></span>
+          <span class="badge">Scope: langchain</span>
+          <button id="toggleChat">对话面板</button>
+        </header>
+        <div class="content">
+          <div class="split">
+            <aside class="side">
+              <b>文档（模拟 Browse 左栏）</b>
+              <div style="margin-top:8px;color:#666">
+                web-index/docs-langchain/topics<br />· core-components<br />· agents<br />· errors<br />· frontend
+              </div>
+            </aside>
+            <section class="doc">
+              <div class="ruler" id="ruler">主内容区宽度：测量中…</div>
+              <p>此区域模拟 Browse 主内容。缩小窗口观察三栏挤压：232（左导航）+ 300（文档栏）+ 360（对话面板）固定占位，主内容区被压到多少像素。</p>
+              <p>当主内容区小于约 420px 时，阅读体验开始不可用，需要窄屏降级策略（面板转浮层或自动收起）。</p>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <aside class="chat" id="chatPanel">
+        <div class="chat__head">
+          <b>AI 对话</b><span class="sp"></span>
+          <button id="btnArchived">已归档</button>
+          <button id="btnNew">新建</button>
+          <button id="btnDel">删除</button>
+          <button id="btnHide">收起</button>
+        </div>
+        <div class="chat__bar">
+          <select id="convList"></select>
+        </div>
+        <div class="prompt">
+          <label>系统提示词（本会话）</label>
+          <textarea id="sysPrompt" rows="2" placeholder="例如：你是 ki 知识库助手，回答简洁"></textarea>
+        </div>
+        <div class="msgs" id="msgs"></div>
+        <div class="composer">
+          <textarea id="input" placeholder="输入消息，Enter 发送 / Shift+Enter 换行"></textarea>
+          <button class="primary" id="btnSend">发送</button>
+          <button id="btnStop" disabled>停止</button>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const msgsEl = $('msgs');
+      let convId = null;
+      let archivedView = false;
+      let ac = null;
+      let streaming = false;
+      let curAssistant = null;
+      let curReasonBox = null;
+
+      const fmtMs = (v) => (v == null ? '—' : `${v}ms`);
+
+      function measure() {
+        const doc = document.querySelector('.doc');
+        $('ruler').textContent = `主内容区宽度：${Math.round(doc.getBoundingClientRect().width)}px（窗口 ${window.innerWidth}px）`;
+      }
+      new ResizeObserver(measure).observe(document.querySelector('.doc'));
+      measure();
+
+      async function api(path, opts) {
+        const res = await fetch(path, opts);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        return data;
+      }
+
+      async function loadConvs(selectId) {
+        const { items } = await api(`/api/conversations?archived=${archivedView ? 1 : 0}`);
+        $('convList').innerHTML = items.length
+          ? items.map((c) => `<option value="${c.id}">${c.title}（${c.count}）</option>`).join('')
+          : '<option value="">（无会话，点「新建」）</option>';
+        const target = selectId || items[0]?.id || '';
+        $('convList').value = target;
+        if (target) await openConv(target);
+        else {
+          convId = null;
+          msgsEl.innerHTML = '';
+          $('sysPrompt').value = '';
+        }
+        $('btnArchived').textContent = archivedView ? '返回列表' : '已归档';
+      }
+
+      async function openConv(id) {
+        const { conv } = await api(`/api/conversations/${id}`);
+        convId = id;
+        $('sysPrompt').value = conv.systemPrompt || '';
+        msgsEl.innerHTML = '';
+        curAssistant = null;
+        curReasonBox = null;
+        for (const m of conv.messages) {
+          if (m.role === 'user') addUser(m.content);
+          else addAssistant(m.content, m.reasoning, m.timing, m.usage);
+        }
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+
+      function addUser(text) {
+        const d = document.createElement('div');
+        d.className = 'msg user';
+        d.innerHTML = '<div class="who">你</div>';
+        const b = document.createElement('div');
+        b.className = 'body';
+        b.textContent = text;
+        d.appendChild(b);
+        msgsEl.appendChild(d);
+        return d;
+      }
+
+      function addAssistant(content, reasoning, timing, usage) {
+        const d = document.createElement('div');
+        d.className = 'msg assistant';
+        d.innerHTML = '<div class="who">AI</div>';
+        if (reasoning) {
+          const det = document.createElement('details');
+          det.className = 'reason';
+          det.innerHTML = `<summary>思考过程（${reasoning.length} 字）</summary>`;
+          const rb = document.createElement('div');
+          rb.className = 'body';
+          rb.textContent = reasoning;
+          det.appendChild(rb);
+          d.appendChild(det);
+        }
+        const b = document.createElement('div');
+        b.className = 'body';
+        b.textContent = content || '';
+        d.appendChild(b);
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = timing
+          ? `首字 ${fmtMs(timing.ttfbMs)} · 首答 ${fmtMs(timing.firstContentMs)} · 总 ${fmtMs(timing.totalMs)}` +
+            (usage ? ` · token ${usage.prompt_tokens}+${usage.completion_tokens}（思考 ${usage.completion_tokens_details?.reasoning_tokens ?? '?'}）` : '')
+          : '';
+        d.appendChild(meta);
+        msgsEl.appendChild(d);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+        return { box: d, body: b, meta };
+      }
+
+      async function send() {
+        const text = $('input').value.trim();
+        if (!text || streaming) return;
+        if (!convId) await loadConvs();
+        if (!convId) {
+          const { conv } = await api('/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: text.slice(0, 14) || '新会话' }),
+          });
+          convId = conv.id;
+          await loadConvs(conv.id);
+        }
+        $('input').value = '';
+        addUser(text);
+        const node = addAssistant('', '', null, null);
+        curAssistant = node;
+        curReasonBox = null;
+        streaming = true;
+        $('btnSend').disabled = true;
+        $('btnStop').disabled = false;
+        ac = new AbortController();
+
+        try {
+          const resp = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId: convId, text }),
+            signal: ac.signal,
+          });
+          if (!resp.ok || !resp.body) {
+            const e = await resp.json().catch(() => ({}));
+            throw new Error(e.error || `HTTP ${resp.status}`);
+          }
+          const reader = resp.body.getReader();
+          const dec = new TextDecoder();
+          let buf = '';
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += dec.decode(value, { stream: true });
+            const parts = buf.split('\n\n');
+            buf = parts.pop() ?? '';
+            for (const part of parts) {
+              const line = part.split('\n').find((l) => l.startsWith('data:'));
+              if (!line) continue;
+              let ev;
+              try {
+                ev = JSON.parse(line.slice(5).trim());
+              } catch {
+                continue;
+              }
+              if (ev.type === 'meta') {
+                curAssistant.meta.textContent = `首字 ${fmtMs(ev.ttfbMs)}${ev.firstContentMs ? ` · 首答 ${fmtMs(ev.firstContentMs)}` : ''} · 生成中…`;
+              } else if (ev.type === 'delta' && ev.channel === 'reasoning') {
+                if (!curReasonBox) {
+                  const det = document.createElement('details');
+                  det.className = 'reason';
+                  det.innerHTML = '<summary>思考过程（生成中…）</summary>';
+                  const rb = document.createElement('div');
+                  rb.className = 'body';
+                  det.appendChild(rb);
+                  curAssistant.box.insertBefore(det, curAssistant.body);
+                  curReasonBox = { det, rb, len: 0 };
+                }
+                curReasonBox.rb.textContent += ev.text;
+                curReasonBox.len += ev.text.length;
+                curReasonBox.det.querySelector('summary').textContent = `思考过程（${curReasonBox.len} 字）`;
+              } else if (ev.type === 'delta' && ev.channel === 'content') {
+                curAssistant.body.textContent += ev.text;
+              } else if (ev.type === 'done') {
+                curAssistant.meta.textContent =
+                  `首字 ${fmtMs(ev.timing.ttfbMs)} · 首答 ${fmtMs(ev.timing.firstContentMs)} · 总 ${fmtMs(ev.timing.totalMs)}`;
+                if (ev.usage) {
+                  curAssistant.meta.textContent += ` · token ${ev.usage.prompt_tokens}+${ev.usage.completion_tokens}（思考 ${ev.usage.completion_tokens_details?.reasoning_tokens ?? '?'}）`;
+                }
+              } else if (ev.type === 'aborted') {
+                curAssistant.body.textContent += '\n\n[已中止]';
+              } else if (ev.type === 'error') {
+                curAssistant.meta.innerHTML = `<span class="err">错误：${ev.message}</span>`;
+              }
+            }
+            msgsEl.scrollTop = msgsEl.scrollHeight;
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            if (curAssistant) curAssistant.body.textContent += '\n\n[已中止]';
+          } else if (curAssistant) {
+            curAssistant.meta.innerHTML = `<span class="err">错误：${err.message}</span>`;
+          }
+        } finally {
+          streaming = false;
+          $('btnSend').disabled = false;
+          $('btnStop').disabled = true;
+          loadConvs(convId);
+        }
+      }
+
+      $('btnSend').onclick = send;
+      $('btnStop').onclick = () => ac?.abort();
+      $('input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
+      });
+      $('convList').onchange = (e) => e.target.value && openConv(e.target.value);
+      $('sysPrompt').addEventListener('change', async () => {
+        if (!convId) return;
+        await api(`/api/conversations/${convId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ systemPrompt: $('sysPrompt').value }),
+        });
+      });
+      $('btnNew').onclick = async () => {
+        const { conv } = await api('/api/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: '新会话' }),
+        });
+        archivedView = false;
+        await loadConvs(conv.id);
+      };
+      $('btnArchived').onclick = async () => {
+        archivedView = !archivedView;
+        await loadConvs();
+      };
+      $('btnDel').onclick = async () => {
+        if (!convId) return;
+        if (!confirm('删除该会话？此操作不可恢复。')) return;
+        await api(`/api/conversations/${convId}`, { method: 'DELETE' });
+        await loadConvs();
+      };
+      $('btnHide').onclick = () => $('chatPanel').classList.add('hide');
+      $('toggleChat').onclick = () => $('chatPanel').classList.toggle('hide');
+
+      loadConvs();
+    </script>
+  </body>
+</html>

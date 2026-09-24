@@ -76,9 +76,9 @@
         {
           "id": "rel_004",
           "text": "向量引擎-向量客户端",
-          "score": 1,
-          "useCount": 1,
-          "lastUsedTime": 1789628910790,
+          "score": 2,
+          "useCount": 2,
+          "lastUsedTime": 1790131129308,
           "isImported": false,
           "tags": [
             "relation"
@@ -350,9 +350,9 @@
         {
           "id": "rel_018",
           "text": "知识索引导入-向量客户端",
-          "score": 1,
-          "useCount": 1,
-          "lastUsedTime": 1790062673274,
+          "score": 2,
+          "useCount": 2,
+          "lastUsedTime": 1790152423714,
           "isImported": false,
           "memoryIds": [
             "1510cd36d0222254bd776775b1640505"
@@ -362,9 +362,9 @@
         {
           "id": "rel_022",
           "text": "知识索引导入-关系与索引管理",
-          "score": 1,
-          "useCount": 1,
-          "lastUsedTime": 1789634165781,
+          "score": 3,
+          "useCount": 3,
+          "lastUsedTime": 1790152423714,
           "isImported": false,
           "tags": [
             "relation"
@@ -378,9 +378,9 @@
         {
           "id": "rel_020",
           "text": "导入防护-向量客户端",
-          "score": 0.9988210559015984,
-          "useCount": 1,
-          "lastUsedTime": 1789634062816,
+          "score": 2,
+          "useCount": 2,
+          "lastUsedTime": 1790152423714,
           "isImported": false,
           "tags": [
             "relation"
@@ -394,9 +394,9 @@
         {
           "id": "rel_019",
           "text": "知识索引导入-MCP HTTP API",
-          "score": 0,
-          "useCount": 0,
-          "lastUsedTime": null,
+          "score": 2,
+          "useCount": 2,
+          "lastUsedTime": 1790152423714,
           "isImported": false,
           "tags": [
             "relation"
@@ -410,9 +410,9 @@
         {
           "id": "rel_021",
           "text": "知识索引导入-restore",
-          "score": 0,
-          "useCount": 0,
-          "lastUsedTime": null,
+          "score": 1,
+          "useCount": 1,
+          "lastUsedTime": 1790152423714,
           "isImported": false,
           "tags": [
             "relation"
@@ -624,6 +624,28 @@
             "ac2a893c5e9d170e7cbcb02dc7d89480"
           ],
           "memoryId": "b556f49d81bcd8e555c71f82f0883507"
+        },
+        {
+          "id": "rel_057",
+          "text": "局部编辑的wiki写回与格式影响",
+          "score": 0,
+          "useCount": 0,
+          "lastUsedTime": null,
+          "isImported": false,
+          "tags": [
+            "wiki写回",
+            "已知坑",
+            "relation编辑",
+            "frontmatter"
+          ],
+          "memoryIds": [
+            "22158207543fae1313c5674c421f6b77",
+            "d5b9933bd0cf881c647a185f77ef7c74",
+            "04de7bf04a3889fbe4eb363eee4e28f7",
+            "0ae8420ecfd9dad85e75ebe97e866bcf",
+            "07f9f5dccde4bff26af83b816f0b2326"
+          ],
+          "memoryId": "22158207543fae1313c5674c421f6b77"
         }
       ],
       "keywords": [],
@@ -631,6 +653,26 @@
     },
     "接口信息/关系与索引管理": {
       "hot_relations": [
+        {
+          "id": "rel_034",
+          "text": "MCP工具清单",
+          "score": 2,
+          "useCount": 2,
+          "lastUsedTime": 1789627952312,
+          "isImported": false,
+          "tags": [
+            "mcp",
+            "工具",
+            "接口信息"
+          ],
+          "memoryIds": [
+            "30420db7bb817f4c459d4a527b9ecceb",
+            "7b228c4615f8a0c9dfd8319e1d0f9887",
+            "58dc10a505ef933c08a5e53fcaba8028",
+            "1983667306ca1c3bc5a544e73b8c1716"
+          ],
+          "memoryId": "30420db7bb817f4c459d4a527b9ecceb"
+        },
         {
           "id": "rel_033",
           "text": "CLI命令族",
@@ -653,26 +695,6 @@
           "memoryId": "b91474f580241c7106a9e2fb39ae51b7"
         },
         {
-          "id": "rel_034",
-          "text": "MCP工具清单",
-          "score": 2,
-          "useCount": 2,
-          "lastUsedTime": 1789627952312,
-          "isImported": false,
-          "tags": [
-            "mcp",
-            "工具",
-            "接口信息"
-          ],
-          "memoryIds": [
-            "30420db7bb817f4c459d4a527b9ecceb",
-            "7b228c4615f8a0c9dfd8319e1d0f9887",
-            "58dc10a505ef933c08a5e53fcaba8028",
-            "1983667306ca1c3bc5a544e73b8c1716"
-          ],
-          "memoryId": "30420db7bb817f4c459d4a527b9ecceb"
-        },
-        {
           "id": "rel_035",
           "text": "可复用纯函数签名",
           "score": 1,
@@ -692,6 +714,18 @@
             "924446ad89c8d1ac40cfc054e987a277"
           ],
           "memoryId": "4639ad2e095ef9eee298d34b3d0466a3"
+        },
+        {
+          "id": "rel_056",
+          "text": "Relation局部编辑（ki_edit_relation）",
+          "score": 0.9992543989283551,
+          "useCount": 1,
+          "lastUsedTime": 1790242023431,
+          "isImported": false,
+          "memoryIds": [
+            "159f0ca8a8a136261eb1d38130db2f81"
+          ],
+          "memoryId": "159f0ca8a8a136261eb1d38130db2f81"
         },
         {
           "id": "rel_053",
@@ -763,9 +797,9 @@
         {
           "id": "rel_039",
           "text": "与向量客户端和MCP服务的依赖",
-          "score": 3,
-          "useCount": 3,
-          "lastUsedTime": 1790062674322,
+          "score": 4,
+          "useCount": 4,
+          "lastUsedTime": 1790151481487,
           "isImported": false,
           "memoryIds": [
             "b7230911296dcbcf29033d0a9e11a728"
@@ -775,9 +809,9 @@
         {
           "id": "rel_038",
           "text": "与知识索引导入的双向耦合",
-          "score": 2,
-          "useCount": 2,
-          "lastUsedTime": 1789629911057,
+          "score": 3,
+          "useCount": 3,
+          "lastUsedTime": 1790151481487,
           "isImported": false,
           "tags": [
             "强关联",
@@ -817,6 +851,18 @@
             "88cfca2578f67a471eaf22ba32caa226"
           ],
           "memoryId": "aa3a6e7e7117c87bb78ae23ecc06189b"
+        },
+        {
+          "id": "rel_058",
+          "text": "ki_sync_relation 是整篇覆盖而非追加",
+          "score": 0,
+          "useCount": 0,
+          "lastUsedTime": null,
+          "isImported": false,
+          "memoryIds": [
+            "0ba2899a9b4d155acadbfbd8207f7384"
+          ],
+          "memoryId": "0ba2899a9b4d155acadbfbd8207f7384"
         }
       ],
       "keywords": [],
@@ -1072,5 +1118,5 @@
       "max_hot_count": 10
     }
   },
-  "updatedAt": "2026-09-22T08:00:26.017Z"
+  "updatedAt": "2026-09-24T09:28:30.013Z"
 }
