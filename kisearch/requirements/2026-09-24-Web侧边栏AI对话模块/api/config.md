@@ -47,8 +47,16 @@ interface ChatConfigOk {
   requestTimeoutMs: number | null; // 生效的整体超时（供前端提示预期等待）
   reason: string | null;    // enabled=false 时的原因（人话）
   code: string | null;      // enabled=false 时的错误码（如 CHAT_DISABLED）
+
+  // ── v2 新增（D13 检索与工具调用）─────────────────────────
+  supportsTools: boolean;   // 模型是否支持 function calling（T10）；false → 走预检索降级
+  retrievalEnabled: boolean; // 检索问答是否可用 = enabled && supportsTools 走任一降级分支均可答 && kbDisclosureAck
+  ackRequired: boolean;     // 是否需要先做隐私确认（T12）；true → 面板阻塞发送并弹确认
+  maxToolRounds: number;    // 工具调用轮次上限（T11，默认 3）；供前端展示预期与提示
 }
 ```
+
+> **`retrievalEnabled` 与 `supportsTools` 正交**（前端最容易写错处）：`retrievalEnabled = !ackRequired`（确认后即可检索）；`supportsTools` 只决定走**工具路径**还是**预检索降级路径**，不决定能否检索。完整对照表见本文档「关键代码设计」小节。
 
 #### 错误响应
 
@@ -73,10 +81,25 @@ curl -s http://127.0.0.1:7423/api/chat/config
   "enabled": true,
   "model": "qwen3.8-flash",
   "baseURLHost": "token-plan.maas.qianwenaiapi.com",
-  "configPath": "/root/.ki/config.yaml",
-  "requestTimeoutMs": 180000,
+  "configPath": "~/.ki/config.yaml",
+  "requestTimeoutMs": 300000,
   "reason": null,
-  "code": null
+  "code": null,
+  "supportsTools": true,
+  "retrievalEnabled": true,
+  "ackRequired": false,
+  "maxToolRounds": 3
+}
+```
+
+已配置但**未做隐私确认**（T12 首次使用）：
+
+```json
+{
+  "ok": true, "enabled": true, "model": "qwen3.8-flash",
+  "baseURLHost": "token-plan.maas.qianwenaiapi.com", "configPath": "~/.ki/config.yaml",
+  "requestTimeoutMs": 300000, "reason": null, "code": null,
+  "supportsTools": true, "retrievalEnabled": false, "ackRequired": true, "maxToolRounds": 3
 }
 ```
 
@@ -88,12 +111,18 @@ curl -s http://127.0.0.1:7423/api/chat/config
   "enabled": false,
   "model": null,
   "baseURLHost": null,
-  "configPath": "/root/.ki/config.yaml",
+  "configPath": "~/.ki/config.yaml",
   "requestTimeoutMs": null,
   "reason": "未配置模型：请在配置文件的 llm 段填写 baseURL / model / apiKey",
-  "code": "CHAT_DISABLED"
+  "code": "CHAT_DISABLED",
+  "supportsTools": false,
+  "retrievalEnabled": false,
+  "ackRequired": false,
+  "maxToolRounds": 3
 }
 ```
+
+> **v2 字段在 `enabled:false` 时仍需返回**（`supportsTools:false` / `retrievalEnabled:false`），前端可据此统一渲染禁用态，不必分两种分支判断。
 
 > 注意：未配置时仍返回 **200 + `ok:true`**（配置缺失是可预期的产品状态，不是请求错误），由 `enabled:false` 表达；面板据此展示配置指引而非错误提示。
 
@@ -103,33 +132,65 @@ curl -s http://127.0.0.1:7423/api/chat/config
 
 ```ts
 // src/lib/llm-client.ts
-export function resolveLlmStatus(cfg: KiConfig, configPath: string): {
+/** 工具轮次上限：SSOT = design/S07 §3.4 的 ToolLoopBudget.maxRounds（T11 拍板取 3） */
+export const MAX_TOOL_ROUNDS = 3;
+
+export interface LlmStatus {
   enabled: boolean; model: string | null; baseURLHost: string | null;
   requestTimeoutMs: number | null; reason: string | null; code: string | null;
-} {
+  // ── v2（D13）
+  supportsTools: boolean;      // 决定走【工具路径】还是【预检索降级路径】
+  retrievalEnabled: boolean;   // 检索问答是否可用（= 已确认隐私）；与 supportsTools 正交
+  ackRequired: boolean;        // 未确认 → 面板阻塞发送
+  maxToolRounds: number;
+}
+
+export function resolveLlmStatus(cfg: KiConfig, configPath: string): LlmStatus {
   const llm = cfg.llm;
+
+  const notReady = (reason: string): LlmStatus => ({
+    enabled: false, model: null, baseURLHost: null, requestTimeoutMs: null,
+    reason, code: 'CHAT_DISABLED',
+    supportsTools: false, retrievalEnabled: false, ackRequired: false,
+    maxToolRounds: MAX_TOOL_ROUNDS,
+  });
+
   if (!llm?.baseURL || !llm?.model || !llm?.apiKey) {
-    return { enabled: false, model: null, baseURLHost: null, requestTimeoutMs: null,
-      reason: '未配置模型：请在配置文件的 llm 段填写 baseURL / model / apiKey',
-      code: 'CHAT_DISABLED' };
+    return notReady('未配置模型：请在配置文件的 llm 段填写 baseURL / model / apiKey');
   }
   const apiKey = resolveApiKey(llm.apiKey);   // 复用 src/lib/config.ts:428-438 的 ${ENV} 解析
-  if (!apiKey) {
-    return { enabled: false, model: null, baseURLHost: null, requestTimeoutMs: null,
-      reason: `apiKey 引用的环境变量未设置：${llm.apiKey}`,
-      code: 'CHAT_DISABLED' };
-  }
+  if (!apiKey) return notReady(`apiKey 引用的环境变量未设置：${llm.apiKey}`);
+
   let host: string;
   try {
     host = new URL(llm.baseURL).host;         // 解析失败视为配置错误
   } catch {
-    return { enabled: false, model: null, baseURLHost: null, requestTimeoutMs: null,
-      reason: `baseURL 不是合法 URL：${llm.baseURL}`, code: 'CHAT_DISABLED' };
+    return notReady(`baseURL 不是合法 URL：${llm.baseURL}`);
   }
-  return { enabled: true, model: llm.model, baseURLHost: host,
-    requestTimeoutMs: llm.requestTimeoutMs ?? 180_000, reason: null, code: null };
+
+  const supportsTools = llm.supportsTools ?? true;    // T10：默认开（不支持时降级，不是禁用）
+  const ackRequired = llm.kbDisclosureAck !== true;   // T12：未确认 → 阻塞发送
+
+  return {
+    enabled: true, model: llm.model, baseURLHost: host,
+    requestTimeoutMs: llm.requestTimeoutMs ?? 300_000, // v2：180s → 300s（D13 后重估，见 S01 §9.2）
+    reason: null, code: null,
+    supportsTools,
+    retrievalEnabled: !ackRequired,   // ★ 确认后即可检索（工具路径或预检索降级路径）
+    ackRequired,
+    maxToolRounds: MAX_TOOL_ROUNDS,
+  };
 }
 ```
+
+> **`retrievalEnabled` 与 `supportsTools` 是两个正交维度**（前端最容易写错的地方）：
+> | `supportsTools` | `ackRequired` | 实际行为 |
+> |:---:|:---:|---|
+> | true | false | 正常检索问答（工具路径） |
+> | false | false | **仍能检索**，走预检索降级 + `degraded` 标记（T10） |
+> | true / false | true | **阻塞发送**，先做一次性确认（T12） |
+>
+> 即 `retrievalEnabled = !ackRequired`；`supportsTools` 只决定走哪条路径，**不决定能否检索**。
 
 #### 为什么这样写
 

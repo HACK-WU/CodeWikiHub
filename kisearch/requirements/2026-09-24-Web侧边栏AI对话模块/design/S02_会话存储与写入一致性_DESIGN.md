@@ -155,7 +155,26 @@ interface ConversationListRes { items: ConversationSummary[]; nextCursor: string
 | DELETE | `/api/chat/conversations/:id` | 物理删除（前端二次确认） |
 | POST | `/api/chat/conversations/:id/messages` | 发消息，SSE 流式返回（事件协议见 S-01/S-03） |
 
-**`:id` 的查找与越权边界（必须遵守）**：接口路径不含 `scope`，因此服务端查找 `:id` 时**只允许在 token 授权 scope 集合内遍历目录**（鉴权未启用时即全部 scope）；命中后再次校验该会话的 `scope` 属于授权集合，否则返回 403 `SCOPE_FORBIDDEN`（不得返回 404，避免通过状态码探测他 scope 会话是否存在）。会话 id 采用时间戳 + 4 位随机（`c-{base36}-{rand4}`）保证全局唯一，`chatDir` 下同名 id 只应存在于一个 scope 目录。
+**`:id` 的查找与越权边界（必须遵守）**：
+
+> ## ⚠️ 本节原文**自相矛盾**，已于 2026-09-25 修正（SR-01 窗口实跑发现，它直接导致了一个 P2 安全缺陷）
+>
+> 原文写：「**只允许在授权 scope 内遍历**」+「命中后再次校验该会话的 `scope` 属于授权集合，否则返回 403」
+> —— 这两句**逻辑不通**：若遍历范围**就是**授权集合，则**不可能**命中他 scope 的会话，
+> 那句 403 校验**永不触发**；且"遍历完找不到"该返回什么**未定义** → 实现者自然写 **404** →
+> **违反 `cross-cutting.md` §2.2 的 P2**（404 是**枚举探测**路径：可用来判断他人会话是否存在）。
+
+**正确语义（三态）**：
+
+```text
+服务端查找 :id 时，扫描 chatDir 下【全部 scope】目录（不是只扫授权集合）：
+  ① 任何 scope 都没有该 id   → 404 CONVERSATION_NOT_FOUND（确实不存在）
+  ② 存在于【非授权】scope    → 403 SCOPE_FORBIDDEN（且【不告知】属于哪个 scope —— 脱敏防探测）
+  ③ 存在于【授权】scope      → 命中返回
+鉴权未启用（authScopes === null）→ 视为全部 scope 授权，直接走 ③
+```
+
+会话 id 采用时间戳 + 4 位随机（`c-{base36}-{rand4}`）保证全局唯一，`chatDir` 下同名 id 只应存在于一个 scope 目录；若同名 id 出现在多个 scope → **fail-loud（500）**，不静默取其一。
 
 Demo 返回示例（`GET /api/chat/conversations?scope=kisearch`）：
 
@@ -218,3 +237,62 @@ Demo 返回示例（`GET /api/chat/conversations?scope=kisearch`）：
 ## 8. 不在范围内
 
 会话内容全文检索、跨 scope 会话迁移、会话分享、按 tag 分类、MCP/CLI 侧会话读写接口、会话内容加密。
+
+---
+
+## 9. v2 修订（2026-09-25，D13 检索与工具调用 + D14 重新生成/编辑重发）
+
+> 变更来源：`S07_检索与工具调用_DESIGN.md`｜**覆盖**前文冲突处，其余条款继续有效。
+
+### 9.1 `ChatMessage` 新增 `sources`（接 §3.2 数据模型）
+
+```ts
+interface ChatMessage {
+  // ...v1 字段全部保留（id/role/content/at/aborted?/finishReason?/timing?/usage?/images?）
+  sources?: SourceRef[];   // 仅 assistant；来源引用（类型定义见 S07 §3.5）
+}
+```
+
+**两条不变量**（与 §3.2 原有约束并列，同为结构性隔离手段）：
+
+- 仍**不含** `reasoning`
+- 仍**不含检索原始结果**（N22）；`sources` 是**投影后的引用**（group / doc / 行号区间 / ≤200 字摘要），不是 `SearchResult`
+
+**向后兼容**：旧会话文件无 `sources` → 可选字段，正常读取。
+
+### 9.2 新增接口（完整契约见 `api/retrieval.md`，此处只登记）
+
+| 编号 | 方法 | 路径 | 说明 | 来源 |
+|---|---|---|---|---|
+| API-11 | POST | `/api/chat/conversations/:id/regenerate` | 重新生成；**不新增 user 消息** | R23 / D14 |
+| API-12 | PATCH | `/api/chat/conversations/:id/messages/:msgId` | 编辑 user 消息 → 原子截断其后 → 重新生成 | R24 / D14 |
+| API-13 | POST | `/api/chat/config/ack` | 隐私确认（T12） | N18 / T12 |
+| API-14 | DELETE | `/api/chat/conversations?scope=` | 清空该 scope 全部会话（**N8 指出当前 api 无此落点**，本次补齐） | N8 |
+
+> **API-14 的删除范围**：仅删 `chatDir/{scope}/` 下的会话文件与 `assets/`；**绝不触碰 `kb/{scope}/`**（与 N15 同级约束）。
+
+### 9.3 原子截断语义（N21，**细化** §3.3 的并发描述）
+
+"编辑并重发"必须在**同一把会话锁内**完成：
+
+```text
+withConvLock(convId, () => {
+  conv = readConversation()              // 锁内读最新
+  if (msgId 不是该会话的 user 消息) → 400 MESSAGE_INVALID
+  conv.messages = conv.messages.slice(0, indexOf(msgId) + 1)   // 物理截断其后全部
+  conv.messages.push(新 user 消息)        // 用编辑后的文本
+  conv.seq += 1; writeJson(...)          // 一次落盘
+})
+→ 锁外：开始生成（沿用 §3.3 "生成期间不持锁"）
+```
+
+| 规则 | 说明 |
+|---|---|
+| 截断是**物理删除** | 不保留"被丢弃的分支"（D14 本期不做分支树） |
+| `msgId` 之后无消息 | 等价于"重新生成"，**不报错** |
+| `msgId` 指向 assistant 消息 | 400 `MESSAGE_INVALID`（只能编辑 user 消息） |
+| 会话正在生成中 | 互斥：返回 409 `CHAT_BUSY`，或先 abort 再执行 —— **实现时二选一并在此处回填** |
+
+### 9.4 与 §3.3 的交互（不覆盖，仅澄清）
+
+§3.3 "生成期间不持锁"**仍有效**；§9.3 的锁只覆盖"截断 + 写入"这一段，生成仍在锁外。两段之间的窗口语义（会话被删 / 归档）沿用 §3.3 既有约定，不新增分支。

@@ -13,6 +13,24 @@ document_type: design
 
 # 对话 API（SSE 流式）
 
+> ## ⚠️ 事件形状的**唯一权威**是 `chatContract.ts`，不是本文档
+>
+> 本文档是 **S07 落地前的早期版本（v1）**，其事件表**已知与冻结契约不一致**（典型：本文把 `meta` 写成
+> `{model,ttfbMs}` + `{firstContentMs}` **两帧**，而契约与 `api/retrieval.md` §1.1 是
+> `{conversationId,messageId,model,discardedCount?}` **单帧**）。
+>
+> **冲突时的优先级**：
+> ```text
+> src/lib/chat/chat-contract.ts（SSOT，冻结）
+>   └─ web/src/api/chatContract.ts（前端副本，由 test/chat/contract-parity.test.ts 机械保证一致）
+>        └─ api/retrieval.md §1（S07 新增，与契约对齐）
+>             └─ 本文档（v1，未同步 —— 仅供背景参考）
+> ```
+>
+> **依据**：`contract-parity.test.ts` 会机械地把前后端契约副本比对到一致，但**它比不出文档**——
+> 所以文档层面的矛盾不会自动报警，只能靠这条显式优先级消解。
+> **待办**：本文档应更新到与契约一致（属设计产物维护，不影响实现）。
+
 > 所属需求：REQ-20260924-001｜基础路径：`/api/chat`｜错误码见 [INDEX.md §3](INDEX.md#3-错误码定义)
 
 ## API-08：发送消息（SSE 流式响应）

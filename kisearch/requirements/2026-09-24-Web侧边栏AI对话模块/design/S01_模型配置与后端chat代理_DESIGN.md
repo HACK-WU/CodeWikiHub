@@ -140,3 +140,51 @@ export interface LlmConfig {
 ## 8. 不在范围内
 
 多模型切换器与模型列表拉取、代理/中转配置、上游重试退避策略（仅供 `retryable` 标记由前端决定重试）、embedding 配置的任何变更。
+
+---
+
+## 9. v2 修订（2026-09-25，D13 检索与工具调用）
+
+> 变更来源：`S07_检索与工具调用_DESIGN.md`｜拍板依据：T9 / T10 / T11 / T12
+> **修订原则**：本节**覆盖**前文冲突处；未提及的条款继续有效。数值以本节为准，结构（如"双层超时"）不变。
+
+### 9.1 `LlmConfig` 新增字段（接 §3 的接口定义）
+
+```ts
+export interface LlmConfig {
+  // ...v1 字段（baseURL/model/apiKey/maxTokens/temperature/requestTimeoutMs/
+  //            firstByteTimeoutMs/defaultSystemPrompt/supportsImages/...）全部保留
+  supportsTools?: boolean;      // 默认 true：模型是否支持 function calling（T10）
+                                //   false → 走预检索降级（S07 §3.7）
+  kbDisclosureAck?: boolean;    // 默认 false：用户是否已确认"知识库内容外发"（T12）
+                                //   false → 面板阻塞发送并弹一次性确认（S07 §3.8 / S03 §9.4）
+}
+```
+
+**`supportsTools` 为何默认 true**：T10 拍板口径为"不支持时降级"，而非"未声明即禁用"。默认 false 会让所有用户的首次体验直接落到降级路径，与"保住检索价值"的决策相悖。误判由 §9.4 的探测兜底。
+
+### 9.2 超时预算重估（**覆盖** §3.1 与 §4 表中的 180s）
+
+| 项 | v1 | v2 | 理由 |
+|---|---|---|---|
+| `requestTimeoutMs` | 180000 | **300000** | D13 后整体时长 ≈ N 轮检索 + N 轮生成（N ≤ 3，reasoning 单轮首答最坏 12s 量级） |
+| `firstByteTimeoutMs` | 30000 | **30000（不变）** | 仅约束"建立连接并收到首个 chunk"，**不约束工具轮次** |
+
+> **工具循环自身的预算（轮次上限 / 单次条数 / 片段截断）定义在 `S07 §3.4`（SSOT），本文件不重复定义**，避免双源漂移。
+
+### 9.3 `llm-client` 职责扩展
+
+签名扩展为 `streamChat(messages, opts & { tools?: ToolDef[] })`：
+
+| 能力 | 要求 |
+|---|---|
+| 传 `tools` | 透传上游请求体；**无 `tools` 时行为与 v1 完全一致**（回归点） |
+| 解析 `tool_calls` | 流式增量 `delta.tool_calls` 必须**按 `index` 累积拼接**（首块给 `id`/`name`，后续块给 `arguments` 片段）—— 这是流式 function calling 的标准陷阱，不可用"最后一块覆盖"的写法 |
+| 产出事件 | 回合结束时发 `{type:'tool_calls', calls:[...]}`（完整调用列表，供 S07 的 tool-loop 消费） |
+| reasoning 隔离 | **不变量，v2 继续有效**（工具轮次中同样适用：reasoning 永不进 `messages`） |
+| 工具不支持类错误的识别 | 上游返回"tools not supported"类 400 → 归一化为可识别信号，供 S07 §3.7 触发降级（而非当作普通 502） |
+
+### 9.4 文件改动增量（接 §3 与 §6）
+
+`src/lib/llm-client.ts` 从"上游调用 / SSE 解析 / 事件归一化"扩展为**同时支持 tools 参数与 tool_calls 累积**；新增 `src/lib/retrieval/*`（4 个文件，见 S07 §3.1）。
+`src/lib/config.ts` / `config-schema.ts` 新增 §9.1 两字段校验（均为可选，旧配置无此字段须正常加载 —— 回归点）。

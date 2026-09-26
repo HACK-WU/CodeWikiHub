@@ -316,6 +316,24 @@ curl -s -X DELETE http://127.0.0.1:7423/api/chat/conversations/c-mf3k1a-9x2p
 
 ### 会话定位与越权判定（所有 `:id` 接口共用）
 
+> ## ⚠️ 本节示例**已过时**，与 `design/cross-cutting.md` §2.2 的 P2 要求**冲突**
+>
+> 本节示例「**只在授权 scope 内查找**」→ 他人 scope 的会话会返回 **404**，
+> 而 P2 要求 **403** —— 404 是**信息泄露路径**（可用来枚举他人会话是否存在）。
+>
+> **正确语义（以 `cross-cutting.md` §2.2 为准）**：
+>
+> ```text
+> 扫描磁盘上【全部 scope】，区分三态：
+>   任何 scope 都没有该 id   → 404（确实不存在）
+>   存在于【非授权】scope    → 403（且不告知属于哪个 scope，脱敏防探测）
+>   存在于【授权】scope      → 命中返回
+> ```
+>
+> **本矛盾由 SR-01 窗口实跑发现**（P2 首轮实测返回 404 —— 它按本节示例写的）。
+> 根因：`cross-cutting.md` 的 P2 是**后补的横切约定**，没有回灌到此前已产出的 API 文档。
+> **本节待重写**。
+
 ```ts
 // src/lib/chat-store.ts
 export function resolveConversation(
