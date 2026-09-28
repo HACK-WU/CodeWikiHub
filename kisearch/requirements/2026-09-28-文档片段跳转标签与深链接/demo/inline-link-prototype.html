@@ -1,0 +1,1229 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>就地加链接 · 交互原型（REQ-20260928-001）</title>
+<!--
+  交互原型：Markdown 在线编辑与段落跳转（REQ-20260928-001）
+  ------------------------------------------------------------------
+  打开方式：零依赖单文件，直接用浏览器打开本文件即可（file:// 亦可），无需构建、无网络请求。
+
+  与现有实现的关键差别（对应用户反馈与走查发现）：
+  1. 选区在「浮现那一刻」就快照（mouseup/selectionchange），不再像现在这样在点击按钮瞬间读
+     window.getSelection()、再拿字符串去源码做 indexOf 字面匹配 —— 那是"跨格式/跨行必失败"的根因。
+  2. 渲染时给每个文本叶子带 data-s / data-e（源码偏移），形成「渲染 → 源码」映射；
+     任意渲染文字都可精确回落到源码位置，不再要求用户去源码里手选。
+  3. 跨块 / 跨格式 / 文本不唯一 一律不阻塞：吸附到"选区起点所在的块"，并在浮条上明示附着位置。
+  4. 插入位置不再依赖"上次光标在哪"：入口由选区或段落决定，从根上消除"没有光标就插到文首"。
+  5. 新增链接与普通链接视觉可区分（图标 + 悬停目标说明），且可悬停就地编辑/移除、可撤销。
+  6. 源码退居"高级视图"：默认不出现，主动打开时才展示将被写入的 Markdown 并高亮改动区间。
+-->
+<style>
+:root{
+  --bg:#fafafa; --bg-2:#f5f5f7; --surface:#fff;
+  --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.14);
+  --text:#1d1d1f; --muted:#636366; --subtle:#98989d;
+  --primary:#0071e3; --primary-hover:#0077ed; --primary-active:#005bb5;
+  --primary-weak:#eaf3fe;
+  --success:#34c759; --warning:#ff9500; --danger:#ff3b30; --purple:#af52de;
+  --r-sm:8px; --r-md:12px; --r-lg:16px;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC','Helvetica Neue',sans-serif;
+  --mono:'SF Mono',Menlo,Monaco,ui-monospace,monospace;
+  --shadow-1:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.06);
+  --shadow-2:0 8px 30px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--font);
+  font-size:14px; line-height:1.7; -webkit-font-smoothing:antialiased;
+  padding-bottom:76px;
+}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:inherit}
+
+/* ── 顶栏 ── */
+.top{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;
+  padding:10px 20px;background:rgba(255,255,255,.86);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.top__title{font-weight:600}
+.top__meta{color:var(--subtle);font-size:12px}
+.top__spacer{flex:1}
+.btn{
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--text);
+  padding:6px 12px;border-radius:999px;transition:.15s;
+}
+.btn:hover{background:var(--bg-2)}
+.btn--primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn--primary:hover{background:var(--primary-hover)}
+.btn--ghost{border-color:transparent;background:transparent;color:var(--primary)}
+.btn--ghost:hover{background:var(--primary-weak)}
+.btn--sm{padding:3px 9px;font-size:12px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* ── 布局 ── */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;max-width:1180px;margin:20px auto 0;padding:0 20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-1)}
+.reader-wrap{position:relative;padding:8px 0 40px}
+.reader{padding:28px 44px 40px;position:relative}
+.reader h1{font-size:24px;margin:0 0 18px;letter-spacing:-.01em}
+.reader h2{font-size:17px;margin:28px 0 12px}
+.reader p{margin:0 0 14px}
+.reader ul{margin:0 0 14px;padding-left:22px}
+.reader li{margin:6px 0}
+.reader :not(pre) > code{font-family:var(--mono);font-size:12.5px;background:var(--bg-2);padding:1px 5px;border-radius:5px;border:1px solid var(--border)}
+.reader table{border-collapse:collapse;width:100%;margin:6px 0 18px;font-size:13px}
+.reader th,.reader td{border:1px solid var(--border);padding:6px 10px;text-align:left}
+.reader th{background:var(--bg-2);font-weight:600}
+.reader [data-unit]{position:relative}
+.reader [data-unit].is-attach{background:var(--primary-weak);border-radius:6px;box-shadow:0 0 0 3px var(--primary-weak)}
+.ki-code-block{position:relative;margin:0 0 18px}
+.ki-code-block pre{
+  margin:0;background:#1d1d1f;color:#f5f5f7;border-radius:var(--r-sm);
+  padding:14px 16px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+}
+.ki-code-copy{
+  position:absolute;top:8px;right:8px;background:rgba(255,255,255,.12);color:#fff;
+  border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:2px 8px;font-size:11px;
+}
+.ki-block-add{
+  position:absolute;width:22px;height:22px;border-radius:50%;border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--primary);line-height:1;font-size:15px;padding:0;
+  display:none;place-items:center;box-shadow:var(--shadow-1);z-index:5;
+}
+.ki-block-add.is-on{display:grid}
+
+/* ── 正文内的链接 ── */
+.ki-jump-link{
+  color:var(--primary);text-decoration:underline;text-decoration-thickness:2px;
+  text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--primary) 45%,transparent);
+  background:color-mix(in srgb,var(--primary) 7%,transparent);border-radius:4px;padding:0 3px;
+  white-space:nowrap;
+}
+.ki-jump-link::before{content:'↗ ';font-size:11px;opacity:.75}
+.ki-jump-link.is-flash{animation:flash 1.3s ease}
+@keyframes flash{0%{background:color-mix(in srgb,var(--primary) 34%,transparent)}100%{background:color-mix(in srgb,var(--primary) 7%,transparent)}}
+.ki-plain{color:var(--primary);text-decoration:none}
+.ki-plain:hover{text-decoration:underline}
+/* 当前被悬停的链接，用于就地操作 */
+.ki-jump-link.is-active{outline:2px solid color-mix(in srgb,var(--primary) 40%,transparent);outline-offset:1px}
+
+/* ── 选区浮条 ── */
+.toolbar{
+  position:fixed;z-index:60;display:none;gap:2px;padding:4px;border-radius:10px;
+  background:#1d1d1f;color:#fff;box-shadow:var(--shadow-2);
+}
+.toolbar.is-on{display:flex}
+.toolbar button{background:transparent;border:0;color:#fff;padding:5px 10px;border-radius:7px;font-size:12.5px}
+.toolbar button:hover{background:rgba(255,255,255,.16)}
+.toolbar .sep{width:1px;background:rgba(255,255,255,.22);margin:4px 2px}
+
+/* ── 目标选择 popover ── */
+.popover{
+  position:fixed;z-index:70;width:400px;max-height:72vh;display:none;flex-direction:column;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;box-shadow:var(--shadow-2);overflow:hidden;
+}
+.popover.is-on{display:flex}
+.popover__head{padding:12px 14px 10px;border-bottom:1px solid var(--border)}
+.popover__title{font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px}
+.popover__attach{margin-top:6px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.popover__tabs{display:flex;gap:4px;padding:10px 14px 0}
+.tab{border:1px solid transparent;background:var(--bg-2);color:var(--muted);padding:5px 10px;border-radius:999px;font-size:12.5px}
+.tab.is-on{background:var(--primary-weak);color:var(--primary-active);border-color:color-mix(in srgb,var(--primary) 30%,transparent);font-weight:600}
+.popover__body{padding:12px 14px;overflow:auto;flex:1}
+.field{display:block;margin-bottom:12px}
+.field__label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.field input[type=text]{
+  width:100%;padding:7px 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);
+}
+.field input[type=text]:focus{outline:2px solid color-mix(in srgb,var(--primary) 35%,transparent);border-color:var(--primary)}
+.hint{font-size:12px;color:var(--subtle)}
+.err{font-size:12px;color:var(--danger);margin-top:4px}
+.list{border:1px solid var(--border);border-radius:var(--r-sm);max-height:190px;overflow:auto;background:var(--bg)}
+.list__item{
+  display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;background:transparent;border:0;
+  border-bottom:1px solid var(--border);padding:7px 10px;
+}
+.list__item:last-child{border-bottom:0}
+.list__item:hover{background:var(--primary-weak)}
+.list__item.is-on{background:var(--primary-weak)}
+.badge{font-size:10.5px;padding:1px 6px;border-radius:999px;background:var(--bg-2);color:var(--muted);border:1px solid var(--border);flex:none}
+.badge--h{background:#fff4e5;color:#a35b00;border-color:#ffe0b8}
+.badge--li{background:#eef7ee;color:#1e7a2e;border-color:#cfe9d2}
+.badge--tr{background:#f2eefb;color:#6a3fb5;border-color:#e0d6f5}
+.badge--code{background:#eef1f5;color:#4a5568;border-color:#dde3ea}
+.list__text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.list__text mark{background:#fff2a8;padding:0 2px}
+.popover__foot{
+  padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;
+  background:var(--bg);
+}
+.popover__preview{
+  flex:1;min-width:0;font-family:var(--mono);font-size:11px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.popover__foot .btn{flex:none}
+
+/* ── 链接就地操作 ── */
+.link-actions{
+  position:fixed;z-index:65;display:none;gap:2px;padding:3px;border-radius:9px;background:var(--surface);
+  border:1px solid var(--border-strong);box-shadow:var(--shadow-1);
+}
+.link-actions.is-on{display:flex}
+.link-actions button{background:transparent;border:0;padding:4px 8px;border-radius:6px;font-size:12px;color:var(--text)}
+.link-actions button:hover{background:var(--bg-2)}
+
+/* ── 侧栏 ── */
+.side{display:flex;flex-direction:column;gap:14px;position:sticky;top:64px;align-self:start;max-height:calc(100vh - 84px);overflow:auto;padding-bottom:20px}
+.panel{padding:14px}
+.panel h3{margin:0 0 10px;font-size:13px}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{position:relative;padding:5px 0 5px 26px;font-size:12.5px;color:var(--muted)}
+.steps li::before{
+  counter-increment:s;content:counter(s);position:absolute;left:0;top:6px;width:18px;height:18px;border-radius:50%;
+  background:var(--bg-2);color:var(--subtle);font-size:11px;display:grid;place-items:center;border:1px solid var(--border);
+}
+.steps li.is-done{color:var(--text)}
+.steps li.is-done::before{content:'✓';background:#e8f8ec;color:#1e7a2e;border-color:#bfe6c8}
+.lnks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.lnks li{border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;background:var(--bg)}
+.lnks .l1{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lnks .l2{font-size:11.5px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lnks .l3{display:flex;gap:6px;margin-top:6px}
+.note{font-size:12px;color:var(--muted);line-height:1.6}
+.note b{color:var(--text)}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+
+/* ── 保存条 ── */
+.savebar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;align-items:center;gap:14px;
+  padding:10px 20px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-top:1px solid var(--border);
+}
+.facets{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.facet{display:flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--subtle)}
+.dot.is-ok{background:var(--success)}.dot.is-warn{background:var(--warning)}.dot.is-fail{background:var(--danger)}.dot.is-run{background:var(--primary)}
+.chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.savebar__spacer{flex:1}
+
+/* ── 源码抽屉 ── */
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(560px,92vw);z-index:80;background:var(--surface);
+  border-left:1px solid var(--border-strong);box-shadow:var(--shadow-2);transform:translateX(102%);
+  transition:transform .22s ease;display:flex;flex-direction:column;
+}
+.drawer.is-on{transform:none}
+.drawer__head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.drawer__head b{flex:1}
+.drawer__note{padding:10px 16px;font-size:12px;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border)}
+.drawer__body{flex:1;overflow:auto;padding:14px 16px}
+.drawer pre{margin:0;font-family:var(--mono);font-size:12px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.drawer pre mark{background:#fff2a8;border-radius:3px;padding:1px 0}
+.drawer pre .c-dim{color:var(--subtle)}
+
+/* ── toast ── */
+.toast{
+  position:fixed;left:50%;bottom:86px;transform:translate(-50%,10px);z-index:90;display:none;align-items:center;gap:12px;
+  background:#1d1d1f;color:#fff;padding:9px 14px;border-radius:999px;box-shadow:var(--shadow-2);font-size:13px;
+}
+.toast.is-on{display:flex;animation:tin .18s ease}
+@keyframes tin{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,10px)}}
+.toast button{background:transparent;border:0;color:#7cc2ff;font-weight:600;font-size:13px;padding:2px 4px}
+
+@media (max-width:1080px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;max-height:none}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <span class="top__title">MCP服务专家</span>
+  <span class="top__meta">default · 专题记忆 · 只读预览原型</span>
+  <span class="top__spacer"></span>
+  <button class="btn btn--sm" id="btnSource">查看源码</button>
+  <button class="btn btn--sm" id="btnReset">重置演示</button>
+</header>
+
+<main class="layout">
+  <section class="card reader-wrap">
+    <article class="reader" id="reader" aria-label="文档正文"></article>
+  </section>
+
+  <aside class="side">
+    <div class="card panel">
+      <h3>演示步骤</h3>
+      <ol class="steps" id="steps">
+        <li data-step="select">在正文里选中任意文字（试试跨粗体、含 <code>代码</code> 或整段的选法）</li>
+        <li data-step="open">点浮条上的「添加跳转」，选择目标</li>
+        <li data-step="insert">点「插入」→ 正文就地出现链接</li>
+        <li data-step="hover">悬停链接 → 就地「编辑 / 移除」</li>
+        <li data-step="save">点右下「保存」→ 看三面写入反馈</li>
+      </ol>
+    </div>
+
+    <div class="card panel">
+      <h3>本文的跳转链接 <span class="hint" id="linkCount">0</span></h3>
+      <ul class="lnks" id="links"></ul>
+      <p class="note" id="linksEmpty">还没有跳转链接。选中正文文字加一个试试。</p>
+    </div>
+
+    <div class="card panel">
+      <h3>这版交互改了什么</h3>
+      <div class="legend">
+        <div>✅ 选中渲染文字即可，<b>不用进源码</b></div>
+        <div>✅ 跨粗体 / 含代码 / 跨行选区都可用，吸附到段落并明示</div>
+        <div>✅ 插入位置由选区或段落决定，不会"没有光标就插到文首"</div>
+        <div>✅ 新增链接有图标与悬停说明，可编辑 / 移除 / 撤销</div>
+        <div>✅ 源码只在主动打开时出现，并高亮本次改动</div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer class="savebar">
+  <label class="chk"><input type="checkbox" id="vectorize"> 保存时向量化（默认关闭）</label>
+  <label class="chk"><input type="checkbox" id="simulateFail"> 模拟索引失败</label>
+  <div class="facets" id="facets"></div>
+  <span class="savebar__spacer"></span>
+  <button class="btn btn--primary" id="btnSave">保存</button>
+</footer>
+
+<!-- 选区浮条 -->
+<div class="toolbar" id="toolbar" role="toolbar" aria-label="选区操作">
+  <button data-act="link">🔗 添加跳转</button>
+  <span class="sep"></span>
+  <button data-act="copy">复制</button>
+</div>
+
+<!-- 目标选择 -->
+<div class="popover" id="popover" role="dialog" aria-label="选择跳转目标"></div>
+
+<!-- 链接就地操作 -->
+<div class="link-actions" id="linkActions">
+  <button data-act="edit">编辑</button>
+  <button data-act="remove">移除</button>
+</div>
+
+<!-- 段落 + 入口 -->
+<button class="ki-block-add" id="blockAdd" title="为这一段添加跳转链接">+</button>
+
+<!-- 源码抽屉 -->
+<aside class="drawer" id="drawer" aria-label="源 Markdown">
+  <div class="drawer__head">
+    <b>源 Markdown</b>
+    <span class="hint">只读</span>
+    <button class="btn btn--sm" id="btnDrawerClose">关闭</button>
+  </div>
+  <div class="drawer__note">普通加链接<b>不需要</b>打开这里。打开时会把本次改动的区间高亮出来，便于核对。</div>
+  <div class="drawer__body"><pre id="sourceView"></pre></div>
+</aside>
+
+<div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo">撤销</button></div>
+
+<script>
+/* ============================================================
+   0. 工具
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const escMdLabel = (s) => String(s).replace(/\\/g, '\\\\').replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+
+/* ============================================================
+   1. ki-link 编解码（与产品实现同构：JSON + encodeURIComponent + 括号转义）
+   ============================================================ */
+const PREFIX = 'ki-link:';
+const ANCHOR_RE = /^(?:h|p|li|tr|pre)-[0-9a-f]{16}$/;
+
+function encodeKiLink(target) {
+  const encoded = encodeURIComponent(JSON.stringify(target)).replace(/[()]/g, (c) => (c === '(' ? '%28' : '%29'));
+  return PREFIX + encoded;
+}
+function parseKiLink(href) {
+  if (!href || !href.startsWith(PREFIX)) return null;
+  try {
+    const v = JSON.parse(decodeURIComponent(href.slice(PREFIX.length)));
+    if (v.v !== 1) return null;
+    if (v.type === 'external' && typeof v.url === 'string') {
+      const u = new URL(v.url);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+      return { v: 1, type: 'external', url: u.href };
+    }
+    if (v.type === 'document' && v.scope && v.group && v.relation
+      && (!v.anchor || ANCHOR_RE.test(v.anchor))) {
+      return { v: 1, type: 'document', scope: v.scope, group: v.group, relation: v.relation, ...(v.anchor ? { anchor: v.anchor } : {}) };
+    }
+  } catch { /* 畸形链接不渲染为可点击 */ }
+  return null;
+}
+function deepLink(t) {
+  const q = new URLSearchParams({ scope: t.scope, group: t.group, relation: t.relation });
+  if (t.anchor) q.set('anchor', t.anchor);
+  return '/browse?' + q.toString();
+}
+/** 目标的一句人话描述，同时用于 title 与链接清单 */
+function describeTarget(t) {
+  if (!t) return '未知目标';
+  if (t.type === 'external') return '外部网页 · ' + t.url;
+  const self = t.group === DOC.group && t.relation === DOC.relation;
+  return (self ? '本文位置' : '其他文档 · ' + t.group + ' / ' + t.relation)
+    + (t.anchor ? ' › ' + (anchorLabel(t.anchor) || t.anchor) : ' · 文档开头');
+}
+
+/* ============================================================
+   2. 源码模型 → 渲染（每个文本叶子带 data-s/data-e，形成映射层）
+   ============================================================ */
+const DOC = { scope: 'default', group: '专题记忆', relation: 'MCP服务专家' };
+
+const SOURCE_LINES = [
+  '# MCP 服务专家 · 专题记忆路标',
+  '',
+  '- **一句话职责**：kisearch 对外 MCP 服务层——stdio / HTTP 共享单例（含 --daemon）传输、**13 个 MCP 工具**注册、多实例锁管理、多 Token + scope 授权（RBAC）',
+  '- **模块根**：`src/mcp-server.ts` + `src/lib/mcp-tools/*`（12 个文件，注册 13 个工具）+ `src/lib/{mcp-http,mcp-http-api}.ts`',
+  '- **专家资产位置**：`.module-experts/MCP服务专家/`（agent.md 名片 + 契约层 C0/C1/C2/C4）',
+  '',
+  '## 关键事实',
+  '',
+  'stdio 锁改为**每实例独立文件** `~/.ki/mcp-stdio-<pid>.lock`，不再互斥，多实例靠向量库空闲释放锁错开；多 Token 存储 `~/.ki/mcp-tokens.json`（0600），越权在 HTTP 层拦 403。',
+  '',
+  '启动命令见下：',
+  '',
+  '```bash',
+  'ki mcp --http --daemon --host 127.0.0.1 --port 7423 --web',
+  '```',
+  '',
+  '## 常用命令',
+  '',
+  '| 场景 | 命令 |',
+  '| --- | --- |',
+  '| 查看状态 | `ki mcp --status` |',
+  '| 重启服务 | `ki mcp restart` |',
+  '',
+  '详见团队知识库中的部署说明。',
+];
+const SOURCE_0 = SOURCE_LINES.join('\n');
+
+/** 计算块锚点：与产品同构（可见文本 → 双哈希），kind 扩展到 li / tr / pre */
+function anchorOf(kind, text) {
+  const v = String(text).replace(/\s+/g, ' ').trim().normalize('NFC');
+  let a = 2166136261, b = 0x9e3779b9;
+  for (let i = 0; i < v.length; i += 1) {
+    a = Math.imul(a ^ v.charCodeAt(i), 16777619);
+    b = Math.imul(b ^ v.charCodeAt(i), 2246822519);
+  }
+  return kind + '-' + (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0');
+}
+/** 把 markdown 行内语法还原成可见文本（用于锚点与人话展示） */
+function visibleText(md) {
+  return String(md)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*([^*]*)\*\*/g, '$1')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/^[-#>\s|]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** 解析成"锚点单元"扁平表：标题 / 段落 / 列表项 / 表格行 / 代码块 */
+function parseUnits(source) {
+  const lines = [];
+  let pos = 0;
+  source.split('\n').forEach((raw) => { lines.push({ raw, start: pos, end: pos + raw.length }); pos += raw.length + 1; });
+  const units = [];
+  let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (!l.raw.trim()) { i += 1; continue; }
+    if (l.raw.startsWith('```')) {
+      const start = l.start;
+      let j = i + 1;
+      const body = [];
+      while (j < lines.length && !lines[j].raw.startsWith('```')) { body.push(lines[j].raw); j += 1; }
+      const end = (j < lines.length ? lines[j] : lines[j - 1]).end;
+      units.push({ type: 'pre', start, end, regionStart: start, regionEnd: end, text: body.join('\n'), group: 'code' });
+      i = j + 1; continue;
+    }
+    const h = /^(#{1,6})\s+/.exec(l.raw);
+    if (h) {
+      units.push({ type: 'h' + h[1].length, start: l.start, end: l.end, regionStart: l.start + h[0].length, regionEnd: l.end, group: null, raw: l.raw });
+      i += 1; continue;
+    }
+    if (/^-\s/.test(l.raw)) {
+      units.push({ type: 'li', start: l.start, end: l.end, regionStart: l.start + 2, regionEnd: l.end, group: 'ul', raw: l.raw });
+      i += 1; continue;
+    }
+    if (/^\|/.test(l.raw)) {
+      const cells = [];
+      let off = 0;
+      l.raw.split('|').forEach((cell) => {
+        const lead = cell.length - cell.replace(/^\s+/, '').length;
+        const core = cell.trim();
+        if (core) cells.push({ start: l.start + off + lead, end: l.start + off + lead + core.length });
+        off += cell.length + 1;
+      });
+      const separator = /^\|[\s|:-]+\|?$/.test(l.raw);
+      units.push({ type: 'tr', start: l.start, end: l.end, group: 'table', cells, separator, raw: l.raw });
+      i += 1; continue;
+    }
+    units.push({ type: 'p', start: l.start, end: l.end, regionStart: l.start, regionEnd: l.end, group: null, raw: l.raw });
+    i += 1;
+  }
+  return units;
+}
+
+const INLINE_RE = /(\*\*([^*]+)\*\*)|(`([^`]+)`)|(\[([^\]]+)\]\(([^)]+)\))/g;
+function spanHtml(text, at) {
+  return text ? '<span data-s="' + at + '" data-e="' + (at + text.length) + '">' + esc(text) + '</span>' : '';
+}
+/** 行内渲染：所有叶子都带 data-s/data-e */
+function inlineHtml(text, base) {
+  let out = '', last = 0, m;
+  INLINE_RE.lastIndex = 0;
+  while ((m = INLINE_RE.exec(text))) {
+    if (m.index > last) out += spanHtml(text.slice(last, m.index), base + last);
+    if (m[2] != null) {
+      out += '<strong data-os="' + (base + m.index) + '" data-oe="' + (base + m.index + m[0].length) + '">' + spanHtml(m[2], base + m.index + 2) + '</strong>';
+    } else if (m[4] != null) {
+      out += '<code data-os="' + (base + m.index) + '" data-oe="' + (base + m.index + m[0].length) + '">' + spanHtml(m[4], base + m.index + 1) + '</code>';
+    } else {
+      out += linkHtml(m[6], m[7], base + m.index, base + m.index + m[0].length);
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out += spanHtml(text.slice(last), base + last);
+  return out;
+}
+function linkHtml(label, dest, s, e) {
+  const inner = spanHtml(label, s + 1);
+  const outer = ' data-s="' + s + '" data-e="' + e + '" data-os="' + s + '" data-oe="' + e + '"';
+  const target = parseKiLink(dest);
+  if (target) {
+    const href = target.type === 'external' ? target.url : deepLink(target);
+    return '<a class="ki-jump-link"' + outer + ' data-dest="' + esc(dest) + '"'
+      + ' href="' + esc(href) + '" target="_blank" rel="noopener noreferrer"'
+      + ' title="跳转：' + esc(describeTarget(target)) + '">' + inner + '</a>';
+  }
+  return '<a class="ki-plain"' + outer + ' href="' + esc(dest) + '" target="_blank" rel="noopener noreferrer">' + inner + '</a>';
+}
+
+const state = {
+  source: SOURCE_0,
+  units: [],
+  links: [],            // { s, e, label, target } —— 由源码扫描得出
+  pending: null,        // 选区快照 { s, e, text, unitIndex, spansUnits, rect }
+  attachUnit: null,     // 本次要附着的单元 index
+  popoverFor: null,     // 'new' | 'edit'
+  editing: null,        // 正在编辑的链接
+  target: null,         // { kind:'external'|'self'|'doc', url, doc, anchor }
+  docPick: null,        // 其他文档选择结果
+  query: '',            // 其他文档搜索词 / 位置搜索词
+  lastChange: null,     // { s, e } 供源码抽屉高亮
+  undo: null,           // { source, msg }
+  steps: {}
+};
+
+/* ============================================================
+   3. 渲染
+   ============================================================ */
+function render(focusRange) {
+  state.units = parseUnits(state.source);
+  state.links = scanLinks(state.source);
+  $('#reader').innerHTML = renderHtml(state.units);
+  $('#reader').classList.add('ki-markdown');
+  renderLinksPanel();
+  if (focusRange) {
+    const el = $$('#reader [data-s]').find((n) => +n.dataset.s <= focusRange.s && +n.dataset.e >= focusRange.e);
+    if (el) el.classList.add('is-flash');
+    setTimeout(() => $$('#reader .is-flash').forEach((n) => n.classList.remove('is-flash')), 1400);
+  }
+}
+
+function renderHtml(units) {
+  let out = '', openList = false, openTable = false, headPending = false;
+  units.forEach((u, i) => {
+    const isFirstTableRow = openTable === false || !(units[i - 1] && units[i - 1].group === 'table');
+    const wantList = u.group === 'ul';
+    const wantTable = u.group === 'table';
+    if (openList && !wantList) { out += '</ul>'; openList = false; }
+    if (openTable && !wantTable) { out += '</tbody></table>'; openTable = false; }
+    if (wantList && !openList) { out += '<ul>'; openList = true; }
+    if (wantTable && !openTable) { out += '<table><tbody>'; openTable = true; headPending = true; }
+
+    const d = ' data-unit="' + i + '"';
+    if (u.type === 'pre') {
+      out += '<div class="ki-code-block"' + d + '><button class="ki-code-copy" type="button">复制</button>'
+        + '<pre><code>' + esc(u.text) + '</code></pre></div>';
+      return;
+    }
+    if (u.type === 'li') { out += '<li' + d + '>' + inlineHtml(state.source.slice(u.regionStart, u.regionEnd), u.regionStart) + '</li>'; return; }
+    if (u.type === 'tr') {
+      if (u.separator) return;
+      const tag = headPending ? 'th' : 'td';
+      const cells = u.cells.map((c) => '<' + tag + '>' + inlineHtml(state.source.slice(c.start, c.end), c.start) + '</' + tag + '>').join('');
+      out += '<tr' + d + '>' + cells + '</tr>';
+      headPending = false;
+      return;
+    }
+    if (/^h[1-6]$/.test(u.type)) {
+      out += '<' + u.type + d + '>' + inlineHtml(state.source.slice(u.regionStart, u.regionEnd), u.regionStart) + '</' + u.type + '>';
+      return;
+    }
+    out += '<p' + d + '>' + inlineHtml(state.source.slice(u.start, u.end), u.start) + '</p>';
+  });
+  if (openList) out += '</ul>';
+  if (openTable) out += '</tbody></table>';
+  return out;
+}
+
+/** 扫描源码里已有的 ki-link（供链接清单 / 悬停编辑用） */
+function scanLinks(source) {
+  const re = /\[([^\]]+)\]\((ki-link:[^)]*)\)/g;
+  const out = [];
+  let m;
+  while ((m = re.exec(source))) {
+    const target = parseKiLink(m[2]);
+    if (target) out.push({ s: m.index, e: m.index + m[0].length, label: m[1], target });
+  }
+  return out;
+}
+
+function unitIndexAt(pos) {
+  let fallback = null;
+  state.units.forEach((u, i) => {
+    if (u.separator) return;
+    const inRange = (u.regionStart != null ? pos >= u.regionStart && pos <= u.regionEnd : pos >= u.start && pos <= u.end);
+    if (inRange && fallback === null) fallback = i;
+  });
+  if (fallback !== null) return fallback;
+  let best = 0;
+  state.units.forEach((u, i) => { if (u.start <= pos) best = i; });
+  return best;
+}
+/** 单元的可见文本（表格行按单元格拼接，代码块取首行内容） */
+function unitText(u) {
+  if (!u) return '';
+  if (u.type === 'pre') return (String(u.text || '').split('\n').find((l) => l.trim()) || '').trim();
+  if (u.type === 'tr') return u.cells.map((c) => visibleText(state.source.slice(c.start, c.end))).join(' · ');
+  return visibleText(state.source.slice(u.regionStart != null ? u.regionStart : u.start, u.regionEnd != null ? u.regionEnd : u.end));
+}
+function unitAnchor(u) {
+  const kind = u.type === 'li' ? 'li' : u.type === 'tr' ? 'tr' : u.type === 'pre' ? 'pre' : u.type === 'p' ? 'p' : 'h';
+  return anchorOf(kind, unitText(u));
+}
+function anchorLabel(anchor) {
+  const found = state.units.find((u) => unitAnchor(u) === anchor);
+  return found ? unitTypeName(found) + '：' + unitText(found).slice(0, 28) : null;
+}
+function unitTypeName(u) {
+  return u.type === 'li' ? '列表项' : u.type === 'tr' ? '表格行' : u.type === 'pre' ? '代码块'
+    : /^h[1-6]$/.test(u.type) ? '标题' : '段落';
+}
+
+/* ============================================================
+   4. 选区：浮现即快照（而不是点击时再读）
+   ============================================================ */
+function leafOf(node) {
+  let n = node;
+  while (n && n !== document.body) {
+    if (n.dataset && n.dataset.s !== undefined) return n;
+    n = n.parentNode;
+  }
+  return null;
+}
+function offsetIn(node, offset) {
+  if (node.nodeType === 3) return offset;
+  let sum = 0;
+  for (let i = 0; i < offset && i < node.childNodes.length; i += 1) sum += (node.childNodes[i].textContent || '').length;
+  return sum;
+}
+function snapshotSelection() {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  const reader = $('#reader');
+  if (!reader.contains(range.startContainer) || !reader.contains(range.endContainer)) return null;
+  const a = leafOf(range.startContainer), b = leafOf(range.endContainer);
+  if (!a || !b) return null;
+  let s = +a.dataset.s + offsetIn(range.startContainer, range.startOffset);
+  let e = +b.dataset.s + offsetIn(range.endContainer, range.endOffset);
+  if (e < s) { const t = s; s = e; e = t; }
+  // 选区边界落在行内标记内部时，向外扩到标记边界，避免替换后留下悬挂的 ** 或 `
+  if (s === +a.dataset.s) { const w = a.closest('[data-os]'); if (w && +w.dataset.os < s) s = +w.dataset.os; }
+  if (e === +b.dataset.e) { const w = b.closest('[data-oe]'); if (w && +w.dataset.oe > e) e = +w.dataset.oe; }
+  if (e - s < 1) return null;
+  const startUnit = unitIndexAt(s);
+  const endUnit = unitIndexAt(e);
+  const spansUnits = startUnit !== endUnit;
+  const rendered = (sel.toString() || '').replace(/\s+/g, ' ').trim();
+  return {
+    s, e,
+    text: spansUnits ? visibleText(state.source.slice(
+      state.units[startUnit].regionStart != null ? state.units[startUnit].regionStart : state.units[startUnit].start,
+      state.units[startUnit].regionEnd != null ? state.units[startUnit].regionEnd : state.units[startUnit].end,
+    )) : (rendered || state.source.slice(s, e)),
+    unitIndex: startUnit,
+    spansUnits,
+    rect: range.getBoundingClientRect(),
+  };
+}
+function blockName(i) {
+  const u = state.units[i];
+  if (!u) return '';
+  const txt = unitText(u);
+  return unitTypeName(u) + '「' + (txt.slice(0, 22) || '(空)') + (txt.length > 22 ? '…' : '') + '」';
+}
+
+function showToolbar(pending) {
+  state.pending = pending;
+  markStep('select');
+  const bar = $('#toolbar');
+  bar.classList.add('is-on');
+  const r = pending.rect;
+  const w = bar.offsetWidth || 220;
+  const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+  const top = r.top > 56 ? r.top - 46 : r.bottom + 10;
+  bar.style.left = left + 'px';
+  bar.style.top = top + 'px';
+}
+function hideToolbar() {
+  $('#toolbar').classList.remove('is-on');
+  $$('#reader .is-attach').forEach((n) => n.classList.remove('is-attach'));
+}
+
+/* ============================================================
+   5. 目标选择 popover
+   ============================================================ */
+const DOC_INDEX = [
+  { group: '部署运维', relation: '部署手册', blocks: ['启动与停止', '端口与 host 约定', 'daemon 与 stdio 的选择', '常见启动失败'] },
+  { group: '关联关系', relation: '前端与后端', blocks: ['HTTP 路由约定', '越权白名单', 'SSE 与流式回复'] },
+  { group: '专题记忆', relation: '向量引擎专家', blocks: ['一句话职责', '模块根', '关键事实'] },
+];
+
+function openPopover(mode, rect) {
+  state.popoverFor = mode;
+  if (mode === 'new') {
+    const p = state.pending;
+    if (!p) return;
+    state.attachUnit = p.unitIndex;
+    state.target = { kind: 'external', url: '', doc: null, anchor: '' };
+    state.query = '';
+  }
+  markStep('open');
+  const pop = $('#popover');
+  pop.classList.add('is-on');
+  renderPopover();
+  const r = rect || (state.pending && state.pending.rect) || { left: 200, top: 200, bottom: 240, width: 0 };
+  const w = 400, h = Math.min(pop.offsetHeight || 420, window.innerHeight - 24);
+  const left = Math.min(Math.max(12, r.left - 20), window.innerWidth - w - 12);
+  const top = r.bottom + 12 + h < window.innerHeight ? r.bottom + 12 : Math.max(12, r.top - h - 12);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+function closePopover() {
+  $('#popover').classList.remove('is-on');
+  state.popoverFor = null;
+  state.editing = null;
+  state.docPick = null;
+}
+
+function targetPayload() {
+  const t = state.target;
+  if (!t) return null;
+  if (t.kind === 'external') {
+    const url = t.url.trim();
+    if (!url) return { error: '请填写 HTTP(S) 地址' };
+    let u; try { u = new URL(url); } catch { return { error: '不是合法的网址' }; }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return { error: '只允许 http / https' };
+    return { target: { v: 1, type: 'external', url: u.href } };
+  }
+  if (t.kind === 'self') return { target: { v: 1, type: 'document', scope: DOC.scope, group: DOC.group, relation: DOC.relation, ...(t.anchor ? { anchor: t.anchor } : {}) } };
+  if (!t.doc) return { error: '请先选择目标文档' };
+  return { target: { v: 1, type: 'document', scope: DOC.scope, group: t.doc.group, relation: t.doc.relation, ...(t.anchor ? { anchor: t.anchor } : {}) } };
+}
+function labelInput() { const el = $('#labelInput'); return el ? el.value.trim() : ''; }
+function updatePreview() { const el = $('.popover__preview'); if (el) el.textContent = pendingMarkdown().slice(0, 120); }
+/** 目标是否完整：就地更新错误说明与确认按钮可用态，不整块重渲染（保输入焦点） */
+function refreshValidity() {
+  const pay = targetPayload();
+  const err = $('#targetErr');
+  if (err) {
+    err.textContent = pay.error || '';
+    err.style.display = pay.error ? '' : 'none';
+    if (pay.error) err.style.margin = '0 0 10px';
+  }
+  const btn = $('#popover [data-act="confirm"]');
+  if (btn) {
+    btn.disabled = Boolean(pay.error);
+    if (pay.error) btn.title = pay.error; else btn.removeAttribute('title');
+  }
+  updatePreview();
+}
+/** 待写入的 Markdown 预览（新手最容易不信赖的一步，直接摊开给他看） */
+function pendingMarkdown() {
+  const label = labelInput() || '（显示文案）';
+  const pay = targetPayload();
+  if (!pay || pay.error || !pay.target) return '（填好目标后显示将写入的 Markdown）';
+  return '[' + escMdLabel(label) + '](' + encodeKiLink(pay.target) + ')';
+}
+
+function renderPopover() {
+  const pop = $('#popover');
+  const p = state.pending;
+  const attach = state.attachUnit != null ? state.units[state.attachUnit] : null;
+  const editing = state.editing;
+  const attachNote = editing
+    ? '<span class="badge">编辑已有链接</span><span>' + esc(describeTarget(editing.target)) + '</span>'
+    : (p && p.spansUnits
+      ? '<span class="badge">已吸附</span><span>选区跨越多段，将整段 ' + esc(blockName(state.attachUnit)) + ' 作为来源</span>'
+      : '<span class="badge">将附着</span><span>' + esc(blockName(state.attachUnit)) + '</span>');
+  const t = state.target || { kind: 'external' };
+
+  const pay = targetPayload();
+  let body = '<div class="err" id="targetErr"' + (pay.error ? ' style="margin:0 0 10px"' : ' style="display:none"') + '>' + (pay.error ? esc(pay.error) : '') + '</div>';
+  if (t.kind === 'external') {
+    body += '<label class="field"><span class="field__label">HTTP(S) 地址</span>'
+      + '<input type="text" id="urlInput" placeholder="https://…" value="' + esc(t.url || '') + '"></label>';
+    body += '<div class="hint">新页打开，带 noopener noreferrer。</div>';
+  } else if (t.kind === 'self') {
+    body += '<label class="field"><span class="field__label">本文位置（可搜索，含列表项 / 表格行）</span></label>';
+    body += blockListHtml('self');
+  } else {
+    body += '<label class="field"><span class="field__label">查找目标文档</span>'
+      + '<input type="text" id="docQuery" placeholder="输入即搜（如 部署、前端）" value="' + esc(state.query || '') + '"></label>';
+    const q = (state.query || '').trim();
+    const hits = q ? DOC_INDEX.filter((d) => (d.group + d.relation).toLowerCase().includes(q.toLowerCase())) : DOC_INDEX;
+    body += '<div class="list">' + (hits.length ? hits.map((d) => {
+      const on = state.docPick && state.docPick.group === d.group && state.docPick.relation === d.relation;
+      return '<button class="list__item' + (on ? ' is-on' : '') + '" data-doc="' + esc(d.group + '|' + d.relation) + '">'
+        + '<span class="badge">文档</span><span class="list__text">' + esc(d.group) + ' / ' + esc(d.relation) + '</span></button>';
+    }).join('') : '<div class="list__item"><span class="list__text hint">没有匹配的文档</span></div>') + '</div>';
+    if (state.docPick) {
+      body += '<p class="hint" style="margin:12px 0 6px">目标位置（' + esc(state.docPick.relation) + '）</p>';
+      body += blockListHtml('doc');
+    }
+  }
+
+  pop.innerHTML = ''
+    + '<div class="popover__head">'
+    +   '<div class="popover__title">' + (editing ? '编辑跳转链接' : '添加跳转链接') + '</div>'
+    +   '<div class="popover__attach">' + attachNote + '</div>'
+    + '</div>'
+    + '<div class="popover__tabs">'
+    +   tabHtml('external', '外部网页') + tabHtml('self', '本文位置') + tabHtml('doc', '其他文档')
+    + '</div>'
+    + '<div class="popover__body">'
+    +   '<label class="field"><span class="field__label">显示文案</span>'
+    +   '<input type="text" id="labelInput" value="' + esc(state.label || '') + '"></label>'
+    +   body
+    + '</div>'
+    + '<div class="popover__foot">'
+    +   '<span class="popover__preview" title="将写入的 Markdown">' + esc(pendingMarkdown()).slice(0, 120) + '</span>'
+    +   '<button class="btn btn--sm" data-act="cancel">取消</button>'
+    +   '<button class="btn btn--sm btn--primary" data-act="confirm"' + (pay.error ? ' disabled title="' + esc(pay.error) + '"' : '') + '>' + (editing ? '保存修改' : '插入链接') + '</button>'
+    + '</div>';
+}
+function tabHtml(kind, text) {
+  const on = (state.target && state.target.kind === kind);
+  return '<button class="tab' + (on ? ' is-on' : '') + '" data-tab="' + kind + '">' + text + '</button>';
+}
+function blockListHtml(scope) {
+  const t = state.target || {};
+  let items = '<button class="list__item' + (!t.anchor ? ' is-on' : '') + '" data-anchor=""><span class="badge">开头</span><span class="list__text">文档开头</span></button>';
+  const rows = scope === 'self'
+    ? state.units.filter((u) => !u.separator).map((u) => ({ anchor: unitAnchor(u), type: unitTypeName(u), text: unitText(u) }))
+    : (state.docPick ? state.docPick.blocks.map((b) => ({ anchor: anchorOf('p', b), type: '段落', text: b })) : []);
+  items += rows.filter((r) => r.text).map((r) => {
+    const on = t.anchor === r.anchor;
+    return '<button class="list__item' + (on ? ' is-on' : '') + '" data-anchor="' + esc(r.anchor) + '">'
+      + '<span class="badge badge--' + (r.type === '标题' ? 'h' : r.type === '列表项' ? 'li' : r.type === '表格行' ? 'tr' : r.type === '代码块' ? 'code' : '') + '">' + esc(r.type) + '</span>'
+      + '<span class="list__text">' + esc(r.text.slice(0, 44)) + '</span></button>';
+  }).join('');
+  return '<div class="list">' + items + '</div>';
+}
+
+/* ============================================================
+   6. 应用改动（插入 / 编辑 / 移除 / 撤销）
+   ============================================================ */
+function pushUndo(msg) {
+  state.undo = { source: state.source, msg };
+}
+/** 跨块 / 整块附着时的替换区间：表格行取首格，代码块改为其后新增一段，其余整段 */
+function attachRange(u) {
+  if (!u) return { s: 0, e: 0, newline: false };
+  if (u.type === 'tr' && u.cells && u.cells.length) return { s: u.cells[0].start, e: u.cells[0].end, newline: false };
+  if (u.type === 'pre') return { s: u.end, e: u.end, newline: true };
+  return {
+    s: u.regionStart != null ? u.regionStart : u.start,
+    e: u.regionEnd != null ? u.regionEnd : u.end,
+    newline: false,
+  };
+}
+function applyEdit(s, e, replacement) {
+  state.source = state.source.slice(0, s) + replacement + state.source.slice(e);
+  state.lastChange = { s, e: s + replacement.length };
+}
+function commitLink() {
+  const pay = targetPayload();
+  if (!pay || pay.error) { toast(pay ? pay.error : '目标不完整'); return; }
+  const label = labelInput();
+  if (!label) { toast('显示文案不能为空'); return; }
+  const md = '[' + escMdLabel(label) + '](' + encodeKiLink(pay.target) + ')';
+
+  if (state.popoverFor === 'edit' && state.editing) {
+    pushUndo('已更新跳转链接');
+    applyEdit(state.editing.s, state.editing.e, md);
+  } else {
+    const p = state.pending;
+    if (!p) return;
+    const u = state.units[state.attachUnit];
+    let s = p.s, e = p.e, prefix = '';
+    // 跨块 / 代码块 / 整段 → 吸附到该段的既定区间；同块 → 精确替换选区
+    if (p.spansUnits || p.newline) {
+      const r = attachRange(u);
+      s = r.s; e = r.e; prefix = r.newline ? '\n\n' : '';
+    }
+    pushUndo('已插入跳转链接');
+    applyEdit(s, e, prefix + md);
+  }
+  const mode = state.popoverFor;
+  closePopover();
+  hideToolbar();
+  window.getSelection().removeAllRanges();
+  render(state.lastChange);
+  markStep('insert');
+  toast(mode === 'edit' ? '链接已更新' : '已插入跳转链接 · 不需要碰源码');
+  openSourceIfNeeded();
+}
+function removeLinkAt(link) {
+  pushUndo('已移除跳转链接');
+  applyEdit(link.s, link.e, link.label);
+  render(state.lastChange);
+  hideLinkActions();
+  toast('已移除跳转链接');
+}
+function undoLast() {
+  if (!state.undo) return;
+  state.source = state.undo.source;
+  state.undo = null;
+  render(state.lastChange);
+  hideToast();
+}
+function toast(msg) {
+  $('#toastText').textContent = msg;
+  $('#toast').classList.add('is-on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(hideToast, 6000);
+}
+function hideToast() { $('#toast').classList.remove('is-on'); }
+
+/* ============================================================
+   7. 链接悬停操作
+   ============================================================ */
+function showLinkActions(a) {
+  const link = state.links.find((l) => l.s === +a.dataset.s && l.e === +a.dataset.e);
+  if (!link) return;
+  state.editing = link;
+  const box = $('#linkActions');
+  box.classList.add('is-on');
+  const r = a.getBoundingClientRect();
+  const w = box.offsetWidth || 120;
+  box.style.left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8) + 'px';
+  box.style.top = (r.bottom + 6) + 'px';
+  $$('#reader .ki-jump-link').forEach((n) => n.classList.remove('is-active'));
+  a.classList.add('is-active');
+  markStep('hover');
+  hideToolbar();
+}
+function hideLinkActions() {
+  $('#linkActions').classList.remove('is-on');
+  $$('#reader .ki-jump-link').forEach((n) => n.classList.remove('is-active'));
+  state.editing = null;
+}
+
+/* ============================================================
+   8. 段落「+」入口（没有选区也能加，插入点由段落决定）
+   ============================================================ */
+function showBlockAdd(unitEl) {
+  const btn = $('#blockAdd');
+  const r = unitEl.getBoundingClientRect();
+  const wrap = $('.reader-wrap').getBoundingClientRect();
+  btn.classList.add('is-on');
+  btn.style.left = (wrap.left + 14) + 'px';
+  btn.style.top = (r.top + 2) + 'px';
+  btn.dataset.unit = unitEl.dataset.unit;
+}
+function hideBlockAdd() { $('#blockAdd').classList.remove('is-on'); }
+
+/* ============================================================
+   9. 保存（三面反馈：KB / 索引 / 源 Markdown）
+   ============================================================ */
+const facets = [
+  { key: 'kb', name: 'KB 正文' },
+  { key: 'index', name: '全文索引' },
+  { key: 'source', name: '源 Markdown' },
+];
+let savedSnapshot = SOURCE_0;
+function renderFacets(status) {
+  $('#facets').innerHTML = facets.map((f) => {
+    const st = (status && status[f.key]) || 'idle';
+    const name = f.key === 'index' && $('#vectorize').checked && st !== 'idle' ? '向量索引' : f.name;
+    const note = f.key === 'source' && st === 'skip' ? '（未配置 sourceDir）' : '';
+    return '<span class="facet"><span class="dot' + (st === 'ok' ? ' is-ok' : st === 'warn' ? ' is-warn' : st === 'fail' ? ' is-fail' : st === 'run' ? ' is-run' : '') + '"></span>'
+      + esc(name) + (st === 'run' ? ' 写入中…' : st === 'ok' ? ' 已更新' : st === 'fail' ? ' 失败' : st === 'skip' ? ' 不适用' + note : ' 未变更') + '</span>';
+  }).join('');
+}
+function save() {
+  if (state.source === savedSnapshot) { toast('没有需要保存的修改'); return; }
+  const vectorize = $('#vectorize').checked;
+  const fail = $('#simulateFail').checked;
+  renderFacets({ kb: 'run', index: 'run', source: 'run' });
+  setTimeout(() => renderFacets({ kb: 'ok', index: 'run', source: 'ok' }), 420);
+  setTimeout(() => {
+    if (fail) {
+      renderFacets({ kb: 'ok', index: 'fail', source: 'ok' });
+      toast('索引写入失败：草稿已保留，可重试');
+    } else {
+      renderFacets({ kb: 'ok', index: 'ok', source: 'ok' });
+      savedSnapshot = state.source;
+      markStep('save');
+      toast(vectorize ? '已保存，并写入向量索引' : '已保存（FTS 全文索引）');
+    }
+  }, 900);
+}
+
+/* ============================================================
+   10. 源码抽屉 / 步骤 / 链接清单
+   ============================================================ */
+function sourceHtml() {
+  const c = state.lastChange;
+  if (!c) return esc(state.source);
+  return esc(state.source.slice(0, c.s)) + '<mark>' + esc(state.source.slice(c.s, c.e)) + '</mark>' + esc(state.source.slice(c.e));
+}
+function openDrawer() {
+  $('#sourceView').innerHTML = sourceHtml();
+  $('#drawer').classList.add('is-on');
+  const m = $('#sourceView mark');
+  if (m) setTimeout(() => m.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120);
+}
+function openSourceIfNeeded() { if ($('#drawer').classList.contains('is-on')) openDrawer(); }
+function markStep(name) {
+  if (state.steps[name]) return;
+  state.steps[name] = true;
+  const li = $('#steps li[data-step="' + name + '"]');
+  if (li) li.classList.add('is-done');
+}
+function renderLinksPanel() {
+  const ul = $('#links');
+  $('#linkCount').textContent = String(state.links.length);
+  $('#linksEmpty').style.display = state.links.length ? 'none' : '';
+  ul.innerHTML = state.links.map((l, i) => {
+    return '<li><div class="l1">' + esc(l.label) + '</div>'
+      + '<div class="l2" title="' + esc(describeTarget(l.target)) + '">' + esc(describeTarget(l.target)) + '</div>'
+      + '<div class="l3"><button class="btn btn--sm btn--ghost" data-goto="' + i + '">定位</button>'
+      + '<button class="btn btn--sm btn--ghost" data-edit-link="' + i + '">编辑</button>'
+      + '<button class="btn btn--sm btn--ghost" data-remove-link="' + i + '">移除</button></div></li>';
+  }).join('');
+}
+
+/* ============================================================
+   11. 事件绑定
+   ============================================================ */
+const reader = $('#reader');
+
+reader.addEventListener('mouseup', () => setTimeout(onSelectionMaybe, 0));
+reader.addEventListener('keyup', () => setTimeout(onSelectionMaybe, 0));
+document.addEventListener('selectionchange', () => {
+  if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#popover,#toolbar,#linkActions')) return;
+  if ($('#popover').classList.contains('is-on')) return;
+  setTimeout(onSelectionMaybe, 60);
+});
+function onSelectionMaybe() {
+  const p = snapshotSelection();
+  if (!p) { hideToolbar(); return; }
+  showToolbar(p);
+}
+
+reader.addEventListener('mouseover', (e) => {
+  const unitEl = e.target.closest && e.target.closest('[data-unit]');
+  if (unitEl && !state.pending) showBlockAdd(unitEl);
+});
+reader.addEventListener('mouseleave', hideBlockAdd);
+reader.addEventListener('click', (e) => {
+  const copy = e.target.closest && e.target.closest('.ki-code-copy');
+  if (copy) {
+    const code = copy.parentElement.querySelector('code');
+    navigator.clipboard && navigator.clipboard.writeText(code.textContent);
+    copy.textContent = '已复制';
+    setTimeout(() => { copy.textContent = '复制'; }, 1200);
+    return;
+  }
+  const a = e.target.closest && e.target.closest('a');
+  if (a) {
+    // 原型不在应用内，真实跳转会落到 file:///browse；这里拦截并说明正式行为
+    e.preventDefault();
+    const t = parseKiLink(a.dataset.dest || '');
+    hideLinkActions();
+    setTimeout(() => showLinkActions(a), 120);
+    toast('正式版：新标签页打开 → ' + describeTarget(t));
+  }
+});
+
+$('#linkActions').addEventListener('mousedown', (e) => e.preventDefault());
+$('#linkActions').addEventListener('click', (e) => {
+  const act = e.target.dataset.act;
+  if (!act || !state.editing) return;
+  if (act === 'edit') {
+    state.pending = state.pending || null;
+    state.target = state.editing.target.type === 'external'
+      ? { kind: 'external', url: state.editing.target.url }
+      : { kind: (state.editing.target.group === DOC.group && state.editing.target.relation === DOC.relation) ? 'self' : 'doc', anchor: state.editing.target.anchor || '' };
+    if (state.target.kind === 'doc') {
+      state.docPick = DOC_INDEX.find((d) => d.group === state.editing.target.group && d.relation === state.editing.target.relation)
+        || { group: state.editing.target.group, relation: state.editing.target.relation, blocks: [] };
+    }
+    state.label = state.editing.label;
+    openPopover('edit', $('#linkActions').getBoundingClientRect());
+  } else {
+    removeLinkAt(state.editing);
+  }
+});
+
+$('#toolbar').addEventListener('mousedown', (e) => e.preventDefault());
+$('#toolbar').addEventListener('click', (e) => {
+  const act = e.target.dataset.act;
+  if (!act || !state.pending) return;
+  if (act === 'link') {
+    state.label = state.pending.text.replace(/\s+/g, ' ').trim();
+    openPopover('new', state.pending.rect);
+  } else if (act === 'copy') {
+    navigator.clipboard && navigator.clipboard.writeText(state.pending.text);
+    toast('已复制所选文字');
+  }
+});
+
+$('#blockAdd').addEventListener('click', () => {
+  const i = +$('#blockAdd').dataset.unit;
+  const u = state.units[i];
+  const full = unitText(u);
+  // 长段落默认只挂首个短句，避免把整段正文变成一个大链接
+  const clause = /^(.{2,60}?)[：:，,。；;]/.exec(full);
+  let range = null;
+  if (clause) {
+    // 可见文本 → 源码：沿块内叶子累加可见字符，映射回首句结束的源码偏移
+    const unitEl = document.querySelector('#reader [data-unit="' + i + '"]');
+    const leaves = unitEl ? Array.from(unitEl.querySelectorAll('[data-s]')) : [];
+    if (leaves.length) {
+      const from = +leaves[0].dataset.s;
+      let acc = 0, to = null;
+      leaves.forEach((leaf) => {
+        if (to != null) return;
+        const t = leaf.textContent;
+        if (clause[1].length <= acc + t.length) to = +leaf.dataset.s + (clause[1].length - acc);
+        else acc += t.length;
+      });
+      if (to != null && to > from) {
+        // 起点若正好落在标记内层，向外扩到标记边界（否则开头会留下悬挂的 ** 或 `）
+        const head = leaves[0].closest('[data-os]');
+        if (head && +head.dataset.os < from) from = +head.dataset.os;
+        // 终点落在标记内部或正好卡在标记内层末尾时，同样向外扩
+        const inner = leaves.find((l) => +l.dataset.s < to && to <= +l.dataset.e);
+        if (inner) {
+          const w = inner.closest('[data-oe]');
+          if (w && +w.dataset.oe > to) to = +w.dataset.oe;
+        }
+        const slice = state.source.slice(from, to);
+        // 若截断处会切开 ** 或 ` 标记，则退回整块，避免写出畸形 Markdown
+        const balanced = ((slice.match(/\*\*/g) || []).length % 2 === 0) && ((slice.match(/`/g) || []).length % 2 === 0);
+        if (balanced) range = { s: from, e: to, newline: false };
+      }
+    }
+  }
+  const r = range || attachRange(u);
+  state.pending = {
+    s: r.s, e: r.e, newline: r.newline,
+    text: range ? clause[1] : full, unitIndex: i, spansUnits: false,
+    rect: $('#blockAdd').getBoundingClientRect(),
+  };
+  state.label = state.pending.text;
+  hideBlockAdd();
+  openPopover('new', state.pending.rect);
+});
+
+const pop = $('#popover');
+pop.addEventListener('mousedown', (e) => { if (e.target.dataset.act !== 'cancel') e.preventDefault(); });
+pop.addEventListener('input', (e) => {
+  if (e.target.id === 'labelInput') { state.label = e.target.value; updatePreview(); return; }
+  if (e.target.id === 'urlInput') { state.target.url = e.target.value; refreshValidity(); return; }
+  if (e.target.id === 'docQuery') { state.query = e.target.value; state.docPick = null; state.target.doc = null; renderPopover(); return; }
+});
+pop.addEventListener('click', (e) => {
+  const tab = e.target.closest('[data-tab]');
+  if (tab) {
+    const kind = tab.dataset.tab;
+    state.target = { ...(state.target || {}), kind, anchor: '' };
+    if (kind === 'self') state.target.kind = 'self';
+    if (kind === 'doc' && state.docPick) state.target.doc = state.docPick;
+    renderPopover(); return;
+  }
+  const docBtn = e.target.closest('[data-doc]');
+  if (docBtn) {
+    const [group, relation] = docBtn.dataset.doc.split('|');
+    state.docPick = DOC_INDEX.find((d) => d.group === group && d.relation === relation);
+    state.target.doc = state.docPick;
+    state.target.anchor = '';
+    renderPopover(); return;
+  }
+  const anchorBtn = e.target.closest('[data-anchor]');
+  if (anchorBtn) { state.target.anchor = anchorBtn.dataset.anchor; renderPopover(); return; }
+  const act = e.target.dataset.act;
+  if (act === 'cancel') { closePopover(); return; }
+  if (act === 'confirm') { commitLink(); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closePopover(); hideToolbar(); hideLinkActions(); hideToast(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && state.popoverFor) { e.preventDefault(); commitLink(); }
+  if (e.key === 'Enter' && state.popoverFor) { e.preventDefault(); commitLink(); }
+});
+window.addEventListener('scroll', () => { hideToolbar(); hideLinkActions(); hideBlockAdd(); }, true);
+window.addEventListener('resize', () => { hideToolbar(); hideLinkActions(); hideBlockAdd(); });
+
+$('#btnSource').addEventListener('click', openDrawer);
+$('#btnDrawerClose').addEventListener('click', () => $('#drawer').classList.remove('is-on'));
+$('#btnSave').addEventListener('click', save);
+$('#toastUndo').addEventListener('click', undoLast);
+$('#btnReset').addEventListener('click', () => {
+  state.source = SOURCE_0;
+  state.lastChange = null; state.undo = null; state.steps = {};
+  state.pending = null; state.editing = null;
+  savedSnapshot = SOURCE_0;
+  $$('#steps li').forEach((li) => li.classList.remove('is-done'));
+  renderFacets({});
+  render();
+  toast('演示已重置');
+});
+$('#links').addEventListener('click', (e) => {
+  const goto = e.target.dataset.goto, edit = e.target.dataset.editLink, rm = e.target.dataset.removeLink;
+  if (goto != null) {
+    const l = state.links[+goto];
+    const el = $$('#reader [data-s]').find((n) => +n.dataset.s === l.s);
+    if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('is-flash'); setTimeout(() => el.classList.remove('is-flash'), 1300); }
+  } else if (edit != null) {
+    const l = state.links[+edit];
+    const a = $$('#reader .ki-jump-link').find((n) => +n.dataset.s === l.s);
+    if (a) showLinkActions(a);
+  } else if (rm != null) {
+    removeLinkAt(state.links[+rm]);
+  }
+});
+$('#vectorize').addEventListener('change', () => renderFacets({}));
+
+render();
+renderFacets({});
+</script>
+</body>
+</html>

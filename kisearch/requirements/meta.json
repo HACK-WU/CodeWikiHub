@@ -55,24 +55,54 @@
       "branch": null,
       "docs": [
         {
+          "path": "review/code-review.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-09-28-文档片段跳转标签与深链接": {
+      "id": "REQ-20260928-002",
+      "feature": "文档片段跳转标签与深链接",
+      "created": "2026-09-28 11:14:09",
+      "updated": "2026-09-28 18:24:25",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 13,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-09-28 11:16:50 v2: 确认 D1：标注独立存储，Markdown 原文不变",
+        "2026-09-28 11:17:38 v3: 补齐来源锚点失效与本地页面边界",
+        "2026-09-28 11:30:04 v4: 确认旧链接行为及跨环境只重导 Markdown 的便携性要求；D3 写入 Markdown 元数据待拍板",
+        "2026-09-28 11:30:09 v5: 补充源文件安全写回与跨环境重导验收",
+        "2026-09-28 12:35:56 v6: 确立在线编辑器主功能，链接与段落笔记为子功能；区分普通编辑/外链/笔记的 FTS 更新策略",
+        "2026-09-28 12:37:10 v7: 补充在线 Markdown 编辑器与段落笔记；普通编辑/站内跳转/笔记更新 FTS-only，纯外链变更跳过",
+        "2026-09-28 12:38:21 v8: 补充段落笔记/批注：跟随在线编辑与 FTS-only 保存，避免 HTML 注释清洗丢笔记",
+        "2026-09-28 12:39:23 v9: 确认在线编辑器作为主功能，跳转标签和段落笔记/批注作为子功能",
+        "2026-09-28 12:40:50 v10: 补充笔记/批注默认为团队共享内容，个人私有需求待确认",
+        "2026-09-28 16:41:21 v11: 用户确认 sourceDir 可选且配置时严格校验，文件名校验保留，取消 R11，向量化默认关闭并支持 FTS/dense；实现进行中",
+        "2026-09-28 18:24:25 v13: 新增就地加链接交互原型（demo/inline-link-prototype.html）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
           "path": "requirement.md",
           "type": "requirement"
         },
         {
-          "path": "design/ui-design.md",
-          "type": "design"
-        },
-        {
-          "path": "demo/vector-status/index.html",
-          "type": "demo"
-        },
-        {
-          "path": "design/实现方案-简版.md",
-          "type": "design"
-        },
-        {
-          "path": "review/auto-review-简版方案.md",
+          "path": "review/frontend-walkthrough.md",
           "type": "review"
+        },
+        {
+          "path": "demo/inline-link-prototype.html",
+          "type": "demo"
         }
       ],
       "role": "standalone",
@@ -137,7 +167,7 @@
     }
   },
   "id_counters": {
-    "REQ-20260928": 1,
+    "REQ-20260928": 2,
     "REQ-20260929": 1,
     "REQ-20260930": 1
   }
