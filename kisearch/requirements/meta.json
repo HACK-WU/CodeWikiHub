@@ -169,17 +169,18 @@
       "id": "REQ-20260930-002",
       "feature": "单Scope大规模数据存储与导入可用性",
       "created": "2026-09-30 12:22:52",
-      "updated": "2026-09-30 12:24:41",
+      "updated": "2026-09-30 18:17:00",
       "status": "草案",
       "tags": [
         "feat",
         "performance"
       ],
-      "version": 2,
+      "version": 3,
       "depends_on": [],
       "changelog": [
         "初始创建",
-        "2026-09-30 12:24:41 v2: 落盘单 Scope 百万 chunk 存储与导入可用性需求草案"
+        "2026-09-30 12:24:41 v2: 落盘单 Scope 百万 chunk 存储与导入可用性需求草案",
+        "2026-09-30 18:17:00 v3: 补充阶段 0 止血需求：计数、分页、导入预算、完成后资源诊断、JSON 写放大与队列反馈"
       ],
       "commits": [],
       "branch": null,
@@ -197,17 +198,24 @@
       "id": "REQ-20260930-003",
       "feature": "知识库浏览工作台 Demo",
       "created": "2026-09-30 17:31:11",
-      "updated": "2026-09-30 17:32:15",
+      "updated": "2026-09-30 18:46:16",
       "status": "已确认",
       "tags": [
         "feat",
         "ux"
       ],
-      "version": 4,
+      "version": 12,
       "depends_on": [],
       "changelog": [
         "初始创建",
-        "2026-09-30 17:32:12 v2: 保存知识库浏览工作台需求、设计与 Demo"
+        "2026-09-30 17:32:12 v2: 保存知识库浏览工作台需求、设计与 Demo",
+        "2026-09-30 17:54:28 v5: 新增其余页面（总览/语义搜索/上传导入/知识写入/后台任务）UI 设计方案与可运行 demo",
+        "2026-09-30 17:59:24 v6: v6: 其余页面 demo 与设计说明并存第二版（design/pages-ui-design.md + demo/workbench-pages-v2/index.html，与并行会话产物并存对比）",
+        "2026-09-30 18:02:50 v8: 完成 challenger 二次质疑（0 高/3 中/3 低），并修复 3 处自查缺陷",
+        "2026-09-30 18:13:08 v9: 第二轮：demo 落地暗色 token 映射与导入阶段映射（58 组对比度审计 0 失败），设计文档补 §9.1/§10.4",
+        "2026-09-30 18:42:09 v10: 总览布局调整（上排对称两栏 + 底部整行知识库表）；v2 兼容性加固与启动自检（老引擎/预览环境可读报错）",
+        "2026-09-30 18:43:53 v11: 总览上排两栏改为等高（指标纵向均分、页脚贴底）",
+        "2026-09-30 18:46:16 v12: 总览当前知识库卡片文字规格统一（标签 14px/600 中文、数值 22px），修「左右字不一样大」"
       ],
       "commits": [],
       "branch": null,
@@ -223,6 +231,22 @@
         {
           "path": "demo/knowledge-workbench/index.html",
           "type": "demo"
+        },
+        {
+          "path": "design/ui-design-pages.md",
+          "type": "demo/workbench-pages/index.html"
+        },
+        {
+          "path": "design/pages-ui-design.md",
+          "type": "design"
+        },
+        {
+          "path": "demo/workbench-pages-v2/index.html",
+          "type": "demo"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
         }
       ],
       "role": "standalone",

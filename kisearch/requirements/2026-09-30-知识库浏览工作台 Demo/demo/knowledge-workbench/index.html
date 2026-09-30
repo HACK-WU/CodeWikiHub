@@ -70,7 +70,7 @@
     .brand-subtitle { display: block; margin-top: 3px; color: var(--color-muted); font: var(--font-xs)/1.2 var(--font-mono); letter-spacing: .06em; }
     .nav-label { padding: 0 var(--space-3); color: var(--color-subtle); font-size: var(--font-xs); font-weight: 700; letter-spacing: .12em; }
     .primary-nav { display: grid; gap: 3px; margin-top: var(--space-3); }
-    .nav-item { display: flex; align-items: center; gap: var(--space-3); height: 42px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--color-muted); font-weight: 500; white-space: nowrap; }
+    .nav-item { display: flex; align-items: center; gap: var(--space-3); height: 42px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--color-muted); font-weight: 500; text-decoration: none; white-space: nowrap; }
     .nav-item .icon { color: var(--color-muted); }
     .nav-item.active { position: relative; background: var(--color-accent-soft); color: var(--color-accent); font-weight: 650; }
     .nav-item.active .icon { color: var(--color-accent); }
@@ -298,12 +298,12 @@
       <div class="brand"><span class="brand-mark" aria-hidden="true">ki</span><span class="brand-copy"><span class="brand-title">ki 知识库</span><span class="brand-subtitle">KNOWLEDGE INDEXER</span></span></div>
       <div class="nav-label">工作空间</div>
       <nav class="primary-nav" aria-label="主导航">
-        <span class="nav-item"><svg class="icon"><use href="#i-grid"/></svg><span class="nav-text">总览</span></span>
+        <a class="nav-item" href="../workbench-pages-v2/index.html#/dashboard" title="打开其他页面 demo：总览"><svg class="icon"><use href="#i-grid"/></svg><span class="nav-text">总览</span></a>
         <span class="nav-item active" aria-current="page"><svg class="icon"><use href="#i-book"/></svg><span class="nav-text">知识库浏览</span></span>
-        <span class="nav-item"><svg class="icon"><use href="#i-search"/></svg><span class="nav-text">语义搜索</span></span>
-        <span class="nav-item"><svg class="icon"><use href="#i-upload"/></svg><span class="nav-text">上传导入</span></span>
-        <span class="nav-item"><svg class="icon"><use href="#i-edit"/></svg><span class="nav-text">知识写入</span></span>
-        <span class="nav-item"><svg class="icon"><use href="#i-clock"/></svg><span class="nav-text">后台任务</span></span>
+        <a class="nav-item" href="../workbench-pages-v2/index.html#/search" title="打开其他页面 demo：语义搜索"><svg class="icon"><use href="#i-search"/></svg><span class="nav-text">语义搜索</span></a>
+        <a class="nav-item" href="../workbench-pages-v2/index.html#/import" title="打开其他页面 demo：上传导入"><svg class="icon"><use href="#i-upload"/></svg><span class="nav-text">上传导入</span></a>
+        <a class="nav-item" href="../workbench-pages-v2/index.html#/write" title="打开其他页面 demo：知识写入"><svg class="icon"><use href="#i-edit"/></svg><span class="nav-text">知识写入</span></a>
+        <a class="nav-item" href="../workbench-pages-v2/index.html#/tasks" title="打开其他页面 demo：后台任务"><svg class="icon"><use href="#i-clock"/></svg><span class="nav-text">后台任务</span></a>
       </nav>
       <div class="sidebar-foot"><strong>本地工作区</strong><span>ki v1.0.0-beta</span></div>
     </aside>

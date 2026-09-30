@@ -1,0 +1,1150 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ki 知识工作台其余页面的独立视觉设计 demo（v3）：总览 / 语义搜索 / 上传导入 / 知识写入 / 后台任务">
+<title>知识工作台 · 其余页面 v3 · ki UI demo</title>
+<style>
+/* ============ tokens：沿用浏览页基线 demo :root 实测值，暗色成对（方案文档 §6） ============ */
+:root{
+  --color-canvas:#f5f6f3; --color-surface:#ffffff; --color-surface-soft:#f9faf8; --color-sidebar:#f0f2ee;
+  --color-ink:#202b27; --color-muted:#4e5f56; --color-subtle:#61716a;
+  --color-line:#e1e7e1; --color-line-strong:#c8d3c9;
+  --color-accent:#2d6755; --color-accent-hover:#23513f; --color-accent-soft:#e8f3ed;
+  --color-success:#2a8055; --color-danger:#b14e49; --color-focus:#3e765e;
+  --color-scrim:rgba(20,38,27,.28); --color-skeleton:#eef1ec;
+  --color-warn:#8a6208; --color-warn-soft:#fbf3db; --color-danger-soft:#fdebec; --color-danger-ink:#9d3a36;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  --font-xs:11px; --font-sm:12px; --font-base:14px; --font-lg:17px; --font-xl:22px; --font-hero:32px; --font-count:16px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-7:32px;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:14px; --radius-tag:4px; --radius-track:999px;
+  --shadow-panel:0 10px 32px rgba(26,58,41,.045);
+}
+html[data-theme="dark"]{
+  --color-canvas:#171d19; --color-surface:#1e2622; --color-surface-soft:#232c27; --color-sidebar:#141a16;
+  --color-ink:#e6ece8; --color-muted:#b7c4bc; --color-subtle:#90a098;
+  --color-line:#2c3630; --color-line-strong:#3d4a42;
+  --color-accent:#6fb99a; --color-accent-hover:#8ccbb0; --color-accent-soft:#24352c;
+  --color-success:#56b98a; --color-danger:#e08a85; --color-focus:#74c2a3;
+  --color-scrim:rgba(6,12,9,.55); --color-skeleton:#252e29;
+  --color-warn:#e8c877; --color-warn-soft:#3a2f12; --color-danger-soft:#3d2422; --color-danger-ink:#f0b5b1;
+  --shadow-panel:0 10px 32px rgba(0,0,0,.28);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--color-canvas);color:var(--color-ink);font:var(--font-base)/1.6 var(--font-sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.62}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,[role="tab"]:focus-visible{outline:2px solid var(--color-focus);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.icon{width:18px;height:18px;flex:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.icon.small{width:15px;height:15px}
+.icon.tiny{width:13px;height:13px}
+
+/* ============ shell：侧栏 248px / 顶栏 63px（基线实测） ============ */
+.sidebar{position:fixed;inset:0 auto 0 0;z-index:40;display:flex;flex-direction:column;width:248px;padding:var(--space-6) var(--space-3) var(--space-4);background:var(--color-sidebar);border-right:1px solid var(--color-line);transform:translateX(-100%);transition:transform .25s ease}
+.sidebar.is-open{transform:translateX(0)}
+.brand{display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-3) var(--space-7)}
+.brand-mark{display:grid;place-items:center;width:35px;height:35px;border-radius:var(--radius-md);background:var(--color-accent);color:var(--color-canvas);font-size:17px;font-weight:700;letter-spacing:-.08em}
+.brand-title{display:block;font-size:var(--font-count);font-weight:700;letter-spacing:-.04em;line-height:1.1}
+.brand-subtitle{display:block;margin-top:3px;color:var(--color-muted);font:var(--font-xs)/1.2 var(--font-mono);letter-spacing:.06em}
+.nav-label{padding:0 var(--space-3);color:var(--color-subtle);font-size:var(--font-xs);font-weight:700;letter-spacing:.12em}
+.primary-nav{display:grid;gap:3px;margin-top:var(--space-3)}
+.nav-item{display:flex;align-items:center;gap:var(--space-3);height:42px;padding:0 var(--space-3);border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-muted);font-weight:500;white-space:nowrap;text-align:left;text-decoration:none}
+.nav-item:hover{background:var(--color-surface-soft)}
+.nav-item.active{position:relative;background:var(--color-accent-soft);color:var(--color-accent);font-weight:650}
+.nav-item.active::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;background:var(--color-accent);border-radius:0 3px 3px 0}
+.nav-item .nav-ext{margin-left:auto;color:var(--color-subtle)}
+.nav-item .nav-new{margin-left:auto;border:1px solid var(--color-line-strong);border-radius:var(--radius-tag);padding:0 5px;color:var(--color-subtle);font:600 var(--font-xs) var(--font-mono)}
+.sidebar-foot{margin-top:auto;padding:var(--space-4) var(--space-3) 0;border-top:1px solid var(--color-line)}
+.sidebar-foot strong{display:block;font-size:var(--font-sm);font-weight:650}
+.sidebar-foot span{display:block;margin-top:2px;color:var(--color-subtle);font:var(--font-xs)/1.5 var(--font-mono)}
+.mobile-scrim{position:fixed;inset:0;z-index:35;background:var(--color-scrim);border:0;visibility:hidden;opacity:0;transition:opacity .25s ease,visibility .25s ease}
+.mobile-scrim.is-open{visibility:visible;opacity:1}
+.main-shell{min-width:0}
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:var(--space-3);height:63px;padding:0 var(--space-5);border-bottom:1px solid var(--color-line);background:var(--color-surface)}
+.topbar>*{flex:none}
+.spacer{flex:1 1 auto!important;min-width:0}
+.breadcrumb{flex:0 1 auto!important;min-width:0;overflow:hidden;color:var(--color-muted);font-size:var(--font-sm);text-overflow:ellipsis;white-space:nowrap}
+.breadcrumb strong{color:var(--color-ink);font-weight:650}
+.icon-button{display:inline-grid;place-items:center;width:34px;height:34px;padding:0;border:1px solid transparent;border-radius:var(--radius-sm);background:transparent;color:var(--color-muted);transition:background .2s ease,color .2s ease,border-color .2s ease}
+.icon-button:hover{background:var(--color-surface-soft);border-color:var(--color-line);color:var(--color-ink)}
+.icon-button[aria-pressed="true"]{background:var(--color-accent-soft);border-color:var(--color-accent);color:var(--color-accent)}
+.menu-button{display:none}
+.task-entry{display:inline-flex;align-items:center;gap:var(--space-2);height:32px;padding:0 var(--space-3);border:1px solid var(--color-line);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-muted);font-size:var(--font-sm);text-decoration:none;white-space:nowrap}
+.task-entry:hover{border-color:var(--color-line-strong);color:var(--color-ink)}
+.task-entry .glyph{font:700 var(--font-base) var(--font-mono)}
+.task-entry[data-state="running"] .glyph{color:var(--color-accent)}
+.task-entry[data-state="failed"] .glyph,.task-entry[data-state="unknown"] .glyph{color:var(--color-danger-ink)}
+.task-entry[data-state="done"] .glyph{color:var(--color-success)}
+.scope-pill,.service-pill{display:inline-flex;align-items:center;gap:var(--space-2);height:32px;padding:0 var(--space-3);border:1px solid var(--color-line);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-muted);font-size:var(--font-sm);white-space:nowrap}
+.scope-pill strong{color:var(--color-ink);font:600 var(--font-sm) var(--font-mono)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--color-success);box-shadow:0 0 0 3px var(--color-accent-soft)}
+.status-dot[data-tone="warn"]{background:var(--color-warn);box-shadow:0 0 0 3px var(--color-warn-soft)}
+.status-dot[data-tone="err"]{background:var(--color-danger);box-shadow:0 0 0 3px var(--color-danger-soft)}
+.theme-icon-dark{display:none}
+html[data-theme="dark"] .theme-icon-light{display:none}
+html[data-theme="dark"] .theme-icon-dark{display:block}
+
+/* ============ page head / 演示态分段控件（demo-only） ============ */
+.page{width:min(100%,1600px);margin:0 auto;padding:var(--space-6) var(--space-4) var(--space-7)}
+.page-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-5);margin-bottom:var(--space-6);flex-wrap:wrap}
+.page-intro h1{margin:0;font-size:var(--font-hero);font-weight:680;line-height:1.25;letter-spacing:-.055em}
+.eyebrow{margin:0 0 var(--space-2);color:var(--color-accent);font:700 var(--font-xs)/1.3 var(--font-mono);letter-spacing:.13em}
+.page-intro p{margin:var(--space-2) 0 0;color:var(--color-muted)}
+.mode-switch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--color-line);border-radius:var(--radius-md);background:var(--color-surface-soft)}
+.mode-switch button{border:0;border-radius:var(--radius-sm);background:transparent;padding:5px var(--space-3);color:var(--color-muted);font-size:var(--font-sm);font-weight:550}
+.mode-switch button:hover{background:var(--color-surface)}
+.mode-switch button[aria-pressed="true"]{background:var(--color-surface);color:var(--color-accent);font-weight:650;box-shadow:0 1px 2px rgba(26,58,41,.06)}
+html[data-theme="dark"] .mode-switch button[aria-pressed="true"]{box-shadow:none;border:1px solid var(--color-line-strong)}
+.demo-tag{margin-left:var(--space-2);border:1px dashed var(--color-line-strong);border-radius:var(--radius-tag);padding:1px 6px;color:var(--color-subtle);font:600 var(--font-xs) var(--font-mono);vertical-align:middle}
+.view{display:none}
+.view.is-active{display:block}
+.state{display:grid;gap:var(--space-3)}
+.view[data-mode="ok"] .state:not([data-state="ok"]),.view[data-mode="loading"] .state:not([data-state="loading"]),.view[data-mode="empty"] .state:not([data-state="empty"]),.view[data-mode="error"] .state:not([data-state="error"]){display:none}
+
+/* ============ panel / grid ============ */
+.grid{display:grid;gap:var(--space-3);min-width:0}
+.panel{min-width:0;overflow:hidden;border:1px solid var(--color-line);border-radius:var(--radius-lg);background:var(--color-surface)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);min-height:62px;padding:0 var(--space-5);border-bottom:1px solid var(--color-line)}
+.panel-heading{min-width:0}
+.panel-kicker{display:block;color:var(--color-subtle);font:600 var(--font-xs)/1.2 var(--font-mono);letter-spacing:.08em}
+.panel-title{display:block;margin-top:3px;font-size:var(--font-lg);font-weight:680;letter-spacing:-.025em}
+.count{color:var(--color-subtle);font:500 var(--font-sm) var(--font-mono)}
+.panel-body{padding:var(--space-5)}
+.stack{display:grid;gap:var(--space-3)}
+
+/* ============ 通用控件 ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);height:38px;padding:0 var(--space-5);border:1px solid var(--color-accent);border-radius:var(--radius-sm);background:var(--color-accent);color:#fff;font-weight:600;transition:background .2s ease,border-color .2s ease}
+html[data-theme="dark"] .btn{color:#0f1512}
+.btn:hover:not(:disabled){background:var(--color-accent-hover);border-color:var(--color-accent-hover)}
+.btn.ghost{background:transparent;color:var(--color-accent);border-color:var(--color-line-strong)}
+.btn.ghost:hover:not(:disabled){background:var(--color-accent-soft)}
+.btn.danger-ghost{background:transparent;color:var(--color-danger-ink);border-color:var(--color-danger-soft)}
+.btn.small{height:30px;padding:0 var(--space-3);font-size:var(--font-sm)}
+.text-input,.select,.textarea{width:100%;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-ink);outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+.text-input,.select{height:38px;padding:0 var(--space-3)}
+.text-input::placeholder,textarea::placeholder{color:var(--color-subtle)}
+.text-input:focus,.select:focus,.textarea:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px var(--color-accent-soft)}
+.switch{position:relative;display:inline-flex;align-items:center;gap:var(--space-2);color:var(--font-sm)}
+.switch input{position:absolute;opacity:0}
+.switch .track{width:36px;height:20px;border-radius:var(--radius-track);background:var(--color-line-strong);transition:background .2s ease}
+.switch .track::after{content:"";display:block;width:16px;height:16px;margin:2px;border-radius:50%;background:var(--color-surface);transition:transform .2s ease}
+.switch input:checked+.track{background:var(--color-accent)}
+.switch input:checked+.track::after{transform:translateX(16px)}
+.switch input:focus-visible+.track{outline:2px solid var(--color-focus);outline-offset:2px}
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:var(--radius-tag);padding:2px 8px;font:600 var(--font-sm) var(--font-mono);white-space:nowrap}
+.badge.neutral{background:var(--color-surface-soft);border:1px solid var(--color-line);color:var(--color-muted)}
+.badge.success{background:var(--color-accent-soft);color:var(--color-success)}
+.badge.warn{background:var(--color-warn-soft);color:var(--color-warn)}
+.badge.danger{background:var(--color-danger-soft);color:var(--color-danger-ink)}
+.badge.accent{background:var(--color-accent-soft);color:var(--color-accent)}
+.layer{display:inline-flex;align-items:center;gap:4px;color:var(--color-muted);font:600 var(--font-sm) var(--font-mono)}
+.layer b{color:var(--color-subtle);font-weight:600}
+.layer[data-on="true"]{color:var(--color-success)}
+.mono{font-family:var(--font-mono)}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.banner{display:flex;align-items:flex-start;gap:var(--space-3);border:1px solid var(--color-line);border-left-width:3px;border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--font-sm)}
+.banner .icon{margin-top:2px}
+.banner.danger{border-left-color:var(--color-danger);background:var(--color-danger-soft);color:var(--color-danger-ink)}
+.banner.warn{border-left-color:var(--color-warn);background:var(--color-warn-soft);color:var(--color-warn)}
+.banner.info{border-left-color:var(--color-accent);background:var(--color-accent-soft);color:var(--color-accent)}
+.banner.neutral{background:var(--color-surface-soft);color:var(--color-muted)}
+.banner form{margin:0}
+.empty-state{display:grid;justify-items:center;gap:var(--space-3);padding:var(--space-7) var(--space-5);text-align:center}
+.empty-state .halo{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--color-surface-soft);color:var(--color-subtle)}
+.empty-state h3{margin:0;font-size:var(--font-lg);font-weight:680}
+.empty-state p{margin:0;color:var(--color-muted);max-width:46ch}
+.empty-state ul{margin:0;padding:0;list-style:none;display:grid;gap:var(--space-2);color:var(--color-muted);font-size:var(--font-sm)}
+.skeleton{border-radius:var(--radius-sm);background:linear-gradient(100deg,var(--color-skeleton) 40%,var(--color-surface-soft) 50%,var(--color-skeleton) 60%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.skeleton{animation:none}.sidebar,.mobile-scrim{transition:none}}
+
+/* ============ P1 总览 ============ */
+.stat-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-3)}
+.stat-card{border:1px solid var(--color-line);border-radius:var(--radius-lg);background:var(--color-surface);padding:var(--space-4) var(--space-5)}
+.stat-card .kicker{display:block;color:var(--color-subtle);font:600 var(--font-xs)/1.2 var(--font-mono);letter-spacing:.1em}
+.stat-card .big{display:block;margin-top:6px;font:700 26px/1.2 var(--font-mono);letter-spacing:-.03em}
+.stat-card .sub{display:block;margin-top:4px;color:var(--color-muted);font-size:var(--font-sm)}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
+.mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2)}
+.mini-card{border:1px solid var(--color-line);border-radius:var(--radius-md);background:var(--color-surface-soft);padding:var(--space-3) var(--space-4)}
+.mini-card .kicker{color:var(--color-subtle);font:600 var(--font-xs)/1.2 var(--font-mono);letter-spacing:.08em}
+.mini-card .big{display:block;margin-top:4px;font:650 var(--font-count)/1.3 var(--font-mono)}
+.health-list{display:grid;gap:2px;margin:0;padding:0;list-style:none}
+.health-list li{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md)}
+.health-list li:hover{background:var(--color-surface-soft)}
+.health-list .glyph{width:20px;text-align:center;font:700 var(--font-base)/20px var(--font-mono)}
+.health-list li[data-level="pass"] .glyph{color:var(--color-success)}
+.health-list li[data-level="warn"] .glyph{color:var(--color-warn)}
+.health-list li[data-level="fail"] .glyph{color:var(--color-danger-ink)}
+.health-list .name{display:block;font-weight:600}
+.health-list .detail{display:block;color:var(--color-muted);font-size:var(--font-sm)}
+.table-wrap{overflow-x:auto}
+table.data{width:100%;border-collapse:collapse;font-size:var(--font-base)}
+table.data th{padding:var(--space-3) var(--space-5);border-bottom:1px solid var(--color-line);color:var(--color-subtle);text-align:left;font:600 var(--font-xs)/1.2 var(--font-mono);letter-spacing:.1em;white-space:nowrap}
+table.data td{padding:0 var(--space-5);height:44px;border-bottom:1px solid var(--color-line);white-space:nowrap;vertical-align:middle}
+table.data tr:last-child td{border-bottom:0}
+table.data tbody tr:hover{background:var(--color-surface-soft)}
+table.data .r{text-align:right}
+table.data .scope-name{font:600 var(--font-base) var(--font-mono)}
+
+/* ============ P2 搜索 ============ */
+.search-layout{display:grid;gap:var(--space-3);grid-template-columns:minmax(0,1fr)}
+.reader-rail{display:none}
+.search-row{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.search-input-wrap{position:relative;flex:1 1 260px;min-width:0}
+.search-input-wrap .icon{position:absolute;top:50%;left:12px;color:var(--color-subtle);transform:translateY(-50%)}
+.search-input{width:100%;height:38px;padding:0 var(--space-3) 0 38px;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);background:var(--color-surface);outline:none}
+.search-input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px var(--color-accent-soft)}
+.param-row{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;margin-top:var(--space-3)}
+.param{display:flex;align-items:center;gap:var(--space-2);color:var(--color-muted);font-size:var(--font-sm);white-space:nowrap}
+.param .kbd-note{color:var(--color-subtle);font:var(--font-xs) var(--font-mono)}
+.chips{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.chip{border:1px solid var(--color-line-strong);border-radius:var(--radius-track);background:transparent;padding:3px 12px;color:var(--color-muted);font-size:var(--font-sm)}
+.chip:hover{background:var(--color-surface-soft)}
+.chip[aria-pressed="true"]{background:var(--color-accent-soft);border-color:var(--color-accent);color:var(--color-accent);font-weight:650}
+.chip .remove{border:0;background:transparent;color:inherit;padding:0 0 0 4px;cursor:pointer;font-size:12px;line-height:1}
+.chip .remove:hover{color:var(--color-danger-ink)}
+.result-card>.btn{justify-self:start}
+.range{width:110px;accent-color:var(--color-accent)}
+.num-tight{width:64px;text-align:right}
+.select.tiny{width:auto;height:30px;padding:0 var(--space-2);font-size:var(--font-sm)}
+.history-row{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px dashed var(--color-line);font-size:var(--font-sm);color:var(--color-subtle)}
+.history-row button{border:1px solid var(--color-line);border-radius:var(--radius-tag);background:var(--color-surface-soft);padding:2px 8px;color:var(--color-muted);font-size:var(--font-sm)}
+.history-row button:hover{border-color:var(--color-line-strong);color:var(--color-ink)}
+.result-head{display:flex;align-items:baseline;gap:var(--space-3);padding:var(--space-4) var(--space-5) 0;color:var(--color-muted);font-size:var(--font-sm)}
+.result-head strong{color:var(--color-ink);font:650 var(--font-base) var(--font-mono)}
+.result-list{display:grid;gap:var(--space-3);padding:var(--space-4) var(--space-5) var(--space-5)}
+.result-card{position:relative;display:grid;gap:var(--space-2);border:1px solid var(--color-line);border-radius:var(--radius-md);background:var(--color-surface);padding:var(--space-4);transition:border-color .2s ease,background .2s ease}
+.result-card:hover,.result-card.selected{border-color:var(--color-accent);background:var(--color-surface-soft)}
+.result-card.selected::before{content:"";position:absolute;left:-1px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--color-accent)}
+.result-top{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;min-width:0}
+.rank{display:grid;place-items:center;width:22px;height:22px;border-radius:var(--radius-tag);background:var(--color-surface-soft);color:var(--color-subtle);font:700 var(--font-sm) var(--font-mono)}
+.result-card[data-top="true"] .rank{background:var(--color-accent-soft);color:var(--color-accent)}
+.result-title{margin:0;font-size:var(--font-base);font-weight:680;letter-spacing:-.01em}
+.result-title button{border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:left}
+.result-title button:hover{color:var(--color-accent)}
+.excerpt{margin:0;color:var(--color-muted);font-size:var(--font-sm)}
+.excerpt mark{background:var(--color-warn-soft);color:var(--color-warn);border-radius:2px;padding:0 2px}
+.result-meta{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;font:var(--font-xs) var(--font-mono);color:var(--color-subtle)}
+.score-line{display:flex;align-items:center;gap:var(--space-3)}
+.score-line .val{margin-left:auto;font:650 var(--font-sm) var(--font-mono)}
+.score-bar{flex:1 1 60px;height:4px;border-radius:var(--radius-track);background:var(--color-skeleton)}
+.score-bar i{display:block;height:100%;border-radius:inherit;background:var(--color-accent)}
+.reader{display:flex;flex-direction:column;min-height:0}
+.reader-body{overflow:auto;padding:var(--space-5);font-size:var(--font-base)}
+.reader-path{color:var(--color-subtle);font:var(--font-sm) var(--font-mono);margin:0 0 var(--space-2)}
+.reader h2{margin:0 0 var(--space-3);font-size:var(--font-xl);font-weight:680;letter-spacing:-.03em}
+.reader h3{margin:var(--space-5) 0 var(--space-2);font-size:var(--font-lg);font-weight:680}
+.reader p{margin:0 0 var(--space-3)}
+.reader pre{margin:0 0 var(--space-3);padding:var(--space-4);border:1px solid var(--color-line);border-radius:var(--radius-md);background:var(--color-surface-soft);overflow:auto;font:var(--font-sm)/1.6 var(--font-mono)}
+.reader-nav{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-5);border-top:1px solid var(--color-line);font-size:var(--font-sm);color:var(--color-muted)}
+/* 窄屏覆盖抽屉（<1200px 时原文回到真实抽屉形态） */
+.doc-drawer{position:fixed;inset:0 0 0 auto;z-index:45;width:min(560px,100%);background:var(--color-surface);border-left:1px solid var(--color-line);box-shadow:var(--shadow-panel);transform:translateX(102%);transition:transform .25s ease;display:flex;flex-direction:column}
+.doc-drawer.is-open{transform:translateX(0)}
+.doc-drawer .panel-head{flex:none}
+.doc-drawer .reader-body{flex:1}
+@media (max-width:1199.98px){.reader-rail{display:none!important}}
+
+/* ============ P3 导入 ============ */
+.import-layout{display:grid;gap:var(--space-3);grid-template-columns:minmax(0,1fr)}
+.dropzone{display:grid;justify-items:center;gap:var(--space-2);border:1.5px dashed var(--color-line-strong);border-radius:var(--radius-lg);background:var(--color-surface-soft);padding:var(--space-7) var(--space-5);text-align:center;color:var(--color-muted);transition:border-color .2s ease,background .2s ease}
+.dropzone:hover,.dropzone.dragover{border-color:var(--color-accent);background:var(--color-accent-soft)}
+.dropzone .halo{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:var(--color-surface);border:1px solid var(--color-line);color:var(--color-accent)}
+.dropzone strong{color:var(--color-ink)}
+.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}
+.field{display:grid;gap:6px;min-width:0}
+.field label{color:var(--color-muted);font-size:var(--font-sm);font-weight:600}
+.field .hint{color:var(--color-subtle);font-size:var(--font-xs)}
+.field .err{color:var(--color-danger-ink);font-size:var(--font-xs)}
+.field.has-error .text-input,.field.has-error .select{border-color:var(--color-danger)}
+.file-summary{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;color:var(--color-muted);font:var(--font-sm) var(--font-mono)}
+.file-summary b{color:var(--color-ink)}
+.file-list{display:grid;gap:2px}
+.file-row{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);color:var(--color-muted);font-size:var(--font-sm)}
+.file-row:hover{background:var(--color-surface-soft)}
+.file-row .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color-ink)}
+.file-row .meta{flex:none;color:var(--color-subtle);font:var(--font-xs) var(--font-mono)}
+.file-row .remove{margin-left:auto;border:0;background:transparent;color:var(--color-subtle);display:grid;place-items:center;width:26px;height:26px;border-radius:var(--radius-sm)}
+.file-row .remove:hover{background:var(--color-danger-soft);color:var(--color-danger-ink)}
+.file-row.skipped{opacity:.62}
+details.advanced{border:1px solid var(--color-line);border-radius:var(--radius-md);background:var(--color-surface-soft)}
+details.advanced summary{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);color:var(--color-muted);font-size:var(--font-sm);font-weight:600;cursor:pointer;list-style:none}
+details.advanced summary::-webkit-details-marker{display:none}
+details.advanced .panel-body{background:transparent}
+.action-row{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap}
+.action-row .note{color:var(--color-subtle);font-size:var(--font-sm)}
+.progress-panel{display:grid;gap:var(--space-3)}
+.progress-line{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)}
+.bar{height:6px;border-radius:var(--radius-track);background:var(--color-skeleton);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:inherit;background:var(--color-accent);transition:width .3s ease}
+.bar[data-tone="warn"] i{background:var(--color-warn)}
+.bar[data-tone="danger"] i{background:var(--color-danger)}
+.bar[data-tone="success"] i{background:var(--color-success)}
+.bar.indeterminate i{width:38%!important;animation:slide 1.2s ease-in-out infinite alternate}
+@keyframes slide{from{transform:translateX(-120%)}to{transform:translateX(320%)}}
+@media (prefers-reduced-motion:reduce){.bar.indeterminate i{animation:none}}
+.pct{font:650 var(--font-sm) var(--font-mono)}
+.done-list{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none;font:var(--font-sm)/1.6 var(--font-mono);color:var(--color-muted)}
+.done-list b{color:var(--color-ink);font-weight:600}
+
+/* ============ P4 写入 ============ */
+.write-layout{display:grid;gap:var(--space-3);grid-template-columns:360px minmax(0,1fr)}
+.editor-card{display:flex;flex-direction:column;min-height:520px}
+.editor-body{flex:1;display:flex;flex-direction:column;min-height:0}
+.editor-body textarea{flex:1;min-height:380px;resize:vertical;border:0;outline:none;background:transparent;padding:var(--space-5);font:14px/1.75 var(--font-mono)}
+.editor-body .preview{flex:1;display:none;padding:var(--space-5);overflow:auto}
+.editor-card[data-tab="preview"] textarea{display:none}
+.editor-card[data-tab="preview"] .preview{display:block}
+.seg{display:inline-flex;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);overflow:hidden}
+.seg button{border:0;background:var(--color-surface);padding:6px var(--space-3);font-size:var(--font-sm);color:var(--color-muted)}
+.seg button[aria-pressed="true"]{background:var(--color-accent-soft);color:var(--color-accent);font-weight:650}
+.write-ok{display:flex;gap:var(--space-2);align-items:center;border:1px solid var(--color-line);border-left:3px solid var(--color-success);border-radius:var(--radius-sm);background:var(--color-surface-soft);padding:var(--space-3);font-size:var(--font-sm)}
+
+/* ============ P5 任务 ============ */
+.tasks-layout{display:grid;gap:var(--space-3);grid-template-columns:minmax(0,1fr) 400px}
+.tabs{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--color-line);border-radius:var(--radius-md);background:var(--color-surface-soft)}
+.tabs button{border:0;border-radius:var(--radius-sm);background:transparent;padding:5px var(--space-3);font-size:var(--font-sm);color:var(--color-muted)}
+.tabs button[aria-selected="true"]{background:var(--color-surface);color:var(--color-accent);font-weight:650}
+html[data-theme="dark"] .tabs button[aria-selected="true"]{border:1px solid var(--color-line-strong)}
+.task-list{display:grid;gap:2px;padding:var(--space-3)}
+.task-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--space-3);width:100%;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;padding:var(--space-3) var(--space-4);text-align:left;color:var(--color-muted);font-size:var(--font-sm)}
+.task-row:hover{background:var(--color-surface-soft)}
+.task-row[aria-selected="true"]{background:var(--color-accent-soft);border-left:3px solid var(--color-accent)}
+.task-row .glyph{width:16px;text-align:center;font:700 var(--font-base)/1 var(--font-mono)}
+.task-row[data-state="running"] .glyph{color:var(--color-accent)}
+.task-row[data-state="failed"] .glyph,.task-row[data-state="unknown"] .glyph{color:var(--color-danger-ink)}
+.task-row[data-state="done"] .glyph{color:var(--color-success)}
+.task-row[data-state="cancelled"] .glyph{color:var(--color-subtle)}
+.task-row .tname{display:block;color:var(--color-ink);font-weight:650}
+.task-row .tsub{display:block;color:var(--color-subtle);font:var(--font-xs) var(--font-mono)}
+.task-row time{font:500 var(--font-xs) var(--font-mono);color:var(--color-subtle);white-space:nowrap}
+.detail-grid{display:grid;gap:var(--space-2);font-size:var(--font-sm)}
+.detail-grid .k{color:var(--color-subtle);font:600 var(--font-xs)/1.6 var(--font-mono);letter-spacing:.06em}
+.detail-grid .v{color:var(--color-ink)}
+.detail-error{border:1px solid var(--color-danger-soft);border-radius:var(--radius-md);background:var(--color-danger-soft);padding:var(--space-3);color:var(--color-danger-ink);font:var(--font-sm)/1.6 var(--font-mono)}
+.suggest{border:1px solid var(--color-line);border-left:3px solid var(--color-warn);border-radius:var(--radius-md);background:var(--color-warn-soft);padding:var(--space-3);color:var(--color-warn);font-size:var(--font-sm)}
+.hidden{display:none!important}
+[hidden]{display:none!important}
+
+/* ============ 响应式（方案文档 §8） ============ */
+@media (min-width:960px){
+  .sidebar{transform:none}
+  .main-shell{margin-left:248px}
+}
+@media (min-width:1200px){
+  .search-layout{grid-template-columns:minmax(0,1fr) 440px}
+  .reader-rail{display:block}
+  .import-layout{grid-template-columns:minmax(0,1fr) 380px}
+  .tasks-layout{grid-template-columns:minmax(0,1fr) 400px}
+}
+@media (min-width:1480px){
+  .search-layout{grid-template-columns:minmax(0,1fr) 480px}
+}
+/* 侧栏轨道钳制在视口内，内部滚动（sticky 有效） */
+.reader-rail,.import-layout>aside,.tasks-layout>aside{max-height:calc(100dvh - 96px);overflow:auto}
+@media (max-width:1199.98px){
+  .stat-bar{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tasks-layout,.import-layout{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:959.98px){
+  .duo{grid-template-columns:minmax(0,1fr)}
+  .write-layout{grid-template-columns:minmax(0,1fr)}
+  .task-entry .txt{display:none}
+}
+@media (min-width:600px) and (max-width:959.98px){
+  .sidebar{width:72px;padding:var(--space-5) var(--space-2) var(--space-4)}
+  .brand{padding:0 var(--space-1) var(--space-5);justify-content:center}
+  .brand-text,.nav-label,.nav-text,.nav-new,.nav-ext,.sidebar-foot{display:none}
+  .nav-item{justify-content:center;padding:0}
+  .main-shell{margin-left:72px}
+}
+@media (max-width:599.98px){
+  .menu-button{display:inline-grid}
+  .page{padding:var(--space-4) var(--space-3) var(--space-6)}
+  .page-intro h1{font-size:var(--font-xl)}
+  .stat-bar,.mini-grid,.field-grid{grid-template-columns:minmax(0,1fr)}
+  .mode-switch{width:100%;justify-content:space-between}
+  .mode-switch button{flex:1;padding:5px 0;text-align:center}
+  .topbar{padding:0 var(--space-3);gap:var(--space-2)}
+  .scope-pill{display:none}
+  .service-pill .label{display:none}
+  .task-entry .txt{display:none}
+}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 20h16"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m14.5 5.5 4 4L8 20H4v-4z"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="2"/><rect x="4" y="14" width="16" height="6" rx="2"/><path d="M8 7h.01M8 17h.01"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4 3 19h18z"/><path d="M12 10v4m0 3h.01"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m0 0-5-5m5 5-5 5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 8a8 8 0 1 0 1.7 6.4"/><path d="M21 4v4.5h-4.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M8 16 16 8M10 8h6v6"/></symbol>
+</svg>
+<a class="skip-link sr-only" href="#main">跳到主内容</a>
+<div class="mobile-scrim" id="scrim" hidden></div>
+
+<aside class="sidebar is-open" id="sidebar" aria-label="主导航">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">ki</span><span class="brand-text"><span class="brand-title">ki 知识库</span><span class="brand-subtitle">KNOWLEDGE · MCP 7423</span></span></div>
+  <p class="nav-label">导航</p>
+  <nav class="primary-nav">
+    <a class="nav-item" href="#/dashboard" data-view="dashboard"><svg class="icon"><use href="#i-grid"/></svg><span class="nav-text">总览</span></a>
+    <a class="nav-item" href="../knowledge-workbench/index.html" data-view="browse"><svg class="icon"><use href="#i-list"/></svg><span class="nav-text">知识库浏览</span><svg class="icon tiny nav-ext"><use href="#i-ext"/></svg></a>
+    <a class="nav-item" href="#/search" data-view="search"><svg class="icon"><use href="#i-search"/></svg><span class="nav-text">语义搜索</span></a>
+    <a class="nav-item" href="#/import" data-view="import"><svg class="icon"><use href="#i-upload"/></svg><span class="nav-text">上传导入</span></a>
+    <a class="nav-item" href="#/write" data-view="write"><svg class="icon"><use href="#i-edit"/></svg><span class="nav-text">知识写入</span></a>
+    <a class="nav-item" href="#/tasks" data-view="tasks"><svg class="icon"><use href="#i-tasks"/></svg><span class="nav-text">后台任务</span><span class="nav-new">新</span></a>
+  </nav>
+  <div class="sidebar-foot"><strong>独立视觉 demo · v3</strong><span>静态示例数据<br>不代表实时知识库</span></div>
+</aside>
+
+<div class="main-shell">
+  <header class="topbar">
+    <button class="icon-button menu-button" id="menuBtn" aria-label="打开导航" aria-expanded="false"><svg class="icon"><use href="#i-menu"/></svg></button>
+    <p class="breadcrumb" id="crumb">ki 知识库 · <strong>总览</strong></p>
+    <span class="spacer"></span>
+    <a class="task-entry hidden" id="taskEntry" href="#/tasks" data-state="running" aria-live="polite"><span class="glyph" aria-hidden="true">↻</span><span class="txt"><span class="mono">default</span> · 上传中 480/1240</span></a>
+    <button class="scope-pill" id="scopePill" type="button" title="切换 scope（demo 内静态）">Scope <strong id="scopeName">default</strong><svg class="icon tiny"><use href="#i-chevron-down"/></svg></button>
+    <span class="service-pill" title="MCP HTTP 已就绪，数据目录可写"><span class="status-dot" id="svcDot"></span><span class="label" id="svcLabel">已就绪</span></span>
+    <button class="icon-button" id="themeBtn" aria-label="切换主题" title="切换主题"><svg class="icon theme-icon-light"><use href="#i-sun"/></svg><svg class="icon theme-icon-dark"><use href="#i-moon"/></svg></button>
+    <button class="icon-button" id="chatBtn" aria-label="AI 对话（demo 未提供）" title="AI 对话：见 chat-tools-config demo" disabled><svg class="icon"><use href="#i-chat"/></svg></button>
+  </header>
+
+  <main id="main" class="page">
+
+    <!-- ===================== VIEW: 总览 ===================== -->
+    <section class="view is-active" id="view-dashboard" data-mode="ok" aria-label="总览">
+      <div class="page-intro">
+        <div><p class="eyebrow">DASHBOARD · 知识库全貌</p><h1>总览</h1><p>知识库规模 · 服务状态 · 健康度 · 静态示例数据</p></div>
+        <div class="mode-switch" role="group" aria-label="演示状态"><button data-mode="ok" aria-pressed="true">正常</button><button data-mode="loading" aria-pressed="false">加载</button><button data-mode="empty" aria-pressed="false">空</button><button data-mode="error" aria-pressed="false">错误</button><span class="demo-tag">demo-only</span></div>
+      </div>
+
+      <div class="state stack" data-state="ok">
+        <div class="banner danger" role="alert" hidden id="dashBanner">
+          <svg class="icon"><use href="#i-warn"/></svg>
+          <div style="flex:1"><strong>MCP HTTP 服务不可达，部分功能不可用。</strong><br>请执行 <code class="mono">ki mcp --http --web</code> 启动服务后重试。</div>
+          <button class="btn small ghost" id="bannerRetry">重试</button>
+        </div>
+        <div class="stat-bar">
+          <div class="stat-card"><span class="kicker">SCOPES</span><span class="big num">3</span><span class="sub">KB 3 · 向量 2</span></div>
+          <div class="stat-card"><span class="kicker">KB 文档</span><span class="big num">2122</span><span class="sub">全部 scope 合计</span></div>
+          <div class="stat-card"><span class="kicker">向量层</span><span class="big num">1866</span><span class="sub">覆盖 scope 2 · 维度存疑</span></div>
+          <div class="stat-card"><span class="kicker">注册</span><span class="big num">42</span><span class="sub">当前库索引数</span></div>
+        </div>
+        <div class="duo">
+          <section class="panel">
+            <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">CURRENT · <span class="mono" data-current-scope>default</span></span><span class="panel-title">当前知识库</span></div><span class="count">顶栏切换 scope 即时刷新</span></header>
+            <div class="panel-body mini-grid">
+              <div class="mini-card"><span class="kicker">文档</span><span class="big num">42</span></div>
+              <div class="mini-card"><span class="kicker">GROUPS</span><span class="big num">8</span></div>
+              <div class="mini-card"><span class="kicker">KB 层</span><span class="big">✓</span></div>
+              <div class="mini-card"><span class="kicker">向量层</span><span class="big">✓</span></div>
+            </div>
+          </section>
+          <section class="panel">
+            <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">HEALTH</span><span class="panel-title">健康状态</span></div><span class="count"><b style="color:var(--color-success)">4 通过</b> · <b style="color:var(--color-warn)">1 告警</b></span></header>
+            <div class="panel-body">
+              <ul class="health-list">
+                <li data-level="pass"><span class="glyph">✓</span><div><span class="name">数据目录可写</span><span class="detail mono">/data/knowledge-indexer</span></div></li>
+                <li data-level="pass"><span class="glyph">✓</span><div><span class="name">MCP HTTP 服务在线</span><span class="detail">127.0.0.1:7423 · 响应正常</span></div></li>
+                <li data-level="warn"><span class="glyph">!</span><div><span class="name">向量集合维度不一致</span><span class="detail mono">vector dim 1024 ≠ embedding dim 1536 · 语义检索降级</span></div></li>
+                <li data-level="pass"><span class="glyph">✓</span><div><span class="name">索引注册数</span><span class="detail">42 条 · 无孤儿索引</span></div></li>
+                <li data-level="pass"><span class="glyph">✓</span><div><span class="name">embedding 服务可达</span><span class="detail">最近探测 10:49</span></div></li>
+              </ul>
+            </div>
+          </section>
+        </div>
+        <section class="panel">
+          <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">SCOPES</span><span class="panel-title">知识库</span></div><span class="count">3 个 scope</span></header>
+          <div class="table-wrap">
+            <table class="data"><thead><tr><th scope="col">Scope</th><th scope="col">层状态</th><th scope="col" class="r">文档数</th></tr></thead>
+              <tbody>
+                <tr><td class="scope-name">default</td><td><span class="badge accent">KB</span> <span class="badge success">RAG ✓</span> <span class="badge success">FTS ✓</span></td><td class="r num">42</td></tr>
+                <tr><td class="scope-name">ai-docs</td><td><span class="badge accent">KB</span> <span class="badge success">RAG ✓</span> <span class="badge neutral" title="仅 FTS-only 文档数（按文档计）">FTS 8</span></td><td class="r num">1866</td></tr>
+                <tr><td class="scope-name">wiki</td><td><span class="badge accent">KB</span> <span class="badge neutral">RAG —</span> <span class="badge neutral">FTS —</span></td><td class="r num">214</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div class="state stack" data-state="loading">
+        <div class="stat-bar" aria-hidden="true"><div class="stat-card"><span class="skeleton" style="display:block;height:14px;width:60px"></span><span class="skeleton" style="display:block;height:26px;margin-top:8px;width:80px"></span></div><div class="stat-card"><span class="skeleton" style="display:block;height:14px;width:60px"></span><span class="skeleton" style="display:block;height:26px;margin-top:8px;width:80px"></span></div><div class="stat-card"><span class="skeleton" style="display:block;height:14px;width:60px"></span><span class="skeleton" style="display:block;height:26px;margin-top:8px;width:80px"></span></div><div class="stat-card"><span class="skeleton" style="display:block;height:14px;width:60px"></span><span class="skeleton" style="display:block;height:26px;margin-top:8px;width:80px"></span></div></div>
+        <section class="panel"><header class="panel-head"><div class="panel-heading"><span class="panel-kicker">SCOPES</span><span class="panel-title">知识库</span></div><span class="count">检测中…</span></header>
+          <div class="panel-body" style="display:grid;gap:12px"><span class="skeleton" style="height:44px"></span><span class="skeleton" style="height:44px"></span></div>
+        </section>
+      </div>
+
+      <div class="state" data-state="empty">
+        <section class="panel"><div class="panel-body empty-state"><span class="halo"><svg class="icon"><use href="#i-folder"/></svg></span><h3>暂无知识库</h3><p>导入第一个知识库，开始沉淀你的文档。</p><a class="btn" href="#/import">上传文档<svg class="icon small"><use href="#i-arrow-right"/></svg></a></div></section>
+      </div>
+
+      <div class="state stack" data-state="error">
+        <div class="banner danger" role="alert"><svg class="icon"><use href="#i-warn"/></svg><div style="flex:1"><strong>MCP HTTP 服务不可达，部分功能不可用。</strong><br>请执行 <code class="mono">ki mcp --http --web</code> 启动服务后重试。</div><button class="btn small ghost" type="button">重试</button></div>
+        <div class="stat-bar">
+          <div class="stat-card"><span class="kicker">SCOPES</span><span class="big num">3</span><span class="sub">KB 3 · 向量 2</span></div>
+          <div class="stat-card"><span class="kicker">KB 文档</span><span class="big num">2122</span><span class="sub">全部 scope 合计</span></div>
+          <div class="stat-card"><span class="kicker">向量层</span><span class="big num">—</span><span class="sub">读取失败</span></div>
+          <div class="stat-card"><span class="kicker">注册</span><span class="big num">—</span><span class="sub">读取失败</span></div>
+        </div>
+        <section class="panel"><header class="panel-head"><div class="panel-heading"><span class="panel-kicker">HEALTH</span><span class="panel-title">MCP HTTP 不可达</span></div></header><div class="panel-body"><ul class="health-list"><li data-level="fail"><span class="glyph">✕</span><div><span class="name">MCP HTTP</span><span class="detail">连接被拒绝：127.0.0.1:7423 未在监听。请启动服务后点击横幅「重试」。</span></div></li></ul></div></section>
+      </div>
+    </section>
+
+    <!-- ===================== VIEW: 语义搜索 ===================== -->
+    <section class="view" id="view-search" data-mode="ok" aria-label="语义搜索">
+      <div class="page-intro">
+        <div><p class="eyebrow">SEARCH · 混合检索</p><h1>语义搜索</h1><p>语义 + 全文混合检索当前 scope · 静态示例数据</p></div>
+        <div class="mode-switch" role="group" aria-label="演示状态"><button data-mode="ok" aria-pressed="true">正常</button><button data-mode="loading" aria-pressed="false">加载</button><button data-mode="empty" aria-pressed="false">空</button><button data-mode="error" aria-pressed="false">错误</button><span class="demo-tag">demo-only</span></div>
+      </div>
+
+      <div class="search-layout">
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-body">
+              <form class="search-row" id="searchForm">
+                <div class="search-input-wrap"><svg class="icon"><use href="#i-search"/></svg><input class="search-input" id="searchInput" placeholder="输入自然语言查询，如：告警收敛策略是什么？" aria-label="检索词"><span class="sr-only">（Ctrl+F 聚焦）</span></div>
+                <button class="btn" type="submit" id="searchBtn">搜索</button>
+              </form>
+              <div class="param-row">
+                <span class="param">Tags</span>
+                <div class="chips" id="tagChips" role="group" aria-label="标签筛选">
+                  <button class="chip" aria-pressed="true" data-tag="">全部</button><button class="chip" aria-pressed="false" data-tag="专题记忆">专题记忆</button><button class="chip" aria-pressed="false" data-tag="RAG">RAG</button><button class="chip" aria-pressed="false" data-tag="接口">接口</button><button class="chip" aria-pressed="false" data-tag="数据流">数据流</button>
+                </div>
+                <label class="param">Threshold <input class="range" type="range" id="thRange" min="0" max="0.2" step="0.005" value="0.12"><span class="num" id="thVal">0.120</span></label>
+                <label class="param">Timeout <input class="text-input num-tight" type="number" id="timeout" min="0.001" max="60" step="1" value="3"><span class="kbd-note">s · 未改动则不发送</span></label>
+                <label class="param">Limit <select class="select tiny" id="limit"><option>5</option><option selected>10</option><option>20</option></select></label>
+                <label class="switch param"><input type="checkbox" id="fulltextSwitch"><span class="track"></span>全文<span class="kbd-note" id="modeHint">语义 + 全文</span></label>
+              </div>
+              <div class="history-row">最近：<button data-q="MCP 服务怎么调用">MCP 服务怎么调用</button><button data-q="向量维度不匹配">向量维度不匹配</button><button data-q="发布回滚流程">发布回滚流程</button><span class="spacer"></span><button id="clearHistory">清空历史</button></div>
+            </div>
+          </section>
+
+          <div class="state stack" data-state="ok">
+            <div class="banner warn" role="status"><svg class="icon"><use href="#i-warn"/></svg><div>部分结果已降级为全文匹配：BM25 分与语义分不可比，Threshold 对降级结果不生效；已跳过 1 个 scope：<span class="mono">wiki · 向量维度不一致</span>。</div></div>
+            <section class="panel">
+              <div class="result-head"><strong><span class="num" id="resultCount">5</span> 条结果</strong><span>· 检索耗时 <span class="num">128</span> ms · scope <span class="mono" data-current-scope>default</span></span></div>
+              <div class="result-list" id="resultList">
+                <article class="result-card" data-top="true" data-doc="mcp-expert" data-tag="专题记忆">
+                  <div class="result-top"><span class="rank">1</span><h3 class="result-title"><button type="button" class="open-doc">MCP服务专家</button></h3><span class="badge neutral">专题记忆</span></div>
+                  <p class="excerpt">…把知识检索与文档读取能力提供给外部客户端。MCP 服务是 <mark>ki</mark> 对外的统一入口，支持 scope 级检索与关联查询…</p>
+                  <div class="result-meta"><span class="badge accent">RAG</span><span>#专题记忆</span><span title="a91c3f7e2b18d042">vector: a91c3f7e2b18…</span></div>
+                  <div class="score-line"><span class="score-bar"><i style="width:81%"></i></span><span class="val">0.812</span></div>
+                  <button class="btn small ghost" type="button" data-browse-group="专题记忆">浏览此 Group<svg class="icon tiny"><use href="#i-ext"/></svg></button>
+                </article>
+                <article class="result-card" data-top="true" data-doc="fe-expert" data-tag="专题记忆">
+                  <div class="result-top"><span class="rank">2</span><h3 class="result-title"><button type="button" class="open-doc">可视化前端专家</button></h3><span class="badge neutral">专题记忆</span></div>
+                  <p class="excerpt">…浏览工作台与知识卡片的前端渲染路径：状态在 store、样式在 CSS Modules、交互在事件层…</p>
+                  <div class="result-meta"><span class="badge accent">RAG</span><span>#专题记忆</span><span title="7b2d19ac44fe0183">vector: 7b2d19ac44fe…</span></div>
+                  <div class="score-line"><span class="score-bar"><i style="width:76%"></i></span><span class="val">0.764</span></div>
+                  <button class="btn small ghost" type="button" data-browse-group="专题记忆">浏览此 Group<svg class="icon tiny"><use href="#i-ext"/></svg></button>
+                </article>
+                <article class="result-card" data-top="true" data-doc="rag-flow" data-tag="数据流">
+                  <div class="result-top"><span class="rank">3</span><h3 class="result-title"><button type="button" class="open-doc">RAG 双轨数据流</button></h3><span class="badge neutral">数据流</span></div>
+                  <p class="excerpt">…写入同时进 KB 与向量层；向量维度不匹配时降级 FTS-only，读取端以 score 口径区分…</p>
+                  <div class="result-meta"><span class="badge accent">RAG</span><span>#数据流</span><span title="c048ba7e3129ff50">vector: c048ba7e3129…</span></div>
+                  <div class="score-line"><span class="score-bar"><i style="width:70%"></i></span><span class="val">0.698</span></div>
+                  <button class="btn small ghost" type="button" data-browse-group="数据流">浏览此 Group<svg class="icon tiny"><use href="#i-ext"/></svg></button>
+                </article>
+                <article class="result-card" data-doc="mcp-http" data-tag="接口">
+                  <div class="result-top"><span class="rank">4</span><h3 class="result-title"><button type="button" class="open-doc">mcp-http-api 接口契约</button></h3><span class="badge neutral">接口</span></div>
+                  <p class="excerpt">…统一响应结构 { code, message, data }；/api/search 支持 scope、tags、threshold、timeout 与全文模式…</p>
+                  <div class="result-meta"><span class="badge neutral">FTS</span><span>#接口</span><span title="e13f0d2a77c6b901">vector: e13f0d2a77c6…</span></div>
+                  <div class="score-line"><span class="score-bar"><i style="width:52%"></i></span><span class="val">0.521</span></div>
+                  <button class="btn small ghost" type="button" data-browse-group="接口">浏览此 Group<svg class="icon tiny"><use href="#i-ext"/></svg></button>
+                </article>
+                <article class="result-card" data-doc="scope-store" data-tag="数据流">
+                  <div class="result-top"><span class="rank">5</span><h3 class="result-title"><button type="button" class="open-doc">scope 索引存储布局</button></h3><span class="badge neutral">数据流</span></div>
+                  <p class="excerpt">…每 scope 一个目录，FTS 与向量分文件存放；删除 scope 时先摘注册再清理物理文件…</p>
+                  <div class="result-meta"><span class="badge neutral">FTS</span><span>#数据流</span><span>vector: -</span></div>
+                  <div class="score-line"><span class="score-bar"><i style="width:34%"></i></span><span class="val">0.344</span></div>
+                  <button class="btn small ghost" type="button" data-browse-group="数据流">浏览此 Group<svg class="icon tiny"><use href="#i-ext"/></svg></button>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <div class="state stack" data-state="loading">
+            <section class="panel"><div class="result-head"><strong>搜索中…</strong></div><div class="result-list" aria-hidden="true"><span class="skeleton" style="height:96px"></span><span class="skeleton" style="height:96px"></span><span class="skeleton" style="height:96px"></span></div></section>
+          </div>
+          <div class="state" data-state="empty">
+            <section class="panel"><div class="panel-body empty-state"><span class="halo"><svg class="icon"><use href="#i-search"/></svg></span><h3>未找到相关内容</h3><p>试试：</p><ul><li>换更短、更口语的关键词（如「怎么发布」）</li><li>关闭全文开关，改用语义 + 全文混合</li><li>在总览确认该 scope 的向量层是否可用</li></ul></div></section>
+          </div>
+          <div class="state stack" data-state="error">
+            <section class="panel"><div class="panel-body empty-state"><span class="halo" style="color:var(--color-danger-ink)"><svg class="icon"><use href="#i-warn"/></svg></span><h3>搜索失败</h3><p>向量集合维度与 embedding 模型不一致（dim 1024 ≠ 1536），语义检索不可用。</p><div class="banner neutral" style="width:100%"><code class="mono" style="flex:1">ki restore ai-docs --rebuild-vector --yes</code></div><div style="display:flex;gap:12px"><button class="btn ghost" type="button" id="retryFulltext">使用全文搜索重试</button></div></div></section>
+          </div>
+        </div>
+
+        <aside class="reader-rail panel" id="readerRail" aria-label="原文">
+          <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">READER · <span class="mono">专题记忆 / MCP服务专家</span></span><span class="panel-title">原文栏</span></div><button class="icon-button" id="railClose" aria-label="关闭原文栏"><svg class="icon"><use href="#i-x"/></svg></button></header>
+          <div class="reader reader-body-wrap" style="display:flex;flex-direction:column;min-height:0;flex:1">
+            <div class="reader reader-body" id="railReader" data-doc="mcp-expert">
+              <p class="reader-path">default / 专题记忆 / MCP服务专家</p>
+              <h2>MCP服务专家</h2>
+              <div class="chips" style="margin-bottom:16px"><span class="badge accent">#专题记忆</span><span class="badge neutral">RAG</span></div>
+              <h3>职责</h3>
+              <p>MCP 服务把知识检索与文档读取能力提供给外部客户端，是 ki 对外的统一入口：scope 级检索、关联查询、文档深链。</p>
+              <h3>调用链</h3>
+              <pre>client → mcp-http-api → scope.store → {fts | vector} → rank → data</pre>
+              <p>检索默认走语义 + 全文双轨；向量维度不匹配时降级为 FTS-only，降级口径在结果 meta 与横幅中显式提示。</p>
+            </div>
+            <div class="reader reader-body hidden" id="railReaderAlt" data-doc="fe-expert">
+              <p class="reader-path">default / 专题记忆 / 可视化前端专家</p>
+              <h2>可视化前端专家</h2>
+              <div class="chips" style="margin-bottom:16px"><span class="badge accent">#专题记忆</span><span class="badge neutral">RAG</span></div>
+              <h3>渲染路径</h3>
+              <p>浏览工作台与知识卡片共享外壳：状态在 store、样式在 CSS Modules、交互在事件层；样式源改动须同步重建产物。</p>
+            </div>
+          </div>
+          <div class="reader-nav"><span>命中 <span class="num">3</span>/<span class="num">7</span></span><button class="icon-button" aria-label="上一个命中"><svg class="icon small"><use href="#i-back"/></svg></button><button class="icon-button" aria-label="下一个命中"><svg class="icon small" style="transform:scaleX(-1)"><use href="#i-back"/></svg></button><span class="spacer"></span><span>大纲 ▾</span></div>
+        </aside>
+      </div>
+    </section>
+    <!-- ===================== VIEW: 上传导入 ===================== -->
+    <section class="view" id="view-import" data-mode="ok" aria-label="上传导入">
+      <div class="page-intro">
+        <div><p class="eyebrow">IMPORT · 幂等追加</p><h1>上传导入</h1><p>批量导入 Markdown 到指定 Scope / Group · 静态示例数据</p></div>
+        <div class="mode-switch" role="group" aria-label="演示状态"><button data-mode="ok" aria-pressed="true">正常</button><button data-mode="loading" aria-pressed="false">加载</button><button data-mode="empty" aria-pressed="false">空</button><button data-mode="error" aria-pressed="false">错误</button><span class="demo-tag">demo-only</span></div>
+      </div>
+
+      <div class="import-layout">
+        <div class="stack">
+          <div class="state stack" data-state="ok">
+            <section class="panel"><div class="panel-body stack">
+              <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="拖拽或点击选择 Markdown 文件">
+                <span class="halo"><svg class="icon"><use href="#i-upload"/></svg></span>
+                <div><strong>拖拽 Markdown 文件或目录到此处</strong>，或点击选择</div>
+                <span class="mono" style="font-size:var(--font-xs);color:var(--color-subtle)">.md · 图片等附件仅在被 Markdown 引用时纳入 · 单请求 ≤ 16 MB</span>
+              </div>
+              <div class="field-grid">
+                <div class="field"><label for="impScope">Scope（目标知识库）</label><select class="select" id="impScope"><option selected>default</option><option>ai-docs</option><option>wiki</option></select><span class="hint">可输入新名称，提交时自动新建</span></div>
+                <div class="field"><label for="impGroup">Group 路径（可选 · 导入根目录）</label><input class="text-input" id="impGroup" value="专题记忆" placeholder="留空则用 scope 名作根"><span class="hint">斜杠分隔层级，如 部署运维/发布</span></div>
+                <div class="field"><label for="impConflict">同名文档处理</label><select class="select" id="impConflict"><option value="suffix" selected>自动添加后缀（推荐）</option><option value="overwrite">覆盖已有文档</option><option value="skip">跳过同名文件</option></select><span class="hint">同 sourcePath 幂等覆盖</span></div>
+                <div class="field"><label for="impSuffix">后缀模板</label><input class="text-input mono" id="impSuffix" value="_{n}" disabled><span class="hint">{n} 从 1 递增 · 仅「自动添加后缀」可编辑</span></div>
+              </div>
+              <div class="field"><label>Tags（对全部导入文件生效）</label>
+                <div class="chips"><span class="chip" aria-pressed="true">专题记忆 <button class="remove" aria-label="移除标签 专题记忆">×</button></span><span class="chip" aria-pressed="true">RAG <button class="remove" aria-label="移除标签 RAG">×</button></span><button class="chip" style="border-style:dashed">+ 输入回车添加</button></div>
+              </div>
+              <div class="stack">
+                <div class="file-summary"><b>待导入 <span class="num">5</span> 个 Markdown</b><span>· 附件 <span class="num">2</span> 个</span><span>· 已跳过 <span class="num">1</span> 个（<span class="num">3.2 MB</span>）</span><span>· 共 <span class="num">226.8 KB</span></span></div>
+                <div class="file-list">
+                  <div class="file-row"><svg class="icon small"><use href="#i-folder"/></svg><span class="name" title="专题记忆/">专题记忆/</span><span class="meta">目录 · 3 个 Markdown · 1 个附件 · 186.4 KB</span><button class="remove" aria-label="移除 专题记忆/"><svg class="icon tiny"><use href="#i-x"/></svg></button></div>
+                  <div class="file-row"><svg class="icon small"><use href="#i-folder"/></svg><span class="name" title="部署运维/">部署运维/</span><span class="meta">目录 · 2 个 Markdown · 1 个附件 · 32.4 KB</span><button class="remove" aria-label="移除 部署运维/"><svg class="icon tiny"><use href="#i-x"/></svg></button></div>
+                  <div class="file-row"><svg class="icon small"><use href="#i-file"/></svg><span class="name">CHANGELOG.md</span><span class="meta">Markdown · 8 KB</span><button class="remove" aria-label="移除 CHANGELOG.md"><svg class="icon tiny"><use href="#i-x"/></svg></button></div>
+                  <div class="file-row skipped"><svg class="icon small"><use href="#i-file"/></svg><span class="name">archive-large.png</span><span class="meta">跳过 · 未被引用且超过 5 MB</span></div>
+                </div>
+              </div>
+              <details class="advanced"><summary><svg class="icon small"><use href="#i-chevron-down"/></svg>切分参数（高级）</summary>
+                <div class="panel-body field-grid">
+                  <div class="field"><label for="impChunk">Chunk Size（字符）</label><input class="text-input mono" id="impChunk" type="number" value="1000" min="100" max="4000"><span class="hint">段落边界优先：\n\n → \n → 句号 → 分号</span></div>
+                  <div class="field"><label for="impOverlap">Chunk Overlap（字符）</label><input class="text-input mono" id="impOverlap" type="number" value="150" min="0" max="500"></div>
+                  <div class="field"><label>向量化</label><div style="display:flex;align-items:center;gap:12px"><label class="switch"><input type="checkbox" id="impVec" checked><span class="track"></span></label><span class="hint">关闭则仅写 FTS，不调 embedding</span></div><span class="hint" style="color:var(--color-warn)">⚠ ai-docs 向量维度不兼容时此处将拦截并提示重建</span></div>
+                </div>
+              </details>
+              <div class="action-row"><button class="btn" id="startImport">开始导入</button><button class="btn ghost" id="clearFiles">清空</button><span class="note" id="importNote">直导无需 AI · 无第三方依赖</span></div>
+            </div></section>
+          </div>
+
+          <div class="state" data-state="loading">
+            <section class="panel"><div class="panel-body stack" aria-hidden="true"><span class="skeleton" style="height:110px"></span><span class="skeleton" style="height:38px"></span><span class="skeleton" style="height:38px; width:60%"></span><span class="skeleton" style="height:80px"></span><p style="color:var(--color-subtle);font-size:var(--font-sm)">读取目录中…（扫描扩展名白名单与被引用附件）</p></div></section>
+          </div>
+          <div class="state" data-state="empty">
+            <section class="panel"><div class="panel-body">
+              <div class="dropzone"><span class="halo"><svg class="icon"><use href="#i-upload"/></svg></span><div><strong>尚未选择文件</strong>，拖拽 Markdown 文件或目录到此处</div></div>
+              <div class="action-row" style="margin-top:16px"><button class="btn" disabled>开始导入</button><span class="note">文件清单为空时不可提交</span></div>
+            </div></section>
+          </div>
+          <div class="state stack" data-state="error">
+            <section class="panel"><div class="panel-body stack">
+              <div class="banner danger" role="alert"><svg class="icon"><use href="#i-warn"/></svg><div style="flex:1"><strong>上传失败</strong><br><span class="mono" style="white-space:pre-wrap">批次 2/5：连接超时（16.0 MB 请求体 · 重试 2 次后放弃）</span></div></div>
+              <div class="banner warn"><svg class="icon"><use href="#i-warn"/></svg><div>部分文件未上传（2）：<div class="mono" style="font-size:var(--font-xs)">部署运维/发布流程.md：connection reset<br>CHANGELOG.md：aborted</div></div></div>
+              <div class="action-row"><button class="btn" id="retryBatch">重试第 2/5 批</button><button class="btn ghost">重新选择文件</button><span class="note">仅当文件快照未变化时可重试本批</span></div>
+            </div></section>
+          </div>
+        </div>
+
+        <aside class="panel" id="taskRail" aria-label="当前任务" style="align-self:start;position:sticky;top:80px">
+          <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">TASK · <span class="mono">import-8f21c4</span></span><span class="panel-title" id="railTitle">当前任务</span></div><span class="badge accent" id="railBadge">等待开始</span></header>
+          <div class="panel-body progress-panel">
+            <div id="railIdle"><p style="margin:0;color:var(--color-muted);font-size:var(--font-sm)">提交后这里会显示实时进度；切页不丢任务（ImportPage 常驻挂载），顶栏任务入口同步联动。</p></div>
+            <div id="railProgress" class="hidden stack">
+              <div class="progress-line"><span id="railPhase" class="mono" style="font-size:var(--font-sm)">上传中</span><span class="pct num" id="railPct">38%</span></div>
+              <div class="bar" id="railBar"><i style="width:38%"></i></div>
+              <div class="mono" style="font-size:var(--font-xs);color:var(--color-subtle)" id="railDetail">第 2/5 批 · 480/1240 个文件 · 8.1/47.2 MB</div>
+              <button class="btn danger-ghost small" id="cancelImport">取消导入</button>
+            </div>
+            <div id="railDone" class="hidden stack">
+              <div class="banner info"><svg class="icon"><use href="#i-check"/></svg><div><strong>导入完成</strong><br>已处理 <span class="num">1240</span> 个分片 / <span class="num">1186</span> 个向量化，错误 <span class="num">0</span>，同名冲突 <span class="num">5</span> 个</div></div>
+              <ul class="done-list">
+                <li>专题记忆/MCP服务专家：<b>原 → mcp-服务专家</b>（已加后缀）</li>
+                <li>专题记忆/可视化前端专家：<b>覆盖</b></li>
+                <li>部署运维/发布流程：<b>已跳过（同名）</b></li>
+              </ul>
+              <div class="action-row"><a class="btn small" href="#/search?scope=default&q=MCP" id="toSearch">前往搜索验证<svg class="icon small"><use href="#i-arrow-right"/></svg></a><a class="btn small ghost" href="#/tasks?id=import-8f21c4">查看任务详情</a></div>
+            </div>
+            <p class="hint" style="margin:0;color:var(--color-subtle);font-size:var(--font-xs);border-top:1px dashed var(--color-line);padding-top:12px">阶段→视觉映射与真实状态机一致（方案文档 §4-P3）· 静态示例</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===================== VIEW: 知识写入 ===================== -->
+    <section class="view" id="view-write" data-mode="ok" aria-label="知识写入">
+      <div class="page-intro">
+        <div><p class="eyebrow">WRITE · 单篇落库</p><h1>知识写入</h1><p>手写 / 粘贴一篇 Markdown 并写入指定 Group · 静态示例数据</p></div>
+        <div class="mode-switch" role="group" aria-label="演示状态"><button data-mode="ok" aria-pressed="true">正常</button><button data-mode="loading" aria-pressed="false">加载</button><button data-mode="empty" aria-pressed="false">空</button><button data-mode="error" aria-pressed="false">错误</button><span class="demo-tag">demo-only</span></div>
+      </div>
+
+      <div class="write-layout">
+        <div class="stack">
+          <div class="state stack" data-state="ok">
+            <section class="panel"><header class="panel-head"><div class="panel-heading"><span class="panel-kicker">METADATA</span><span class="panel-title">元数据</span></div></header>
+              <div class="panel-body stack">
+                <div class="field" id="fScope"><label for="wScope">Scope（目标知识库）</label><input class="text-input mono" id="wScope" value="default"><span class="hint">仅 [a-zA-Z0-9_-] · 不存在的名称提交时自动新建 · __global__ 为保留字</span><span class="err" role="alert" hidden></span></div>
+                <div class="field" id="fGroup"><label for="wGroup">Group（文档分组）</label><input class="text-input mono" id="wGroup" value="专题记忆" placeholder="告警系统/告警收敛"><span class="hint">斜杠分隔层级，禁止包含 \ 与 ..</span><span class="err" role="alert" hidden></span></div>
+                <div class="field" id="fRel"><label for="wRel">文档名称（Relation）</label><input class="text-input" id="wRel" value="发布回滚手册"><span class="hint">同 Group 内唯一；浏览页按此名显示 · 禁止 / \ 与 ..</span><span class="err" role="alert" hidden></span></div>
+                <div class="field"><label>Tags</label><div class="chips"><span class="chip" aria-pressed="true">运维 <button class="remove" aria-label="移除标签 运维">×</button></span><button class="chip" style="border-style:dashed">+ 输入回车</button></div><span class="hint">新建 tag 将自动加入候选</span></div>
+                <div class="field"><label>向量化</label><div style="display:flex;align-items:center;gap:12px"><label class="switch"><input type="checkbox" id="wVec" checked><span class="track"></span></label><span class="hint">关闭则写入 FTS-only，不被语义搜索命中</span></div></div>
+                <div class="write-ok hidden" id="writeOk"><svg class="icon small"><use href="#i-check"/></svg><span id="writeOkText">写入成功</span></div>
+                <div class="action-row"><button class="btn" id="saveWrite">保存</button><button class="btn ghost" id="clearWrite">清空</button></div>
+              </div></section>
+          </div>
+          <div class="state" data-state="loading"><section class="panel"><div class="panel-body stack" aria-hidden="true"><span class="skeleton" style="height:38px"></span><span class="skeleton" style="height:38px"></span><span class="skeleton" style="height:38px;width:70%"></span><p style="font-size:var(--font-sm);color:var(--color-subtle)">保存中…（禁用重复提交）</p></div></section></div>
+          <div class="state" data-state="empty"><section class="panel"><div class="panel-body stack"><div class="banner neutral"><svg class="icon small"><use href="#i-file"/></svg><div>尚未填写：<strong>Group、文档名、正文</strong>（空字段不判红，提交时才合并提示）</div></div><div class="field"><label>必填顺序建议</label><ul class="empty-state" style="padding:0"><li>1. Scope 与 Group 决定文档落点</li><li>2. Relation 是浏览页显示名</li><li>3. 正文支持标准 Markdown</li></ul></div></div></section></div>
+          <div class="state stack" data-state="error">
+            <div class="banner danger" role="alert"><svg class="icon"><use href="#i-warn"/></svg><div style="flex:1"><strong>写入失败</strong><br><span class="mono" style="white-space:pre-wrap">relation "发布\回滚" 非法：禁止包含反斜杠；Group、Relation、Module Info 均不能为空</span></div><button class="btn small ghost" type="button">查看校验规则</button></div>
+            <div class="field has-error" style="max-width:360px"><label>文档名称（Relation）</label><input class="text-input mono" value="发布\回滚"><span class="err">禁止包含 / 与 \</span></div>
+          </div>
+        </div>
+
+        <section class="panel editor-card" id="editorCard" data-tab="edit">
+          <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">MODULE INFO · Markdown</span><span class="panel-title">正文</span></div>
+            <div class="seg" role="group" aria-label="编辑/预览"><button data-tab="edit" aria-pressed="true">编辑</button><button data-tab="preview" aria-pressed="false">预览</button></div>
+          </header>
+          <div class="editor-body">
+            <textarea id="editorTextarea" spellcheck="false" aria-label="正文 Markdown"># 发布回滚手册
+
+## 适用场景
+线上发布失败需要 5 分钟内回滚到上一稳定版本时使用。
+
+## 步骤
+1. 确认当前批次与健康检查状态
+2. `ki rollback --scope ai-docs --to <snapshot>`
+3. 校验向量层与 FTS 一致性
+
+> 回滚不删除数据目录，快照保留 7 天。</textarea>
+            <div class="preview" id="editorPreview" aria-label="预览">
+              <h2 style="margin:0 0 12px;font-size:22px">发布回滚手册</h2>
+              <h3 style="margin:16px 0 8px;font-size:17px">适用场景</h3>
+              <p style="margin:0 0 12px;color:var(--color-muted)">线上发布失败需要 5 分钟内回滚到上一稳定版本时使用。</p>
+              <h3 style="margin:16px 0 8px;font-size:17px">步骤</h3>
+              <ol style="margin:0 0 12px;padding-left:20px;color:var(--color-muted)"><li>确认当前批次与健康检查状态</li><li><code class="mono">ki rollback --scope ai-docs --to &lt;snapshot&gt;</code></li><li>校验向量层与 FTS 一致性</li></ol>
+              <div class="banner info"><div>回滚不删除数据目录，快照保留 7 天。</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================== VIEW: 后台任务 [新页面提案] ===================== -->
+    <section class="view" id="view-tasks" data-mode="ok" aria-label="后台任务">
+      <div class="page-intro">
+        <div><p class="eyebrow">TASKS · <span class="mono">新页面提案</span></p><h1>后台任务</h1><p>导入 / 向量重建 / 快照还原的运行与历史 · 静态示例数据（需后端新增列表 API）</p></div>
+        <div class="mode-switch" role="group" aria-label="演示状态"><button data-mode="ok" aria-pressed="true">正常</button><button data-mode="loading" aria-pressed="false">加载</button><button data-mode="empty" aria-pressed="false">空</button><button data-mode="error" aria-pressed="false">错误</button><span class="demo-tag">demo-only</span></div>
+      </div>
+
+      <div class="state stack" data-state="ok">
+        <div class="stat-bar">
+          <div class="stat-card"><span class="kicker">运行中</span><span class="big num">1</span><span class="sub">上传导入 · default</span></div>
+          <div class="stat-card"><span class="kicker">失败 / 待确认</span><span class="big num" style="color:var(--color-danger-ink)">2</span><span class="sub">需人工处理</span></div>
+          <div class="stat-card"><span class="kicker">今日完成</span><span class="big num" style="color:var(--color-success)">2</span><span class="sub">共 226.8 KB</span></div>
+          <div class="stat-card"><span class="kicker">可见任务</span><span class="big num">6</span><span class="sub">保留最近 30 天</span></div>
+        </div>
+        <div class="tasks-layout">
+          <section class="panel">
+            <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">JOBS</span><span class="panel-title">任务记录</span></div>
+              <div class="tabs" role="tablist" aria-label="任务筛选"><button role="tab" aria-selected="true" data-filter="all">全部</button><button role="tab" aria-selected="false" data-filter="running">运行中</button><button role="tab" aria-selected="false" data-filter="failed">失败</button><button role="tab" aria-selected="false" data-filter="done">最近完成</button></div>
+            </header>
+            <div class="task-list" id="taskList" role="listbox" aria-label="任务列表">
+              <button class="task-row" role="option" aria-selected="true" data-state="running" data-id="import-8f21c4" data-detail="d1"><span class="glyph" aria-hidden="true">↻</span><span><span class="tname">运行中 · 上传导入</span><span class="tsub">default · 网页 · 上传中 480/1240</span></span><time class="mono">10:49</time></button>
+              <button class="task-row" role="option" aria-selected="false" data-state="failed" data-id="vecbuild-2e90aa" data-detail="d2"><span class="glyph" aria-hidden="true">!</span><span><span class="tname">失败 · 向量重建</span><span class="tsub">wiki · MCP · 批次 3/5 超时</span></span><time class="mono">09-28 16:02</time></button>
+              <button class="task-row" role="option" aria-selected="false" data-state="done" data-id="import-71bd05" data-detail="d3"><span class="glyph" aria-hidden="true">✓</span><span><span class="tname">完成 · 上传导入</span><span class="tsub">ai-docs · 网页 · 1240/1240</span></span><time class="mono">09-27 17:03</time></button>
+              <button class="task-row" role="option" aria-selected="false" data-state="unknown" data-id="import-55ac10" data-detail="d4"><span class="glyph" aria-hidden="true">!</span><span><span class="tname">待确认 · 上传导入</span><span class="tsub">default · 网页 · 状态未知（服务重启）</span></span><time class="mono">09-26 22:41</time></button>
+              <button class="task-row" role="option" aria-selected="false" data-state="done" data-id="snapshot-0c31f7" data-detail="d5"><span class="glyph" aria-hidden="true">✓</span><span><span class="tname">完成 · 快照还原</span><span class="tsub">default · MCP · 已还原至 09-25 08:00</span></span><time class="mono">09-25 09:12</time></button>
+              <button class="task-row" role="option" aria-selected="false" data-state="cancelled" data-id="import-90ff22" data-detail="d6"><span class="glyph" aria-hidden="true">–</span><span><span class="tname">已取消 · 上传导入</span><span class="tsub">wiki · 网页 · 用户在扫描阶段取消</span></span><time class="mono">09-24 15:37</time></button>
+            </div>
+          </section>
+
+          <aside class="panel" style="align-self:start;position:sticky;top:80px" aria-label="任务详情">
+            <header class="panel-head"><div class="panel-heading"><span class="panel-kicker">DETAIL · <span class="mono" id="detailId">import-8f21c4</span></span><span class="panel-title" id="detailTitle">上传导入</span></div><span class="badge accent" id="detailBadge">运行中</span></header>
+            <div class="panel-body">
+              <div class="detail-grid" id="d-d1">
+                <div><span class="k">SCOPE · 来源</span><div class="v"><span class="mono">default</span> · 网页</div></div>
+                <div><span class="k">阶段 · 进度</span><div class="v">上传中 · <span class="num">38%</span></div><div class="bar" style="margin-top:6px"><i style="width:38%"></i></div><span class="mono" style="font-size:var(--font-xs);color:var(--color-subtle)">第 2/5 批 · 480/1240 个文件 · 8.1/47.2 MB</span></div>
+                <div><span class="k">开始 / 结束</span><div class="v mono">10:49 / —</div></div>
+                <div><span class="k">操作</span><div class="v" style="display:flex;gap:8px"><a class="btn small danger-ghost" href="#/import">取消并回导入页</a></div></div>
+              </div>
+              <div class="detail-grid hidden" id="d-d2">
+                <div><span class="k">SCOPE · 来源</span><div class="v"><span class="mono">wiki</span> · MCP</div></div>
+                <div><span class="k">阶段 · 进度</span><div class="v">导入失败 · <span class="num">60%</span></div><div class="bar" data-tone="danger" style="margin-top:6px"><i style="width:60%"></i></div></div>
+                <div><span class="k">开始 / 结束</span><div class="v mono">09-28 15:40 / 16:02</div></div>
+                <div class="detail-error">ErrorBatch 3/5: embed HTTP 504（重试 2 次）</div>
+                <div class="suggest">建议：确认 embedding 服务在线后执行 <span class="mono">ki scan-kb rebuild-vector wiki</span>；或在导入页重试该批次。</div>
+                <div><span class="k">操作</span><div class="v" style="display:flex;gap:8px"><a class="btn small" href="#/import">重试批次</a><a class="btn small ghost" href="#/search?scope=wiki">搜索验证</a></div></div>
+              </div>
+              <div class="detail-grid hidden" id="d-d3">
+                <div><span class="k">SCOPE · 来源</span><div class="v"><span class="mono">ai-docs</span> · 网页</div></div>
+                <div><span class="k">阶段 · 进度</span><div class="v">导入完成 · <span class="num">100%</span></div><div class="bar" data-tone="success" style="margin-top:6px"><i style="width:100%"></i></div></div>
+                <div><span class="k">统计</span><div class="v">已处理 <span class="num">1240</span> 个分片 / <span class="num">1186</span> 个向量化 · 错误 <span class="num">0</span> · 同名冲突 <span class="num">5</span></div></div>
+                <div><span class="k">开始 / 结束</span><div class="v mono">09-27 16:11 / 17:03</div></div>
+                <div><span class="k">操作</span><div class="v" style="display:flex;gap:8px"><a class="btn small ghost" href="#/search?scope=ai-docs">前往搜索验证</a></div></div>
+              </div>
+              <div class="detail-grid hidden" id="d-d4">
+                <div><span class="k">SCOPE · 来源</span><div class="v"><span class="mono">default</span> · 网页</div></div>
+                <div><span class="k">状态</span><div class="v">任务状态待确认：服务在批次 4/5 期间重启，凭据已恢复但结果未知。</div></div>
+                <div class="suggest">建议：先到浏览页确认最后批次文档是否落库，再决定是否重新上传（同 sourcePath 幂等覆盖，不会产生重复）。</div>
+                <div><span class="k">开始 / 结束</span><div class="v mono">09-26 22:31 / —</div></div>
+                <div><span class="k">操作</span><div class="v" style="display:flex;gap:8px"><a class="btn small" href="../knowledge-workbench/index.html">去浏览页确认</a></div></div>
+              </div>
+              <div class="detail-grid hidden" id="d-d5">
+                <div><span class="k">SCOPE · 来源</span><div class="v"><span class="mono">default</span> · MCP</div></div>
+                <div><span class="k">结果</span><div class="v">已还原至快照 <span class="mono">snap-0925-0800</span></div></div>
+                <div><span class="k">开始 / 结束</span><div class="v mono">09-25 09:10 / 09:12</div></div>
+              </div>
+              <div class="detail-grid hidden" id="d-d6">
+                <div><span class="k">SCOPE · 来源</span><div class="v"><span class="mono">wiki</span> · 网页</div></div>
+                <div><span class="k">结果</span><div class="v">已取消 · 未写入任何文档</div></div>
+                <div class="suggest">提示：重新开始只会处理剩余未导入文件（幂等）。</div>
+                <div><span class="k">开始 / 结束</span><div class="v mono">09-24 15:35 / 15:37</div></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="state" data-state="loading">
+        <section class="panel"><header class="panel-head"><div class="panel-heading"><span class="panel-kicker">JOBS</span><span class="panel-title">任务记录</span></div><span class="count">正在读取任务…</span></header><div class="panel-body stack" aria-hidden="true"><span class="skeleton" style="height:44px"></span><span class="skeleton" style="height:44px"></span><span class="skeleton" style="height:44px"></span></div></section>
+      </div>
+      <div class="state" data-state="empty">
+        <section class="panel"><div class="panel-body empty-state"><span class="halo"><svg class="icon"><use href="#i-tasks"/></svg></span><h3>暂无任务</h3><p>导入、向量重建、快照还原都会在这里留痕。</p><a class="btn" href="#/import">上传文档<svg class="icon small"><use href="#i-arrow-right"/></svg></a></div></section>
+      </div>
+      <div class="state" data-state="error">
+        <div class="stack">
+          <div class="banner danger" role="alert"><svg class="icon"><use href="#i-warn"/></svg><div style="flex:1"><strong>无法读取后台任务。</strong>请检查服务连接和数据目录权限。</div><button class="btn small ghost" id="taskRetry" type="button"><svg class="icon tiny"><use href="#i-refresh"/></svg>重试</button></div>
+          <div class="empty-state"><p>任务凭据保存在本页与会话中；重试成功后恢复列表。</p></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="doc-drawer" id="docDrawer" role="dialog" aria-modal="true" aria-label="原文" hidden>
+  <header class="panel-head"><button class="icon-button" id="drawerBack" aria-label="返回目录"><svg class="icon"><use href="#i-back"/></svg></button><div class="panel-heading"><span class="panel-kicker">READER</span><span class="panel-title" id="drawerTitle">MCP服务专家</span></div><span class="count"><button class="icon-button" aria-label="后退">←</button><button class="icon-button" aria-label="前进">→</button><button class="icon-button" id="drawerClose" aria-label="关闭"><svg class="icon"><use href="#i-x"/></svg></button></span></header>
+  <div class="reader reader-body" style="flex:1"><p class="reader-path">default / 专题记忆 / MCP服务专家</p><h2>MCP服务专家</h2><p>MCP 服务把知识检索与文档读取能力提供给外部客户端，是 ki 对外的统一入口：scope 级检索、关联查询、文档深链。</p></div>
+</div>
+<script>
+/* ================= v3 demo 交互脚本：仅演示，不接真实后端 ================= */
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var VIEWS={dashboard:'总览',search:'语义搜索',import:'上传导入',write:'知识写入',tasks:'后台任务'};
+var curScope='default';
+
+/* ---------- hash 路由 + 深链 ---------- */
+function parseHash(){
+  var h=location.hash.replace(/^#\//,''),q={};
+  var seg=h.split('?');
+  var qs=seg[1];
+  if(qs){qs.split('&').forEach(function(kv){var p=kv.split('=');q[decodeURIComponent(p[0])]=decodeURIComponent(p[1]||'')})}
+  return {view:VIEWS[seg[0]]?seg[0]:'dashboard',q:q};
+}
+function route(){
+  var r=parseHash();
+  $$('.view').forEach(function(v){v.classList.toggle('is-active',v.id==='view-'+r.view)});
+  $$('.nav-item[data-view]').forEach(function(a){
+    var on=a.dataset.view===r.view;a.classList.toggle('active',on);
+    if(on){a.setAttribute('aria-current','page')}else{a.removeAttribute('aria-current')}
+  });
+  $('#crumb').innerHTML='ki 知识库 · <strong>'+VIEWS[r.view]+'</strong>';
+  document.title='知识工作台 · '+VIEWS[r.view]+' · ki UI demo';
+  closeSidebar();
+  if(r.view==='search'&&r.q.q!=null){$('#searchInput').value=r.q.q;if(r.q.scope){setScope(r.q.scope)}runSearch(true)}
+  if(r.view==='tasks'&&r.q.id){var row=$('.task-row[data-id="'+r.q.id+'"]');if(row){selectTask(row)}}
+  if(r.view==='import'&&r.q.scope){setScope(r.q.scope);$('#impScope').value=r.q.scope}
+  if(r.view==='write'&&r.q.group){$('#wGroup').value=r.q.group}
+  window.scrollTo(0,0);
+}
+/* 直接点击路由：部分内嵌预览（IDE webview）点击锚点后不派发 hashchange，
+   故点击后无条件 route()；用标志位让真实 hashchange 去重，避免双触发 */
+var routedByClick=false;
+window.addEventListener('hashchange',function(){
+  if(routedByClick){routedByClick=false;return}
+  route();
+});
+document.addEventListener('click',function(e){
+  if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0)return;/* 修饰键/中键留给浏览器默认（新标签打开等） */
+  var a=e.target&&e.target.closest?e.target.closest('a'):null;
+  if(!a)return;
+  var href=a.getAttribute('href')||'';
+  if(href.indexOf('#/')!==0)return;/* 跨文件链接（浏览页 demo）不拦截 */
+  e.preventDefault();
+  if(location.hash!==href){
+    routedByClick=true;location.hash=href;
+    setTimeout(function(){routedByClick=false},0);/* webview 吞事件时复位 */
+  }
+  route();
+});
+
+/* ---------- scope 顶栏切换（demo 内循环） ---------- */
+function setScope(s){curScope=s;$('#scopeName').textContent=s;$$('[data-current-scope]').forEach(function(n){n.textContent=s})}
+$('#scopePill').addEventListener('click',function(){
+  var order=['default','ai-docs','wiki'];
+  setScope(order[(order.indexOf(curScope)+1)%order.length]);
+});
+
+/* ---------- 主题（明/暗成对 token，真实 AppShell 有同款切换） ---------- */
+var KEY='ki-v3-theme';
+function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem(KEY,t)}catch(e){}}
+try{var st=localStorage.getItem(KEY);if(st==='dark'){setTheme('dark')}}catch(e){}
+$('#themeBtn').addEventListener('click',function(){setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')});
+
+/* ---------- 侧栏抽屉（<960px） ---------- */
+function mq(){return window.matchMedia('(max-width:959.98px)').matches}
+function openSidebar(){var s=$('#sidebar'),c=$('#scrim');s.classList.add('is-open');c.hidden=false;c.classList.add('is-open');$('#menuBtn').setAttribute('aria-expanded','true')}
+function closeSidebar(){var s=$('#sidebar'),c=$('#scrim');if(mq()){s.classList.remove('is-open');c.classList.remove('is-open');c.hidden=true;$('#menuBtn').setAttribute('aria-expanded','false')}else{s.classList.add('is-open')}}
+$('#menuBtn').addEventListener('click',function(){openSidebar();$('#searchInput').focus()});
+$('#scrim').addEventListener('click',function(){closeSidebar();$('#menuBtn').focus()});
+if(!mq()){$('#sidebar').classList.add('is-open')}else{closeSidebar()}
+window.addEventListener('resize',function(){if(!mq()){$('#sidebar').classList.add('is-open');var c=$('#scrim');c.classList.remove('is-open');c.hidden=true}else{closeSidebar()}});
+
+/* ---------- 演示态切换器（demo-only） ---------- */
+$$('.view').forEach(function(v){
+  var btns=$$('.mode-switch button',v);
+  btns.forEach(function(b){b.addEventListener('click',function(){
+    v.dataset.mode=b.dataset.mode;
+    btns.forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+  })});
+});
+
+/* ---------- P2 搜索 ---------- */
+var searchBtn=$('#searchBtn');
+function runSearch(fast){
+  var v=$('#view-search');v.dataset.mode='loading';
+  $$('.mode-switch button',v).forEach(function(x){x.setAttribute('aria-pressed',x.dataset.mode==='loading'?'true':'false')});
+  searchBtn.disabled=true;searchBtn.textContent='搜索中…';
+  setTimeout(function(){
+    v.dataset.mode='ok';
+    $$('.mode-switch button',v).forEach(function(x){x.setAttribute('aria-pressed',x.dataset.mode==='ok'?'true':'false')});
+    searchBtn.disabled=false;searchBtn.textContent='搜索';
+  },fast?200:600);
+}
+$('#searchForm').addEventListener('submit',function(e){e.preventDefault();if($('#searchInput').value.trim()){runSearch(false)}});
+$('#tagChips').addEventListener('click',function(e){
+  var b=e.target.closest('.chip');if(!b)return;
+  $$('#tagChips .chip').forEach(function(x){x.setAttribute('aria-pressed','false')});
+  b.setAttribute('aria-pressed','true');
+  var tag=b.dataset.tag;
+  $$('#resultList .result-card').forEach(function(c){c.classList.toggle('hidden',tag&&c.dataset.tag!==tag)});
+});
+$('#thRange').addEventListener('input',function(){$('#thVal').textContent=(+this.value).toFixed(3)});
+$('#fulltextSwitch').addEventListener('change',function(){
+  var on=this.checked;
+  $('#thRange').disabled=on;$('#timeout').disabled=on;
+  $('#modeHint').textContent=on?'仅全文，不调用 embedding':'语义 + 全文';
+});
+$$('.history-row button[data-q]').forEach(function(b){b.addEventListener('click',function(){$('#searchInput').value=this.dataset.q;runSearch(false)})});
+$('#clearHistory').addEventListener('click',function(){$$('.history-row button[data-q]').forEach(function(b){b.classList.add('hidden')})});
+$('#retryFulltext').addEventListener('click',function(){
+  $('#fulltextSwitch').checked=true;$('#fulltextSwitch').dispatchEvent(new Event('change'));
+  $('#view-search').dataset.mode='ok';
+});
+var DOCS={'mcp-expert':{main:true,name:'MCP服务专家',path:'专题记忆 / MCP服务专家'},'fe-expert':{main:false,name:'可视化前端专家',path:'专题记忆 / 可视化前端专家'},'rag-flow':{main:true,name:'MCP服务专家',path:'专题记忆 / MCP服务专家'},'mcp-http':{main:true,name:'MCP服务专家',path:'专题记忆 / MCP服务专家'},'scope-store':{main:false,name:'可视化前端专家',path:'专题记忆 / 可视化前端专家'}};
+function openDoc(card){
+  var key=DOCS[card.dataset.doc]?card.dataset.doc:'mcp-expert';
+  $('#readerRail .panel-kicker').textContent='READER · '+DOCS[key].path;
+  $$('#resultList .result-card').forEach(function(c){c.classList.toggle('selected',c===card)});
+  $('#railReader').classList.toggle('hidden',!DOCS[key].main);
+  $('#railReaderAlt').classList.toggle('hidden',DOCS[key].main);
+  $('#railClose').classList.remove('hidden');
+  $('#readerRail').classList.remove('hidden');
+  $('#drawerTitle').textContent=DOCS[key].name;
+  if(window.matchMedia('(max-width:1199.98px)').matches){openDrawer()}
+}
+$$('#resultList .open-doc').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openDoc(b.closest('.result-card'))})});
+$$('#resultList .result-card').forEach(function(c){c.addEventListener('click',function(){openDoc(c)})});
+$('#railClose').addEventListener('click',function(){$('#readerRail').classList.add('hidden')});
+function openDrawer(){var d=$('#docDrawer');d.hidden=false;requestAnimationFrame(function(){d.classList.add('is-open')});$('#drawerBack').focus()}
+function closeDrawer(){var d=$('#docDrawer');d.classList.remove('is-open');setTimeout(function(){d.hidden=true},250)}
+$('#drawerBack').addEventListener('click',closeDrawer);
+$('#drawerClose').addEventListener('click',closeDrawer);
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){closeDrawer();closeSidebar()}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='f'){
+    var d=$('#docDrawer');if(!d.hidden)return;
+    e.preventDefault();if(location.hash.indexOf('search')<0){location.hash='#/search';route()}setTimeout(function(){$('#searchInput').focus()},50);
+  }
+});
+/* 跨 demo 深链契约（方案文档 §9）：基线浏览 demo 暂不支持 group 参数，先提示后跳转 */
+$$('#resultList [data-browse-group]').forEach(function(b){b.addEventListener('click',function(e){
+  e.stopPropagation();
+  var g=b.dataset.browseGroup;
+  var url='../knowledge-workbench/index.html#/browse?scope='+encodeURIComponent(curScope)+'&group='+encodeURIComponent(g);
+  var note=document.createElement('div');
+  note.className='banner info';note.setAttribute('role','status');
+  note.innerHTML='<svg class="icon"><use href="#i-ext"/></svg><div>按深链契约跳转浏览页：<span class="mono">'+url.split('#')[1]+'</span>。基线 demo 尚未支持 group 参数，将落在根目录（正式页面迁移时实现自动展开与定位）。</div>';
+  $('#resultList').before(note);
+  setTimeout(function(){note.remove()},1800);
+  window.open(url,'_blank');
+})});
+
+/* ---------- P3 导入 ---------- */
+$('#impConflict').addEventListener('change',function(){$('#impSuffix').disabled=this.value!=='suffix'});
+var rail={idle:$('#railIdle'),prog:$('#railProgress'),done:$('#railDone')};
+var railBar=$('#railBar'),railPct=$('#railPct'),railPhase=$('#railPhase'),railBadge=$('#railBadge'),railDetail=$('#railDetail'),entry=$('#taskEntry');
+function setBadge(txt,cls){railBadge.className='badge '+cls;railBadge.textContent=txt}
+function showEntry(state,txt){entry.classList.remove('hidden');entry.dataset.state=state;$('.txt',entry).innerHTML='<span class="mono">'+curScope+'</span> · '+txt;$('.glyph',entry).textContent={running:'↻',done:'✓',failed:'!',unknown:'!'}[state==='failed'?'failed':state]||'↻'}
+var timers=[];
+function clearTimers(){timers.forEach(clearInterval);timers=[]}
+$('#startImport').addEventListener('click',function(){
+  clearTimers();
+  rail.idle.classList.add('hidden');rail.done.classList.add('hidden');rail.prog.classList.remove('hidden');
+  railBar.classList.add('indeterminate');railBar.removeAttribute('data-tone');railBar.removeAttribute('style');
+  setBadge('读取目录中','warn');railPhase.textContent='读取目录中…';railPct.textContent='—';railDetail.textContent='扫描扩展名白名单与被引用附件';
+  showEntry('running','读取目录中…');
+  $('#importNote').textContent='任务在切页后继续（ImportPage 常驻挂载）';
+  timers.push(setTimeout(function(){
+    railBar.classList.remove('indeterminate');
+    setBadge('上传中','accent');railPhase.textContent='上传中';
+    var p=0;
+    var up=setInterval(function(){
+      p+=7;if(p>=38){p=38;clearInterval(up);
+        timers.push(setTimeout(function(){
+          railPhase.textContent='导入中';setBadge('导入中','accent');
+          var q=38;
+          var im=setInterval(function(){
+            q+=11;if(q>=100){q=100;clearInterval(im);
+              railBar.removeAttribute('data-tone');railBar.className='bar';$('#railBar i').style.width='100%';
+              setBadge('导入完成','success');rail.prog.classList.add('hidden');rail.done.classList.remove('hidden');
+              showEntry('done','导入完成');
+              $('#startImport').textContent='开始导入';$('#startImport').disabled=false;
+            }else{$('#railBar i').style.width=q+'%';railPct.textContent=q+'%';railDetail.textContent=(600+Math.round(q*6))+'/1240 个处理单元（'+q+'%）'}
+          },180);
+          timers.push(im);
+        },400));
+      }
+      $('#railBar i').style.width=p+'%';railPct.textContent=p+'%';
+      railDetail.textContent='第 2/5 批 · '+Math.round(p*12.4)+'/1240 个文件 · '+(p*0.47).toFixed(1)+'/47.2 MB';
+      showEntry('running','上传中 '+Math.round(p*12.4)+'/1240');
+      $('#startImport').disabled=true;$('#startImport').textContent='上传中…';
+    },160);
+    timers.push(up);
+  },1000));
+});
+$('#cancelImport').addEventListener('click',function(){
+  clearTimers();
+  rail.prog.classList.add('hidden');rail.idle.classList.remove('hidden');
+  setBadge('已取消','neutral');showEntry('failed','导入已取消');
+  $('#importNote').textContent='已取消 · 重新开始仅处理剩余文件（幂等）';
+  $('#startImport').textContent='开始导入';$('#startImport').disabled=false;
+});
+$('#retryBatch').addEventListener('click',function(){
+  var v=$('#view-import');v.dataset.mode='loading';
+  $$('.mode-switch button',v).forEach(function(x){x.setAttribute('aria-pressed',x.dataset.mode==='loading'?'true':'false')});
+});
+
+/* ---------- P4 写入 ---------- */
+var RE_SCOPE=/^[a-zA-Z0-9_-]*$/,RE_PATHBAD=/[\/\\]|\.\./;
+function fieldErr(wrap,input,msg){
+  var e=$('.err',wrap);
+  if(msg){wrap.classList.add('has-error');e.hidden=false;e.textContent=msg;input.setAttribute('aria-invalid','true')}
+  else{wrap.classList.remove('has-error');e.hidden=true;e.removeAttribute('hidden');input.removeAttribute('aria-invalid')}
+}
+function validateWrite(){
+  var ok=true;
+  var s=$('#wScope'),g=$('#wGroup'),r=$('#wRel');
+  if(!RE_SCOPE.test(s.value)||s.value==='__global__'){fieldErr($('#fScope'),s,'Scope 仅允许 [a-zA-Z0-9_-]，__global__ 为保留字');ok=false}else fieldErr($('#fScope'),s,'');
+  if(RE_PATHBAD.test(g.value)){fieldErr($('#fGroup'),g,'Group 禁止包含 / 与 \\ 以外的 .. 等非法片段');ok=false}else fieldErr($('#fGroup'),g,'');
+  if(RE_PATHBAD.test(r.value)){fieldErr($('#fRel'),r,'Relation 禁止包含 / 与 \\');ok=false}else fieldErr($('#fRel'),r,'');
+  return ok;
+}
+['wScope','wGroup','wRel'].forEach(function(id){$('#'+id).addEventListener('input',validateWrite)});
+$$('.editor-card .seg button').forEach(function(b){b.addEventListener('click',function(){
+  var c=$('#editorCard');c.dataset.tab=b.dataset.tab;
+  $$('.editor-card .seg button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+})});
+$('#saveWrite').addEventListener('click',function(){
+  var btn=this;
+  if(!validateWrite())return;
+  if(!$('#wGroup').value||!$('#wRel').value||!$('#editorTextarea').value.trim()){
+    var v=$('#view-write');v.dataset.mode='error';
+    $$('.mode-switch button',v).forEach(function(x){x.setAttribute('aria-pressed',x.dataset.mode==='error'?'true':'false')});
+    return;
+  }
+  btn.disabled=true;btn.textContent='保存中…';
+  setTimeout(function(){
+    btn.disabled=false;btn.textContent='保存';
+    var extra=$('#wVec').checked?'':'（未向量化）';
+    $('#writeOkText').textContent='写入成功'+extra+'（标签：运维）';
+    $('#writeOk').classList.remove('hidden');
+    $('#wGroup').value='';$('#wRel').value='';$('#editorTextarea').value='';
+    setTimeout(function(){$('#writeOk').classList.add('hidden')},4000);
+  },700);
+});
+$('#clearWrite').addEventListener('click',function(){
+  $('#wGroup').value='';$('#wRel').value='';$('#editorTextarea').value='';$('#writeOk').classList.add('hidden');
+  ['fScope','fGroup','fRel'].forEach(function(id){var w=$('#'+id);w.classList.remove('has-error');var e=$('.err',w);if(e){e.hidden=true}});
+});
+
+/* ---------- P5 任务 ---------- */
+var ST={running:{glyph:'↻',badge:'运行中',cls:'accent'},done:{glyph:'✓',badge:'已完成',cls:'success'},failed:{glyph:'!',badge:'失败',cls:'danger'},unknown:{glyph:'!',badge:'待确认',cls:'warn'},cancelled:{glyph:'–',badge:'已取消',cls:'neutral'}};
+function selectTask(row){
+  $$('.task-row').forEach(function(r){r.setAttribute('aria-selected',r===row?'true':'false')});
+  var s=ST[row.dataset.state];
+  $('#detailId').textContent=row.dataset.id;
+  $('#detailTitle').textContent=$('.tname',row).textContent.split('· ')[1]||'任务';
+  $('#detailBadge').className='badge '+s.cls;$('#detailBadge').textContent=s.badge;
+  $$('.detail-grid').forEach(function(d){d.classList.add('hidden')});
+  var dd=$('#d-'+row.dataset.detail);if(dd){dd.classList.remove('hidden')}
+}
+$('#taskList').addEventListener('click',function(e){var row=e.target.closest('.task-row');if(row){selectTask(row)}});
+$$('.tabs [data-filter]').forEach(function(t){t.addEventListener('click',function(){
+  $$('.tabs [data-filter]').forEach(function(x){x.setAttribute('aria-selected',x===t?'true':'false')});
+  var f=t.dataset.filter;
+  $$('.task-row').forEach(function(r){
+    var s=r.dataset.state,show=f==='all'||(f==='running'&&s==='running')||(f==='failed'&&(s==='failed'||s==='unknown'))||(f==='done'&&(s==='done'||s==='cancelled'));
+    r.classList.toggle('hidden',!show);
+  });
+})});
+$('#taskRetry').addEventListener('click',function(){
+  var v=$('#view-tasks');v.dataset.mode='ok';
+  $$('.mode-switch button',v).forEach(function(x){x.setAttribute('aria-pressed',x.dataset.mode==='ok'?'true':'false')});
+});
+
+/* ---------- 启动 ---------- */
+if(!location.hash){location.hash='#/dashboard'}
+route();
+})();
+</script>
+</body>
+</html>
