@@ -1,0 +1,144 @@
+{
+  "requirements": {
+    "2026-09-28-上传导入跨页面任务与暂存清理": {
+      "id": "REQ-20260928-001",
+      "feature": "上传导入跨页面任务与暂存清理",
+      "created": "2026-09-28 21:49:44",
+      "updated": "2026-09-28 23:18:03",
+      "status": "已确认",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "确认最后一批自动启动导入、未完成暂存目录惰性清理及已导入源目录保留",
+        "2026-09-28 23:11:00 v3: 完成代码审查（深度模式，发现 1 项 P0 + 8 项 P1）",
+        "2026-09-28 23:18:03 v4: 修复 review 的 P0-1 与 P1-1/2/3（恢复流程状态机），更新 review/code-review.md"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-09-29-批量向量化故障止损与全局状态提示": {
+      "id": "REQ-20260929-001",
+      "feature": "批量向量化故障止损与全局状态提示",
+      "created": "2026-09-29 21:35:24",
+      "updated": "2026-09-29 22:16:39",
+      "status": "草案",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 7,
+      "depends_on": [
+        "REQ-20260928-001"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-09-29 21:39:08 v3: 关联跨页面导入任务需求，补充向量化止损与顶部状态反馈",
+        "2026-09-29 21:57:35 v4: 补充 CLI/Web 统一任务发现、后台任务中心及 UI 预览草案",
+        "2026-09-29 22:07:29 v6: 新增简版实现方案：故障止损、共享任务状态、顶部诊断与任务页",
+        "2026-09-29 22:16:39 v7: auto-review 修订简版方案：补足故障传递、重建安全提交、任务终态、非阻塞诊断与任务登记保证，并记录静态审查结论"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/ui-design.md",
+          "type": "design"
+        },
+        {
+          "path": "demo/vector-status/index.html",
+          "type": "demo"
+        },
+        {
+          "path": "design/实现方案-简版.md",
+          "type": "design"
+        },
+        {
+          "path": "review/auto-review-简版方案.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-09-30-AI对话工具化与可配置提示词": {
+      "id": "REQ-20260930-001",
+      "feature": "AI对话工具化与可配置提示词",
+      "created": "2026-09-30 09:19:31",
+      "updated": "2026-09-30 09:20:52",
+      "status": "草案",
+      "tags": [
+        "feat",
+        "ai"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-09-30 09:20:32 v2: 创建需求：M1 需求报告 + 配置层 UI 方案 + demo + 批次台账；批次 1 工作项 1（配置模型与存储 prompt-config）已完成并通过 19 条单测"
+      ],
+      "commits": [
+        "cb37f28",
+        "fabd5fd",
+        "0595646"
+      ],
+      "branch": "feat/sidebar-ai-chat",
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/ui-design.md",
+          "type": "design"
+        },
+        {
+          "path": "design/评估-LangChain采纳.md",
+          "type": "design"
+        },
+        {
+          "path": "demo/chat-tools-config/index.html",
+          "type": "demo"
+        },
+        {
+          "path": "progress/plan.md",
+          "type": "progress"
+        },
+        {
+          "path": "progress/checklist.md",
+          "type": "progress"
+        },
+        {
+          "path": "HANDOFF.md",
+          "type": "handoff"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    }
+  },
+  "id_counters": {
+    "REQ-20260928": 1,
+    "REQ-20260929": 1,
+    "REQ-20260930": 1
+  }
+}
