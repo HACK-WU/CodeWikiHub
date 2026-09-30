@@ -164,11 +164,75 @@
       "role": "standalone",
       "parent_id": null,
       "child_ids": []
+    },
+    "2026-09-30-单Scope大规模数据存储与导入可用性": {
+      "id": "REQ-20260930-002",
+      "feature": "单Scope大规模数据存储与导入可用性",
+      "created": "2026-09-30 12:22:52",
+      "updated": "2026-09-30 12:24:41",
+      "status": "草案",
+      "tags": [
+        "feat",
+        "performance"
+      ],
+      "version": 2,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-09-30 12:24:41 v2: 落盘单 Scope 百万 chunk 存储与导入可用性需求草案"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-09-30-知识库浏览工作台 Demo": {
+      "id": "REQ-20260930-003",
+      "feature": "知识库浏览工作台 Demo",
+      "created": "2026-09-30 17:31:11",
+      "updated": "2026-09-30 17:32:15",
+      "status": "已确认",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-09-30 17:32:12 v2: 保存知识库浏览工作台需求、设计与 Demo"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/ui-design.md",
+          "type": "design"
+        },
+        {
+          "path": "demo/knowledge-workbench/index.html",
+          "type": "demo"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
     }
   },
   "id_counters": {
     "REQ-20260928": 2,
     "REQ-20260929": 1,
-    "REQ-20260930": 1
+    "REQ-20260930": 3
   }
 }

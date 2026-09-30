@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ki 知识库浏览页的独立视觉设计 demo">
+  <title>知识工作台 · ki UI demo</title>
+  <style>
+    :root {
+      --color-canvas: #f5f6f3;
+      --color-surface: #ffffff;
+      --color-surface-soft: #f9faf8;
+      --color-sidebar: #f0f2ee;
+      --color-ink: #202b27;
+      --color-muted: #4e5f56;
+      --color-subtle: #61716a;
+      --color-line: #e1e7e1;
+      --color-line-strong: #c8d3c9;
+      --color-accent: #2d6755;
+      --color-accent-hover: #23513f;
+      --color-accent-soft: #e8f3ed;
+      --color-success: #2a8055;
+      --color-danger: #b14e49;
+      --color-focus: #3e765e;
+      --color-scrim: rgba(20, 38, 27, .28);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+      --font-xs: 11px;
+      --font-sm: 12px;
+      --font-base: 14px;
+      --font-lg: 17px;
+      --font-xl: 22px;
+      --font-hero: 32px;
+      --font-reader: 26px;
+      --font-count: 16px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-7: 32px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-tag: 4px;
+      --shadow-panel: 0 10px 32px rgba(26, 58, 41, .045);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--color-canvas); color: var(--color-ink); font: var(--font-base)/1.6 var(--font-sans); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .62; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .skip-link { position: fixed; top: -50px; left: var(--space-4); z-index: 60; padding: var(--space-2) var(--space-4); background: var(--color-accent); color: var(--color-surface); border-radius: var(--radius-sm); }
+    .skip-link:focus { top: var(--space-3); }
+    .icon { width: 18px; height: 18px; flex: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .icon.small { width: 15px; height: 15px; }
+    .app { min-height: 100dvh; }
+
+    /* Navigation */
+    .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; display: flex; flex-direction: column; width: 248px; padding: var(--space-6) var(--space-3) var(--space-4); background: var(--color-sidebar); border-right: 1px solid var(--color-line); transform: translateX(-100%); transition: transform .25s ease; }
+    .sidebar.is-open { transform: translateX(0); }
+    .brand { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3) var(--space-7); }
+    .brand-mark { display: grid; place-items: center; width: 35px; height: 35px; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-surface); font-size: 17px; font-weight: 700; letter-spacing: -.08em; }
+    .brand-title { display: block; font-size: var(--font-count); font-weight: 700; letter-spacing: -.04em; line-height: 1.1; }
+    .brand-subtitle { display: block; margin-top: 3px; color: var(--color-muted); font: var(--font-xs)/1.2 var(--font-mono); letter-spacing: .06em; }
+    .nav-label { padding: 0 var(--space-3); color: var(--color-subtle); font-size: var(--font-xs); font-weight: 700; letter-spacing: .12em; }
+    .primary-nav { display: grid; gap: 3px; margin-top: var(--space-3); }
+    .nav-item { display: flex; align-items: center; gap: var(--space-3); height: 42px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--color-muted); font-weight: 500; white-space: nowrap; }
+    .nav-item .icon { color: var(--color-muted); }
+    .nav-item.active { position: relative; background: var(--color-accent-soft); color: var(--color-accent); font-weight: 650; }
+    .nav-item.active .icon { color: var(--color-accent); }
+    .nav-item.active::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; background: var(--color-accent); border-radius: 0 3px 3px 0; }
+    .sidebar-foot { margin-top: auto; padding: var(--space-4) var(--space-3) 0; border-top: 1px solid var(--color-line); }
+    .sidebar-foot strong { display: block; font-size: var(--font-sm); font-weight: 650; }
+    .sidebar-foot span { color: var(--color-subtle); font: var(--font-xs) var(--font-mono); }
+    .mobile-scrim { position: fixed; inset: 0; z-index: 35; background: var(--color-scrim); border: 0; visibility: hidden; opacity: 0; transition: opacity .25s ease, visibility .25s ease; }
+    .mobile-scrim.is-open { visibility: visible; opacity: 1; }
+
+    /* Shell */
+    .main-shell { min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); height: 63px; padding: 0 var(--space-5); border-bottom: 1px solid var(--color-line); background: var(--color-surface); }
+    .topbar-left, .topbar-right { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+    .topbar-right { justify-content: flex-end; }
+    .breadcrumb { overflow: hidden; color: var(--color-muted); font-size: var(--font-sm); text-overflow: ellipsis; white-space: nowrap; }
+    .breadcrumb strong { color: var(--color-ink); font-weight: 650; }
+    .breadcrumb-separator { margin: 0 var(--space-2); color: var(--color-subtle); }
+    .icon-button { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--color-muted); transition: background .2s ease, color .2s ease, border-color .2s ease; }
+    .icon-button:hover { background: var(--color-surface-soft); border-color: var(--color-line); color: var(--color-ink); }
+    #tree-collapse[data-action="expand"] { background: var(--color-accent-soft); color: var(--color-accent); }
+    .menu-button { flex: none; }
+    .scope-pill, .service-pill { display: inline-flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-3); border: 1px solid var(--color-line); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-muted); font-size: var(--font-sm); white-space: nowrap; }
+    .scope-pill strong { color: var(--color-ink); font: 600 var(--font-sm) var(--font-mono); }
+    .service-pill { display: none; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-success); box-shadow: 0 0 0 3px var(--color-accent-soft); }
+    .page { width: min(100%, 1600px); margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-7); }
+    .eyebrow { margin: 0 0 var(--space-2); color: var(--color-accent); font: 700 var(--font-xs)/1.3 var(--font-mono); letter-spacing: .13em; }
+    .page-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-6); }
+    .page-intro h1 { margin: 0; font-size: var(--font-hero); font-weight: 680; line-height: 1.25; letter-spacing: -.055em; }
+    .page-intro p { margin: var(--space-2) 0 0; color: var(--color-muted); }
+    .intro-summary { display: none; gap: var(--space-5); padding-bottom: var(--space-1); color: var(--color-muted); font-size: var(--font-sm); white-space: nowrap; }
+    .intro-summary strong { margin-right: var(--space-1); color: var(--color-ink); font: 650 var(--font-count) var(--font-mono); }
+
+    /* Shared panel */
+    .workspace { display: grid; gap: var(--space-3); min-width: 0; }
+    .panel { min-width: 0; overflow: hidden; border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: var(--color-surface); }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 62px; padding: 0 var(--space-5); border-bottom: 1px solid var(--color-line); }
+    .panel-heading { min-width: 0; }
+    .panel-kicker { display: block; color: var(--color-subtle); font: 600 var(--font-xs)/1.2 var(--font-mono); letter-spacing: .08em; }
+    .panel-title { display: block; margin-top: 3px; font-size: var(--font-lg); font-weight: 680; letter-spacing: -.025em; }
+    .panel-actions { display: flex; align-items: center; gap: 2px; }
+    .count { color: var(--color-subtle); font: 500 var(--font-sm) var(--font-mono); }
+
+    /* Group tree */
+    .tree-panel { display: flex; flex-direction: column; }
+    .tree-body { max-height: 230px; overflow: auto; padding: var(--space-3) var(--space-2) var(--space-4); }
+    .tree-note { margin: auto 0 0; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-line); color: var(--color-subtle); font-size: var(--font-sm); }
+
+    /* Search and filter controls */
+    .search-wrap { position: relative; flex: 1 1 190px; }
+    .search-wrap .icon { position: absolute; top: 50%; left: 12px; color: var(--color-subtle); transform: translateY(-50%); }
+    .search-input, .tag-select { height: 38px; border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink); outline: none; transition: border-color .2s ease, box-shadow .2s ease; }
+    .search-input { width: 100%; padding: 0 var(--space-3) 0 38px; }
+    .search-input::placeholder { color: var(--color-subtle); }
+    .search-input:focus, .tag-select:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); }
+    .tag-control { position: relative; display: inline-flex; flex: none; }
+    .tag-control::after { position: absolute; top: 50%; right: 15px; width: 7px; height: 7px; border-right: 1.7px solid currentColor; border-bottom: 1.7px solid currentColor; color: var(--color-muted); content: ""; pointer-events: none; transform: translateY(-70%) rotate(45deg); }
+    .tag-control:focus-within::after { color: var(--color-accent); }
+    .tag-select { appearance: none; -webkit-appearance: none; width: 136px; min-width: 136px; padding: 0 36px 0 14px; font-size: var(--font-sm); cursor: pointer; }
+    .tag-select:hover { border-color: var(--color-accent); }
+    .clear-button { padding: var(--space-1) 0; border: 0; background: transparent; color: var(--color-accent); font-size: var(--font-sm); font-weight: 600; }
+    .clear-button:hover { text-decoration: underline; }
+    .clear-button[hidden] { display: none; }
+    .tag { display: inline-flex; align-items: center; min-height: 19px; padding: 0 6px; border-radius: var(--radius-tag); background: var(--color-accent-soft); color: var(--color-accent); font-size: var(--font-xs); font-weight: 650; }
+    .tag.neutral { background: var(--color-sidebar); color: var(--color-muted); }
+    .skeleton { display: grid; gap: var(--space-3); padding: var(--space-6) 0; border-bottom: 1px solid var(--color-line); }
+    .skeleton::before, .skeleton::after { content: ""; display: block; height: 12px; border-radius: 4px; background: var(--color-sidebar); animation: pulse 1.2s ease-in-out infinite; }
+    .skeleton::before { width: 58%; }
+    .skeleton::after { width: 84%; }
+    @keyframes pulse { 50% { opacity: .4; } }
+
+    /* Reader */
+    .reader { display: none; flex-direction: column; min-width: 0; }
+    .reader.mobile-open { position: fixed; inset: 0 0 0 auto; z-index: 55; display: flex; width: min(100%, 480px); border-radius: 0; box-shadow: var(--shadow-panel); }
+    .reader-scrim { position: fixed; inset: 0; z-index: 50; visibility: hidden; border: 0; background: var(--color-scrim); opacity: 0; transition: opacity .25s ease, visibility .25s ease; }
+    .reader-scrim.is-open { visibility: visible; opacity: 1; }
+    .reader-head { display: flex; align-items: center; justify-content: space-between; min-height: 62px; padding: 0 var(--space-5); border-bottom: 1px solid var(--color-line); }
+    .reader-label { color: var(--color-muted); font-size: var(--font-sm); font-weight: 600; }
+    .reader-scroll { overflow: auto; padding: var(--space-7) var(--space-6) 52px; }
+    .reader-path { color: var(--color-accent); font-size: var(--font-sm); font-weight: 650; }
+    .reader-title { margin: var(--space-4) 0 var(--space-3); font-size: var(--font-reader); font-weight: 700; line-height: 1.3; letter-spacing: -.045em; text-wrap: balance; }
+    .reader-summary { margin: 0 0 var(--space-5); color: var(--color-muted); font-size: var(--font-base); line-height: 1.75; }
+    .reader-tags { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-7); }
+    .reader-divider { height: 1px; margin-bottom: var(--space-7); background: var(--color-line); }
+    .reader-section h3 { margin: 0 0 var(--space-3); font-size: var(--font-base); font-weight: 700; }
+    .reader-section p { margin: 0 0 var(--space-5); color: var(--color-ink); line-height: 1.8; }
+    .reader-callout { padding: var(--space-4); border-left: 3px solid var(--color-accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--color-accent-soft); color: var(--color-accent); font-size: var(--font-sm); }
+    .reader-callout strong { display: block; margin-bottom: var(--space-1); }
+    .reader-footer { margin-top: var(--space-7); padding-top: var(--space-4); border-top: 1px solid var(--color-line); color: var(--color-subtle); font-size: var(--font-xs); }
+
+    @media (min-width: 600px) {
+      .sidebar { width: 72px; padding-left: var(--space-2); padding-right: var(--space-2); transform: none; }
+      .brand { justify-content: center; padding-left: 0; padding-right: 0; }
+      .brand-copy, .nav-label, .nav-text, .sidebar-foot { display: none; }
+      .nav-item { justify-content: center; padding: 0; }
+      .main-shell { margin-left: 72px; }
+      .menu-button { display: none; }
+      .topbar { padding: 0 var(--space-6); }
+      .service-pill { display: inline-flex; }
+      .page { padding: var(--space-7) var(--space-6); }
+      .intro-summary { display: flex; }
+      .tree-body { max-height: none; flex: 1; }
+    }
+    @media (min-width: 960px) {
+      .sidebar { width: 224px; padding: var(--space-6) var(--space-3) var(--space-4); }
+      .brand { justify-content: flex-start; padding: 0 var(--space-3) var(--space-7); }
+      .brand-copy, .nav-label, .nav-text, .sidebar-foot { display: block; }
+      .nav-item { justify-content: flex-start; padding: 0 var(--space-3); }
+      .main-shell { margin-left: 224px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+
+    /* Unified directory and document navigation */
+    .page { width: 100%; padding-top: var(--space-4); padding-left: var(--space-4); padding-right: var(--space-4); }
+    .workspace { grid-template-columns: minmax(0, 1fr); }
+    .tree-panel { min-height: 490px; }
+    .tree-toolbar { display: grid; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--color-line); }
+    .tree-toolbar .search-wrap { width: 100%; }
+    .tree-toolbar .search-input { width: 100%; }
+    .tree-filters { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+    .tree-filters .tag-select { max-width: 100%; }
+    .tree-filters .clear-button { flex: none; }
+    .tree-meta { min-height: 39px; padding: 9px var(--space-4); background: var(--color-surface-soft); color: var(--color-muted); font-size: var(--font-sm); }
+    .tree-meta strong { color: var(--color-ink); font-weight: 650; }
+    .tree-body { flex: 1; min-height: 0; max-height: none; overflow: auto; padding: var(--space-3) var(--space-2) var(--space-6); }
+    .tree-item { margin: 0; }
+    .folder-row, .tree-doc { display: flex; align-items: center; width: 100%; min-height: 39px; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-sm); background: transparent; text-align: left; transition: background .2s ease, color .2s ease; }
+    .folder-row { gap: var(--space-2); color: var(--color-ink); font-weight: 630; }
+    .folder-row:hover, .tree-doc:hover { background: var(--color-surface-soft); }
+    .folder-row .icon { width: 16px; height: 16px; color: var(--color-muted); }
+    .folder-chevron { width: 11px; flex: none; color: var(--color-subtle); font-size: 13px; line-height: 1; transition: transform .2s ease; }
+    .folder-row[aria-expanded="false"] .folder-chevron { transform: rotate(-90deg); }
+    .folder-name, .tree-doc-title { overflow: hidden; flex: 1; text-overflow: ellipsis; white-space: nowrap; }
+    .folder-count { color: var(--color-subtle); font: 500 var(--font-xs) var(--font-mono); }
+    .folder-children { margin-left: 17px; padding-left: 8px; border-left: 1px solid var(--color-line); }
+    .folder-children[hidden] { display: none; }
+    .tree-doc { gap: var(--space-2); margin: 2px 0; padding-left: var(--space-3); color: var(--color-muted); font-size: var(--font-sm); }
+    .tree-doc .icon { width: 15px; height: 15px; color: var(--color-subtle); }
+    .tree-doc.active { background: var(--color-accent-soft); box-shadow: inset 3px 0 0 var(--color-accent); color: var(--color-accent); font-weight: 680; }
+    .tree-doc.active .icon { color: var(--color-accent); }
+    .tree-doc:active, .folder-row:active { transform: translateY(1px); }
+    .index-empty { display: grid; justify-items: center; gap: var(--space-2); padding: 56px var(--space-4); color: var(--color-muted); text-align: center; }
+    .index-empty .icon { width: 27px; height: 27px; color: var(--color-accent); }
+    .index-empty strong { color: var(--color-ink); font-size: var(--font-base); }
+    .index-empty span { font-size: var(--font-sm); }
+    .tree-note { margin: 0; padding: var(--space-3) var(--space-4); }
+    .reader { display: none; }
+    .reader-head { min-height: 64px; }
+    .reader-back { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-accent); font-weight: 650; }
+    .reader-back .icon { transform: rotate(180deg); }
+    .reader-back:hover { background: var(--color-accent-soft); }
+    .reader-search-tools { display: none; align-items: center; justify-content: flex-end; gap: var(--space-3); flex: 1; min-width: 0; }
+    .reader-search-tools .search-wrap { flex: 1; width: auto; min-width: 0; max-width: 360px; }
+    .reader-search-tools .tag-control { width: 136px; }
+    .reader-clear-slot { display: flex; align-items: center; justify-content: center; width: 34px; flex: none; }
+    .reader-clear-slot .clear-button { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border-radius: var(--radius-sm); }
+    .reader-clear-slot .clear-button:disabled { cursor: default; opacity: .42; }
+    .reader-clear-slot .clear-button:not(:disabled):hover { background: var(--color-accent-soft); text-decoration: none; }
+    .reader-clear-label { display: none; }
+    .reader-width-toggle { display: none; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--color-line); border-radius: var(--radius-sm); background: var(--color-surface-soft); }
+    .reader-width-toggle button { min-width: 48px; min-height: 28px; padding: 0 var(--space-2); border: 0; border-radius: 4px; background: transparent; color: var(--color-muted); font-size: var(--font-sm); }
+    .reader-width-toggle button[aria-pressed="true"] { background: var(--color-surface); box-shadow: 0 1px 3px rgba(26, 58, 41, .12); color: var(--color-accent); font-weight: 650; }
+    .reader-scroll { flex: 1; min-height: 0; padding: var(--space-7) var(--space-5) 56px; }
+    .reader-article { width: min(100%, 770px); margin: 0 auto; }
+    .reader.wide .reader-article { width: 100%; max-width: none; }
+    .reader-title { margin-top: var(--space-4); font-size: var(--font-hero); }
+    .reader-section p { font-size: var(--font-base); }
+
+    @media (min-width: 600px) {
+      .page { padding-left: var(--space-4); padding-right: var(--space-4); }
+      .workspace { grid-template-columns: minmax(0, 1fr); height: calc(100dvh - 225px); min-height: 570px; }
+      .tree-panel { min-height: 0; }
+      .reader.mobile-open { width: min(100%, 640px); }
+    }
+    @media (min-width: 960px) {
+      .workspace { grid-template-columns: clamp(260px, 26vw, 340px) minmax(0, 1fr); }
+      .reader, .reader.mobile-open { position: static; display: flex; width: auto; border-radius: var(--radius-lg); box-shadow: none; }
+      .reader-scrim { display: none; }
+      .reader-back { display: none; }
+      .tree-toolbar { display: none; }
+      .reader-search-tools { display: flex; }
+      .reader-scroll { padding: 38px 24px 64px; }
+    }
+    @media (min-width: 1200px) {
+      .reader-clear-slot { width: 64px; }
+      .reader-clear-slot .clear-button { width: 64px; }
+      .reader-clear-slot .reader-clear-icon { display: none; }
+      .reader-clear-label { display: inline; white-space: nowrap; }
+    }
+    @media (min-width: 960px) and (max-width: 1479px) {
+      .reader-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); padding-top: var(--space-3); padding-bottom: var(--space-3); }
+      .reader-search-tools { justify-content: stretch; width: 100%; }
+      .reader-search-tools .search-wrap { max-width: none; }
+    }
+    @media (min-width: 1480px) {
+      .reader-width-toggle { display: inline-flex; margin-left: var(--space-7); }
+      .reader-scroll { padding-left: 42px; padding-right: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <svg class="sr-only" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.8A2.8 2.8 0 0 1 6.8 2H20v17H6.8A2.8 2.8 0 0 0 4 21.8z"/><path d="M4 19.5A2.8 2.8 0 0 1 6.8 17H20"/><path d="M8 7h8M8 11h6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m0 0L7.5 7.5M12 3l4.5 4.5M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10.8-10.8-3.5-3.5L5 15.5zM14.8 5.8l3.5 3.5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M13 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V11z"/><path d="M13 3v8h8M7.5 15h9M7.5 18h6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.2 6.7M20 4v7h-7"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M5 5 19 19M19 5 5 19"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-collapse" viewBox="0 0 24 24"><path d="m6 17 6-6 6 6M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="m6 7 6 6 6-6m-12 6 6 6 6-6"/></symbol>
+  </svg>
+  <a class="skip-link" href="#main">跳转到主要内容</a>
+  <div class="app">
+    <button class="mobile-scrim" id="nav-scrim" aria-label="关闭导航菜单"></button>
+    <aside class="sidebar" id="sidebar" aria-label="全站导航">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">ki</span><span class="brand-copy"><span class="brand-title">ki 知识库</span><span class="brand-subtitle">KNOWLEDGE INDEXER</span></span></div>
+      <div class="nav-label">工作空间</div>
+      <nav class="primary-nav" aria-label="主导航">
+        <span class="nav-item"><svg class="icon"><use href="#i-grid"/></svg><span class="nav-text">总览</span></span>
+        <span class="nav-item active" aria-current="page"><svg class="icon"><use href="#i-book"/></svg><span class="nav-text">知识库浏览</span></span>
+        <span class="nav-item"><svg class="icon"><use href="#i-search"/></svg><span class="nav-text">语义搜索</span></span>
+        <span class="nav-item"><svg class="icon"><use href="#i-upload"/></svg><span class="nav-text">上传导入</span></span>
+        <span class="nav-item"><svg class="icon"><use href="#i-edit"/></svg><span class="nav-text">知识写入</span></span>
+        <span class="nav-item"><svg class="icon"><use href="#i-clock"/></svg><span class="nav-text">后台任务</span></span>
+      </nav>
+      <div class="sidebar-foot"><strong>本地工作区</strong><span>ki v1.0.0-beta</span></div>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar">
+        <div class="topbar-left"><button class="icon-button menu-button" id="menu-button" aria-label="打开导航菜单" aria-expanded="false"><svg class="icon"><use href="#i-menu"/></svg></button><div class="breadcrumb">工作空间 <span class="breadcrumb-separator">/</span> <strong>知识库浏览</strong></div></div>
+        <div class="topbar-right"><div class="scope-pill"><span>Scope</span><strong>default</strong></div><div class="service-pill"><span class="status-dot"></span> MCP HTTP 已就绪</div></div>
+      </header>
+
+      <main class="page" id="main">
+        <div class="page-intro"><div><div class="eyebrow">LIBRARY / 01</div><h1>知识库浏览</h1><p>沿着目录，找到文档，直接阅读原文。</p></div><div class="intro-summary"><span><strong>14</strong> 篇示例文档</span><span><strong>5</strong> 个一级目录</span></div></div>
+
+        <div class="workspace" id="workspace">
+          <section class="panel tree-panel" id="tree-panel" aria-labelledby="tree-title">
+            <div class="panel-head"><div class="panel-heading"><span class="panel-kicker">LIBRARY INDEX</span><span class="panel-title" id="tree-title">知识目录</span></div><div class="panel-actions"><span class="count">14 篇</span><button class="icon-button" id="refresh-button" type="button" title="刷新目录" aria-label="刷新目录"><svg class="icon small"><use href="#i-refresh"/></svg></button><button class="icon-button" id="tree-collapse" type="button" title="折叠全部目录" aria-label="折叠全部目录" data-action="collapse"><svg class="icon small"><use href="#i-collapse"/></svg></button></div></div>
+            <div class="tree-toolbar"><label class="search-wrap"><span class="sr-only">搜索目录、文档或内容</span><svg class="icon"><use href="#i-search"/></svg><input class="search-input" id="search-input" type="search" placeholder="搜索目录或文档…" autocomplete="off"></label><div class="tree-filters"><label class="tag-control"><span class="sr-only">按标签筛选</span><select class="tag-select" id="tag-select"><option value="">全部标签</option><option value="RAG">RAG</option><option value="专题记忆">专题记忆</option><option value="接口">接口</option><option value="数据流">数据流</option><option value="验证">验证</option></select></label><button class="clear-button" id="clear-button" type="button" hidden>清除筛选</button></div></div>
+            <div class="tree-meta" id="tree-meta" role="status" aria-live="polite">全部文档 <strong>· 14 篇</strong></div>
+            <nav class="tree-body" id="tree-body" aria-label="目录与文档"></nav>
+            <p class="tree-note">展开目录，选择文档查看内容</p>
+          </section>
+
+          <aside class="panel reader wide" id="reader" aria-labelledby="reader-title">
+            <div class="reader-head"><span class="reader-label">文档内容</span><div class="reader-search-tools"><label class="search-wrap"><span class="sr-only">搜索全部目录与文档，结果显示在左侧</span><svg class="icon"><use href="#i-search"/></svg><input class="search-input" id="reader-search-input" type="search" placeholder="搜索全库文档…" autocomplete="off"></label><label class="tag-control"><span class="sr-only">按标签筛选，结果显示在左侧</span><select class="tag-select" id="reader-tag-select"><option value="">全部标签</option><option value="RAG">RAG</option><option value="专题记忆">专题记忆</option><option value="接口">接口</option><option value="数据流">数据流</option><option value="验证">验证</option></select></label><span class="reader-clear-slot"><button class="clear-button" id="reader-clear-button" type="button" aria-label="清除筛选" title="清除筛选" disabled><svg class="icon small reader-clear-icon" aria-hidden="true"><use href="#i-x"/></svg><span class="reader-clear-label">清除筛选</span></button></span></div><div class="reader-width-toggle" role="group" aria-label="正文宽度"><button id="reader-centered" type="button" aria-pressed="false">居中</button><button id="reader-wide" type="button" aria-pressed="true">铺满</button></div><button class="reader-back" id="reader-back" type="button" aria-label="返回目录"><svg class="icon small"><use href="#i-arrow"/></svg> 返回目录</button></div>
+            <div class="reader-scroll"><article class="reader-article"><div class="reader-path" id="reader-path"></div><h2 class="reader-title" id="reader-title"></h2><p class="reader-summary" id="reader-summary"></p><div class="reader-tags" id="reader-tags"></div><div class="reader-divider"></div><div class="reader-section" id="reader-content"></div><div class="reader-footer">示例内容 · 视觉设计 demo</div></article></div>
+          </aside>
+        </div>
+      </main>
+    </div>
+    <button class="reader-scrim" id="reader-scrim" aria-label="返回目录"></button>
+  </div>
+
+  <script>
+    const docs = [
+      { id: 'mcp-expert', title: 'MCP服务专家', group: '专题记忆', tags: ['专题记忆', 'RAG'], summary: '梳理 MCP 服务的能力边界、调用入口与常见运维问题。', sections: [['概览', 'MCP 服务把知识检索和文档读取能力提供给外部客户端。使用者可以先检索相关材料，再按目录定位到对应原文。'], ['关键职责', '服务负责接收请求、解析 scope、调用知识库与向量检索，并把结果整理为可直接消费的响应。目录结构与文档关系需要保持一致，才能让检索结果回到正确的上下文。']] },
+      { id: 'frontend-expert', title: '可视化前端专家', group: '专题记忆', tags: ['专题记忆', 'RAG'], summary: '记录浏览、搜索和导入页面的关键功能与数据呈现。', sections: [['概览', '前端把知识库中的目录、文档和检索结果组织成连续的浏览体验。用户可从目录进入文档，也可用搜索直接跨目录定位。'], ['界面原则', '当前 scope、筛选条件与阅读对象应始终清晰可见，避免用户在切换目录时失去上下文。']] },
+      { id: 'storage-expert', title: '存储与配置基础专家', group: '专题记忆', tags: ['专题记忆', 'RAG'], summary: '说明本地知识库、向量集合与配置文件之间的关系。' },
+      { id: 'mcp-rel', title: 'MCP服务关联关系', group: '关联关系/MCP服务', tags: ['RAG'], summary: '追踪 MCP 服务与索引、检索和文档读取模块的调用关系。' },
+      { id: 'frontend-rel', title: '前端与后端协作关系', group: '关联关系/前端与后端', tags: ['RAG'], summary: '整理前端请求、后端响应与页面状态之间的映射。' },
+      { id: 'storage-rel', title: '存储与配置关联关系', group: '关联关系/存储与配置', tags: ['RAG'], summary: '标注配置参数如何影响知识库与向量存储。' },
+      { id: 'frontend-api', title: '可视化前端接口专家', group: '接口信息/可视化前端', tags: ['接口'], summary: '汇总浏览页和搜索页使用的数据接口与字段。' },
+      { id: 'mcp-flow', title: 'MCP服务数据流', group: '数据流/MCP服务', tags: ['数据流'], summary: '从请求入口到结果返回，记录服务内部的数据流转。' },
+      { id: 'frontend-flow', title: '可视化前端数据流', group: '数据流/可视化前端', tags: ['数据流'], summary: '梳理 scope 切换、列表加载与阅读器的数据流转。' },
+      { id: 'storage-flow', title: '存储与配置数据流', group: '数据流/存储与配置', tags: ['数据流'], summary: '描述文档内容、元数据与向量索引的写入过程。' },
+      { id: 'write-one', title: '写入测试：单条文档', group: '验证组/写入测试', tags: ['验证'], summary: '验证新文档写入后可以在目录与搜索中找到。' },
+      { id: 'write-batch', title: '写入测试：批量导入', group: '验证组/写入测试', tags: ['验证'], summary: '检查批量导入后的文档数量、目录归属与反馈状态。' },
+      { id: 'write-tags', title: '写入测试：标签更新', group: '验证组/写入测试', tags: ['验证'], summary: '确认标签更新后筛选结果与文档元数据一致。' },
+      { id: 'search-check', title: '写入测试：检索回归', group: '验证组/写入测试', tags: ['验证'], summary: '核对已写入文档的关键词与语义检索结果。' }
+    ];
+    const groups = [
+      { name: '专题记忆', path: '专题记忆', children: [] },
+      { name: '关联关系', path: '关联关系', children: ['MCP服务', '前端与后端', '存储与配置'] },
+      { name: '接口信息', path: '接口信息', children: ['可视化前端'] },
+      { name: '数据流', path: '数据流', children: ['MCP服务', '可视化前端', '存储与配置'] },
+      { name: '验证组', path: '验证组', children: ['写入测试'] }
+    ];
+    const $ = (selector) => document.querySelector(selector);
+    const state = { tag: '', query: '', selected: 'mcp-expert', loading: false, expanded: new Set(['专题记忆']) };
+    const icon = (name, className = 'icon') => { const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', className); svg.setAttribute('aria-hidden', 'true'); const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', `#i-${name}`); svg.append(use); return svg; };
+
+    function matchesFilters(doc) {
+      const query = state.query.trim().toLocaleLowerCase();
+      const matchesQuery = !query || `${doc.title} ${doc.group} ${doc.summary}`.toLocaleLowerCase().includes(query);
+      return matchesQuery && (!state.tag || doc.tags.includes(state.tag));
+    }
+
+    function expandMatchingGroups() {
+      if (!state.query.trim() && !state.tag) return;
+      for (const doc of docs.filter(matchesFilters)) {
+        const parts = doc.group.split('/');
+        for (let index = 1; index <= parts.length; index++) state.expanded.add(parts.slice(0, index).join('/'));
+      }
+    }
+
+    function updateCollapseButton(filteredDocs = docs.filter(matchesFilters)) {
+      const hasVisibleExpandedRoot = groups.some(group => state.expanded.has(group.path) && filteredDocs.some(doc => doc.group === group.path || doc.group.startsWith(`${group.path}/`)));
+      const action = hasVisibleExpandedRoot ? 'collapse' : 'expand';
+      const label = hasVisibleExpandedRoot ? '折叠全部目录' : '展开全部目录';
+      const button = $('#tree-collapse');
+      button.disabled = state.loading || filteredDocs.length === 0;
+      button.dataset.action = action;
+      button.setAttribute('aria-label', label);
+      button.title = label;
+      button.querySelector('use').setAttribute('href', `#i-${action}`);
+    }
+
+    function renderTree() {
+      const body = $('#tree-body');
+      body.replaceChildren();
+      const filtered = docs.filter(matchesFilters);
+      updateCollapseButton(filtered);
+      const filterActive = Boolean(state.query.trim() || state.tag);
+      const meta = $('#tree-meta'); meta.replaceChildren(document.createTextNode(filterActive ? '筛选结果' : '全部文档'));
+      const count = document.createElement('strong'); count.textContent = ` · ${filtered.length} 篇`; meta.append(count);
+      $('#clear-button').hidden = !filterActive;
+      $('#reader-clear-button').disabled = !filterActive;
+      if (state.loading) {
+        meta.textContent = '正在刷新目录…';
+        for (let index = 0; index < 3; index++) { const skeleton = document.createElement('div'); skeleton.className = 'skeleton'; body.append(skeleton); }
+        return;
+      }
+      if (filtered.length === 0) {
+        const empty = document.createElement('div'); empty.className = 'index-empty'; empty.setAttribute('role', 'status');
+        empty.append(icon('search'));
+        const title = document.createElement('strong'); title.textContent = '没有匹配的文档';
+        const hint = document.createElement('span'); hint.textContent = '换个关键词，或清除标签筛选。';
+        empty.append(title, hint); body.append(empty);
+        return;
+      }
+      const makeDocument = (doc) => {
+        const button = document.createElement('button'); button.type = 'button'; button.className = `tree-doc${state.selected === doc.id ? ' active' : ''}`;
+        button.dataset.docId = doc.id;
+        if (state.selected === doc.id) button.setAttribute('aria-current', 'true');
+        button.setAttribute('aria-label', `${doc.title}，${doc.group}`); button.title = doc.summary;
+        const title = document.createElement('span'); title.className = 'tree-doc-title'; title.textContent = doc.title;
+        button.append(icon('file', 'icon small'), title);
+        button.addEventListener('click', () => {
+          state.selected = doc.id; renderTree(); renderReader();
+          if (window.innerWidth < 960) {
+            $('#reader').classList.add('mobile-open'); $('#reader').setAttribute('role', 'dialog'); $('#reader').setAttribute('aria-modal', 'true');
+            $('#reader-scrim').classList.add('is-open'); $('#reader-back').focus();
+          } else {
+            [...body.querySelectorAll('[data-doc-id]')].find(item => item.dataset.docId === doc.id)?.focus();
+          }
+        });
+        return button;
+      };
+      const makeFolder = (name, path, children) => {
+        const allDocs = docs.filter(doc => doc.group === path || doc.group.startsWith(`${path}/`));
+        const visibleDocs = allDocs.filter(matchesFilters);
+        if (filterActive && visibleDocs.length === 0) return null;
+        const item = document.createElement('div'); item.className = 'tree-item';
+        const folder = document.createElement('button'); folder.type = 'button'; folder.className = 'folder-row';
+        folder.dataset.groupPath = path; folder.setAttribute('aria-expanded', String(state.expanded.has(path)));
+        folder.setAttribute('aria-label', `${path}，${filterActive ? `匹配 ${visibleDocs.length} 篇，共 ${allDocs.length} 篇` : `${allDocs.length} 篇文档`}`);
+        const chevron = document.createElement('span'); chevron.className = 'folder-chevron'; chevron.setAttribute('aria-hidden', 'true'); chevron.textContent = '⌄';
+        const label = document.createElement('span'); label.className = 'folder-name'; label.textContent = name;
+        const number = document.createElement('span'); number.className = 'folder-count'; number.textContent = filterActive ? `${visibleDocs.length}/${allDocs.length}` : String(allDocs.length);
+        folder.append(chevron, icon('folder', 'icon small'), label, number); item.append(folder);
+        const contents = document.createElement('div'); contents.className = 'folder-children'; contents.hidden = !state.expanded.has(path);
+        for (const doc of docs.filter(doc => doc.group === path && matchesFilters(doc))) contents.append(makeDocument(doc));
+        for (const child of children) { const branch = makeFolder(child, `${path}/${child}`, []); if (branch) contents.append(branch); }
+        folder.addEventListener('click', () => {
+          const expanded = !state.expanded.has(path);
+          expanded ? state.expanded.add(path) : state.expanded.delete(path);
+          contents.hidden = !expanded; folder.setAttribute('aria-expanded', String(expanded));
+          updateCollapseButton();
+        });
+        item.append(contents); return item;
+      };
+      for (const group of groups) { const item = makeFolder(group.name, group.path, group.children); if (item) body.append(item); }
+    }
+
+    function renderReader() {
+      const doc = docs.find(item => item.id === state.selected);
+      if (!doc) return;
+      $('#reader-path').textContent = doc.group.replaceAll('/', ' / ');
+      $('#reader-title').textContent = doc.title;
+      $('#reader-summary').textContent = doc.summary;
+      const tags = $('#reader-tags'); tags.replaceChildren();
+      for (const tagName of doc.tags) { const tag = document.createElement('span'); tag.className = `tag${tagName === 'RAG' ? ' neutral' : ''}`; tag.textContent = tagName; tags.append(tag); }
+      const content = $('#reader-content'); content.replaceChildren();
+      const sections = doc.sections || [['概览', doc.summary], ['相关内容', '这份示例文档用于展示原文阅读区域的层级、行距和引用提示。正式页面将呈现知识库中实际保存的原文内容。']];
+      for (const [heading, body] of sections) { const h = document.createElement('h3'); h.textContent = heading; const p = document.createElement('p'); p.textContent = body; content.append(h, p); }
+      const callout = document.createElement('div'); callout.className = 'reader-callout';
+      const label = document.createElement('strong'); label.textContent = '阅读提示';
+      const detail = document.createElement('span'); detail.textContent = '示例内容用于评审视觉样式；实际原文由知识库接口提供。';
+      callout.append(label, detail); content.append(callout);
+      $('.reader-scroll').scrollTop = 0;
+    }
+
+    function closeReader() {
+      if (!$('#reader').classList.contains('mobile-open')) return;
+      $('#reader').classList.remove('mobile-open');
+      $('#reader').removeAttribute('role');
+      $('#reader').removeAttribute('aria-modal');
+      $('#reader-scrim').classList.remove('is-open');
+      const selected = [...$('#tree-body').querySelectorAll('[data-doc-id]')].find(item => item.dataset.docId === state.selected);
+      (selected || $('#search-input')).focus();
+    }
+    function closeNav() { $('#sidebar').classList.remove('is-open'); $('#nav-scrim').classList.remove('is-open'); $('#menu-button').setAttribute('aria-expanded', 'false'); }
+
+    for (const input of [$('#search-input'), $('#reader-search-input')]) input.addEventListener('input', event => {
+      state.query = event.target.value;
+      $('#search-input').value = state.query; $('#reader-search-input').value = state.query;
+      expandMatchingGroups(); renderTree();
+    });
+    for (const select of [$('#tag-select'), $('#reader-tag-select')]) select.addEventListener('change', event => {
+      state.tag = event.target.value;
+      $('#tag-select').value = state.tag; $('#reader-tag-select').value = state.tag;
+      expandMatchingGroups(); renderTree();
+    });
+    function clearFilters(event) {
+      state.query = ''; state.tag = '';
+      $('#search-input').value = ''; $('#reader-search-input').value = ''; $('#tag-select').value = ''; $('#reader-tag-select').value = '';
+      renderTree();
+      (event.currentTarget === $('#reader-clear-button') ? $('#reader-search-input') : $('#search-input')).focus();
+    }
+    $('#clear-button').addEventListener('click', clearFilters);
+    $('#reader-clear-button').addEventListener('click', clearFilters);
+    $('#refresh-button').addEventListener('click', () => {
+      if (state.loading) return;
+      state.loading = true; $('#refresh-button').disabled = true; $('#refresh-button').setAttribute('aria-label', '刷新中'); renderTree();
+      window.setTimeout(() => { state.loading = false; $('#refresh-button').disabled = false; $('#refresh-button').setAttribute('aria-label', '刷新目录'); renderTree(); }, 850);
+    });
+    $('#tree-collapse').addEventListener('click', () => {
+      const paths = groups.flatMap(group => [group.path, ...group.children.map(child => `${group.path}/${child}`)]);
+      const collapse = $('#tree-collapse').dataset.action === 'collapse';
+      state.expanded = new Set(collapse ? [] : paths);
+      renderTree();
+    });
+    function setReaderWidth(wide) {
+      $('#reader').classList.toggle('wide', wide);
+      $('#reader-centered').setAttribute('aria-pressed', String(!wide));
+      $('#reader-wide').setAttribute('aria-pressed', String(wide));
+    }
+    $('#reader-centered').addEventListener('click', () => setReaderWidth(false));
+    $('#reader-wide').addEventListener('click', () => setReaderWidth(true));
+    $('#reader-back').addEventListener('click', closeReader);
+    $('#reader-scrim').addEventListener('click', closeReader);
+    $('#menu-button').addEventListener('click', () => { const open = $('#sidebar').classList.toggle('is-open'); $('#nav-scrim').classList.toggle('is-open', open); $('#menu-button').setAttribute('aria-expanded', String(open)); });
+    $('#nav-scrim').addEventListener('click', closeNav);
+    document.addEventListener('keydown', event => { if (event.key === 'Tab' && window.innerWidth < 960 && $('#reader').classList.contains('mobile-open')) { event.preventDefault(); $('#reader-back').focus(); } if (event.key === 'Escape') { closeReader(); closeNav(); } });
+    window.addEventListener('resize', () => { if (window.innerWidth >= 960) { closeReader(); closeNav(); } });
+    renderTree(); renderReader();
+  </script>
+</body>
+</html>
