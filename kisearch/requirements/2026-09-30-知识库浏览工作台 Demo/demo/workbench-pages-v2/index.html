@@ -249,8 +249,9 @@
     .field { display: grid; gap: 6px; min-width: 0; }
     .field > label, .field-label { color: var(--color-muted); font-size: var(--font-sm); font-weight: 600; }
     .field .hint { color: var(--color-subtle); font-size: var(--font-xs); }
-    .field .error-text { display: none; color: var(--color-danger-ink); font-size: var(--font-xs); font-weight: 650; }
-    .field.invalid .error-text { display: block; }
+    /* 错误提示常驻一行（默认不可见）——出现/消失都不改变表单高度，避免页面抖动 */
+    .field .error-text { display: block; min-height: 1.6em; color: var(--color-danger-ink); font-size: var(--font-xs); font-weight: 650; visibility: hidden; }
+    .field.invalid .error-text { visibility: visible; }
     .field.invalid .input, .field.invalid .select { border-color: var(--color-danger); }
     .input, .select { width: 100%; height: 38px; padding: 0 var(--space-3); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink); outline: none; transition: border-color .2s ease, box-shadow .2s ease; }
     .input::placeholder { color: var(--color-subtle); }
@@ -279,6 +280,8 @@
     .segmented button:hover:not(:disabled) { color: var(--color-ink); }
     .segmented button[aria-pressed="true"], .segmented button[aria-selected="true"] { background: var(--color-surface); box-shadow: 0 1px 3px rgba(26, 58, 41, .12); color: var(--color-accent); font-weight: 650; }
     .segmented button:disabled { opacity: .42; cursor: default; }
+    /* 字段里的分段控件不要被 grid 拉成全宽（沿用 ki.css 里同款坑的修法） */
+    .field > .segmented { justify-self: start; }
     .switch { display: inline-flex; align-items: center; gap: 10px; color: var(--color-muted); font-size: var(--font-sm); cursor: pointer; }
     .switch input { position: absolute; width: 0; height: 0; opacity: 0; }
     .switch .track { position: relative; width: 38px; height: 22px; flex: none; border-radius: var(--radius-track); background: var(--color-line-strong); transition: background .2s ease; }
@@ -321,7 +324,9 @@
     .summary-strip dd { margin: var(--space-2) 0 0; font-size: var(--font-xl); font-weight: 680; font-variant-numeric: tabular-nums; }
     .summary-strip .is-warn dd { color: var(--color-warn); }
     .summary-strip .is-danger dd { color: var(--color-danger-ink); }
-    .key-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }
+    .key-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0; }
+    /* 每个指标一个小卡片底（浅底 + 1px 边 + 圆角），不再是裸文字 */
+    .key-stats > div { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: var(--space-4) var(--space-5); border: 1px solid var(--color-line); border-radius: var(--radius-md); background: var(--color-surface-soft); }
     .key-stats dt { color: var(--color-muted); font-size: var(--font-base); font-weight: 600; }
     .key-stats dd { margin: 3px 0 0; font: 650 var(--font-xl) var(--font-mono); font-variant-numeric: tabular-nums; }
     .health-list { margin: 0; padding: 0; list-style: none; }
@@ -338,7 +343,7 @@
     /* 两栏等高：卡片纵向撑满，指标在正文区内均分，页脚贴底 */
     .dashboard-pair > .panel { display: flex; flex-direction: column; }
     .dashboard-pair > .panel > .panel-body { flex: 1; }
-    .dashboard-pair > .panel > .panel-body > .key-stats { height: 100%; align-content: space-evenly; }
+    .dashboard-pair > .panel > .panel-body > .key-stats { height: 100%; grid-template-rows: repeat(2, minmax(0, 1fr)); align-content: stretch; }
     #db-table .table th:first-child, #db-table .table td:first-child { width: 44%; }
     #db-table .table th:last-child, #db-table .table td:last-child { width: 180px; }
 
@@ -405,16 +410,14 @@
     .result-side b { font: 680 var(--font-count)/1 var(--font-mono); font-variant-numeric: tabular-nums; }
     .score-bar { width: 72px; height: 4px; border-radius: var(--radius-track); background: var(--color-sidebar); overflow: hidden; }
     .score-bar i { display: block; height: 100%; background: var(--color-accent); }
-    .reader-panel { position: fixed; inset: 0 0 0 auto; z-index: var(--z-overlay); display: flex; flex-direction: column; width: min(100%, 480px); border-left: 1px solid var(--color-line); background: var(--color-surface); transform: translateX(100%); transition: transform .25s ease; }
-    .reader-panel.mobile-open { transform: none; }
+    /* 原文抽屉：窄屏与桌面都是右侧滑出，点结果才出现（与正式页面一致） */
+    .reader-panel { position: fixed; inset: 0 0 0 auto; z-index: var(--z-overlay); display: flex; flex-direction: column; width: min(100%, 560px); visibility: hidden; border-left: 1px solid var(--color-line); background: var(--color-surface); box-shadow: var(--shadow-panel); transform: translateX(100%); transition: transform .25s ease, visibility 0s linear .25s; }
+    .reader-panel.mobile-open { visibility: visible; transform: none; transition: transform .25s ease, visibility 0s; }
     .reader-scrim { position: fixed; inset: 0; z-index: calc(var(--z-overlay) - 1); border: 0; background: var(--color-scrim); opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility .25s ease; }
     .reader-scrim.is-open { opacity: 1; visibility: visible; }
     .reader-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 62px; padding: 0 var(--space-4) 0 var(--space-5); border-bottom: 1px solid var(--color-line); }
     .reader-head .reader-label { color: var(--color-muted); font-size: var(--font-sm); font-weight: 600; }
-    .reader-back { display: none; align-items: center; gap: var(--space-1); padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-accent); font-weight: 650; }
-    .reader-back:hover { background: var(--color-accent-soft); }
-    .reader-back .icon { transform: rotate(180deg); }
-    .reader-scroll { flex: 1; min-height: 0; max-height: 640px; overflow: auto; padding: var(--space-6) var(--space-5) var(--space-7); }
+    .reader-scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--space-6) var(--space-5) var(--space-7); }
     .doc-path { color: var(--color-accent); font-size: var(--font-sm); font-weight: 650; overflow-wrap: anywhere; }
     .doc-title { margin: var(--space-3) 0; font-size: var(--font-reader); font-weight: 700; line-height: 1.3; letter-spacing: -.045em; text-wrap: balance; }
     .doc-summary { margin: 0 0 var(--space-4); color: var(--color-muted); line-height: 1.75; overflow-wrap: anywhere; }
@@ -498,9 +501,8 @@
       .workspace.rail-right { grid-template-columns: minmax(0, 1fr) 440px; }
       .workspace.rail-left { grid-template-columns: 400px minmax(0, 1fr); }
     }
-    @media (min-width: 960px) {
-      .reader-panel { position: static; width: auto; transform: none; border: 1px solid var(--color-line); border-radius: var(--radius-lg); overflow: hidden; }
-      .reader-scroll { max-height: 720px; }
+    @media (min-width: 1480px) {
+      .reader-panel { width: min(100%, 620px); }
     }
     @media (max-width: 1199px) {
       .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -508,8 +510,6 @@
     }
     @media (max-width: 959px) {
       .dashboard-pair { grid-template-columns: minmax(0, 1fr); }
-      .reader-back { display: inline-flex; }
-      .reader-scroll { max-height: none; }
       .split { grid-template-columns: minmax(0, 1fr); }
       .search-bar { grid-template-columns: minmax(0, 1fr) auto; }
       .search-bar .segmented { grid-column: 1 / -1; justify-self: start; }
@@ -593,7 +593,7 @@
         <a class="nav-item" href="#/write" data-view="write"><svg class="icon"><use href="#i-edit"/></svg><span class="nav-text">知识写入</span></a>
         <a class="nav-item" href="#/tasks" data-view="tasks"><svg class="icon"><use href="#i-clock"/></svg><span class="nav-text">后台任务</span></a>
       </nav>
-      <div class="sidebar-foot"><strong>本地工作区</strong><span>ki v1.0.0-beta · demo v2.3 · 示例数据</span></div>
+      <div class="sidebar-foot"><strong>本地工作区</strong><span>ki v1.0.0-beta · demo v2.4 · 示例数据</span></div>
     </aside>
 
     <div class="main-shell">
@@ -654,7 +654,7 @@
             <div>
               <p class="eyebrow">RETRIEVAL / 02</p>
               <h1 id="se-h">语义搜索</h1>
-              <p>向量与 BM25 混合检索，范围为当前 Scope；点击结果在右侧读取原文，并保留检索条件。</p>
+              <p>向量与 BM25 混合检索，范围为当前 Scope；点击结果在右侧抽屉中打开原文，检索条件保持不变。</p>
             </div>
             <div class="page-intro-right">
               <div class="intro-summary"><span><strong id="se-count">5</strong> 条结果</span><span><strong id="se-ms">128</strong> ms</span></div>
@@ -678,7 +678,7 @@
                 <div class="history-row" id="se-history"></div>
               </div>
             </section>
-            <div class="workspace rail-right">
+            <div class="stack">
               <section class="panel" aria-labelledby="se-res-h">
                 <div class="panel-head">
                   <div class="panel-heading"><span class="panel-kicker">RESULTS</span><span class="panel-title" id="se-res-h">检索结果</span></div>
@@ -688,9 +688,8 @@
                 <div id="se-results"></div>
               </section>
               <aside class="panel reader-panel" id="se-reader" aria-labelledby="se-doc-h">
-                <div class="reader-head"><span class="reader-label">原文</span><span class="mono" id="se-hit-nav"></span><button class="icon-button" id="se-close" type="button" aria-label="关闭原文面板"><svg class="icon small"><use href="#i-x"/></svg></button></div>
+                <div class="reader-head"><span class="reader-label">原文</span><span class="mono" id="se-hit-nav"></span><button class="icon-button" id="se-close" type="button" aria-label="关闭原文抽屉"><svg class="icon small"><use href="#i-x"/></svg></button></div>
                 <div class="reader-scroll">
-                  <button class="button quiet sm reader-back" id="se-back" type="button"><svg class="icon small"><use href="#i-arrow"/></svg> 返回结果</button>
                   <p class="doc-path" id="se-path"></p>
                   <h2 class="doc-title" id="se-doc-h"></h2>
                   <p class="doc-summary" id="se-summary"></p>
@@ -729,7 +728,14 @@
                   <div class="dropzone-actions"><button class="button ghost sm" id="im-pick-files" type="button">选择文件</button><button class="button ghost sm" id="im-pick-dir" type="button">选择目录</button></div>
                 </div>
                 <div class="split">
-                  <div class="field"><label for="im-scope">Scope</label><div class="select-wrap"><select class="select" id="im-scope"><option>default</option><option>ai-docs</option><option>wiki</option></select></div><span class="hint">导入落点；不存在时可新建</span></div>
+                  <div class="field" id="im-scope-field">
+                    <span class="field-label" id="im-scope-label">Scope</span>
+                    <div class="segmented" id="im-scope-mode" role="group" aria-labelledby="im-scope-label"><button type="button" data-mode="existing" aria-pressed="true">选择已有</button><button type="button" data-mode="new" aria-pressed="false">新建</button></div>
+                    <div id="im-scope-existing"><div class="select-wrap"><select class="select" id="im-scope" aria-label="选择已有 Scope"><option>default</option><option>ai-docs</option><option>wiki</option></select></div></div>
+                    <div id="im-scope-new" hidden><input class="input" id="im-scope-name" placeholder="新 Scope 名称，如 wiki/部署运维" autocomplete="off"></div>
+                    <span class="hint" id="im-scope-hint">导入落点；目标不存在时切到「新建」</span>
+                    <span class="error-text" id="im-scope-error"></span>
+                  </div>
                   <div class="field"><label for="im-group">Group 路径</label><input class="input" id="im-group" value="专题记忆" autocomplete="off"><span class="hint">留空时以 Scope 名为根目录</span></div>
                 </div>
                 <div class="split">
@@ -786,7 +792,14 @@
               <section class="panel" aria-labelledby="wr-meta-h">
                 <div class="panel-head"><div class="panel-heading"><span class="panel-kicker">DOCUMENT</span><span class="panel-title" id="wr-meta-h">文档信息</span></div></div>
                 <div class="panel-body stack">
-                  <div class="field"><label for="wr-scope">Scope</label><div class="select-wrap"><select class="select" id="wr-scope"><option>default</option><option>ai-docs</option></select></div><span class="hint">写入目标知识库</span></div>
+                  <div class="field" id="wr-scope-field">
+                    <span class="field-label" id="wr-scope-label">Scope</span>
+                    <div class="segmented" id="wr-scope-mode" role="group" aria-labelledby="wr-scope-label"><button type="button" data-mode="existing" aria-pressed="true">选择已有</button><button type="button" data-mode="new" aria-pressed="false">新建</button></div>
+                    <div id="wr-scope-existing"><div class="select-wrap"><select class="select" id="wr-scope" aria-label="选择已有 Scope"><option>default</option><option>ai-docs</option></select></div></div>
+                    <div id="wr-scope-new" hidden><input class="input" id="wr-scope-name" placeholder="新 Scope 名称，如 wiki/部署运维" autocomplete="off"></div>
+                    <span class="hint" id="wr-scope-hint">写入目标知识库；不存在时切到「新建」</span>
+                    <span class="error-text" id="wr-scope-error"></span>
+                  </div>
                   <div class="field" id="wr-group-field"><label for="wr-group">Group</label><input class="input" id="wr-group" value="专题记忆" autocomplete="off"><span class="error-text" id="wr-group-err"></span></div>
                   <div class="field" id="wr-name-field"><label for="wr-name">文档名</label><input class="input" id="wr-name" value="MCP 服务调用示例" autocomplete="off"><span class="hint">同 Group 内唯一，可含中文</span><span class="error-text" id="wr-name-err"></span></div>
                   <div class="field"><span class="field-label">Tags</span><div class="chips" id="wr-tags"></div></div>
@@ -1027,6 +1040,7 @@
         },
         import: { hasFiles: true, phase: 'upload', cancelled: false, tags: ['专题记忆'] },
         write: { mode: 'edit', draft: undefined, tags: ['专题记忆', 'RAG'], feedback: 'none', lastSave: null },
+        scope: { import: { mode: 'existing', name: '', touched: false }, write: { mode: 'existing', name: '', touched: false } },
         tasks: { tab: 'all', selected: 'import-8f21c4' }
       };
 
@@ -1150,6 +1164,7 @@
       function renderSearch() {
         const mode = state.demo.search;
         const search = state.search;
+        if (mode !== 'normal' || !orElse(search.results, []).length) closeSearchReader();
 
         renderChips($('#se-tags'), SEARCH_TAGS, search.tags, (tag) => {
           search.tags = search.tags.includes(tag) ? search.tags.filter((item) => item !== tag) : [...search.tags, tag];
@@ -1268,17 +1283,16 @@
 
       function openResult(index) {
         state.search.active = index;
-        const reader = $('#se-reader');
-        if (window.innerWidth < 960) {
-          reader.classList.add('mobile-open');
-          reader.setAttribute('role', 'dialog');
-          reader.setAttribute('aria-modal', 'true');
-          const scrim = $('#reader-scrim');
-          scrim.hidden = false;
-          scrim.classList.add('is-open');
-          $('#se-close').focus();
-        }
         renderSearch();
+        const reader = $('#se-reader');
+        reader.classList.add('mobile-open');
+        reader.setAttribute('role', 'dialog');
+        reader.setAttribute('aria-modal', 'true');
+        const scrim = $('#reader-scrim');
+        scrim.hidden = false;
+        scrim.classList.add('is-open');
+        /* 抽屉有 visibility 过渡，等一帧再聚焦，否则焦点会因元素仍不可见而丢失 */
+        window.requestAnimationFrame(() => $('#se-close').focus());
       }
       function closeSearchReader() {
         const reader = $('#se-reader');
@@ -1289,6 +1303,8 @@
         const scrim = $('#reader-scrim');
         scrim.classList.remove('is-open');
         scrim.hidden = true;
+        const active = $('#se-results .result-card.active .result-open');
+        if (active) active.focus();
       }
       function runSearch(query) {
         const search = state.search;
@@ -1303,9 +1319,44 @@
       }
 
       /* ---------------- P3 上传导入 ---------------- */
+      function effectiveScope(host) {
+        const prefix = host === 'import' ? 'im' : 'wr';
+        return state.scope[host].mode === 'new' ? $(`#${prefix}-scope-name`).value.trim() : $(`#${prefix}-scope`).value;
+      }
+      /* 新 Scope 名称校验：允许中文与 - _ . /（用于分层），禁止空格与 \ : * ? " < > |、禁止 .. 与首尾/连续斜杠 */
+      function scopeNameError(name, existingNames, touched) {
+        if (!name) return touched ? '请输入新 Scope 名称' : '';
+        if (/[\\:*?"<>|\s]/.test(name)) return '不能包含空格与 \\ : * ? " < > | 等字符';
+        if (name.startsWith('/') || name.endsWith('/') || name.includes('//')) return '斜杠用于分层，不能出现在开头、结尾或连续出现';
+        if (name.includes('..')) return '不能包含 ..';
+        if (existingNames.includes(name)) return '该名称已存在，请改用「选择已有」';
+        return '';
+      }
+      /* Scope 两种方式：选择已有 / 新建（与正式实现一致，新建需校验名称） */
+      function renderScopeControl(host) {
+        const conf = state.scope[host];
+        const prefix = host === 'import' ? 'im' : 'wr';
+        const creating = conf.mode === 'new';
+        for (const button of $$(`#${prefix}-scope-mode button`)) button.setAttribute('aria-pressed', String(button.dataset.mode === conf.mode));
+        $(`#${prefix}-scope-existing`).hidden = creating;
+        $(`#${prefix}-scope-new`).hidden = !creating;
+        const nameInput = $(`#${prefix}-scope-name`);
+        if (nameInput.value !== conf.name) nameInput.value = conf.name;
+        const existingNames = [...$(`#${prefix}-scope`).options].map((option) => option.value);
+        const error = creating ? scopeNameError(conf.name, existingNames, Boolean(conf.touched)) : '';
+        /* blocking：动作按钮能否继续（名称为空也算未就绪）；error：是否显示红字（未输入时不打扰） */
+        const blocking = creating && (!conf.name || Boolean(error));
+        $(`#${prefix}-scope-error`).textContent = error;
+        $(`#${prefix}-scope-field`).classList.toggle('invalid', Boolean(error));
+        $(`#${prefix}-scope-hint`).textContent = creating
+          ? (conf.name ? '不存在时按此名称创建；与已有名称重复会被拦下' : '请输入新 Scope 名称，例如 wiki/部署运维')
+          : (host === 'import' ? '导入落点；目标不存在时切到「新建」' : '写入目标知识库；不存在时切到「新建」');
+        return { blocking, error, value: effectiveScope(host) };
+      }
       function prepareImportDemo(value) {
         const imp = state.import;
         imp.cancelled = false;
+        state.scope.import = { mode: 'existing', name: '', touched: false };
         if (value === 'empty') { imp.hasFiles = false; imp.phase = 'upload'; return; }
         imp.hasFiles = true;
         imp.phase = value === 'loading' ? 'scan' : 'upload';
@@ -1313,7 +1364,9 @@
       function renderImport() {
         const mode = state.demo.import;
         const imp = state.import;
-        $('#im-target').textContent = `${$('#im-scope').value} / ${$('#im-group').value || $('#im-scope').value}`;
+        const scope = renderScopeControl('import');
+        const scopeLabel = scope.value || '（未命名 Scope）';
+        $('#im-target').textContent = `${scopeLabel} / ${$('#im-group').value || scopeLabel}`;
         renderChips($('#im-tags'), SEARCH_TAGS, imp.tags, (tag) => {
           imp.tags = imp.tags.includes(tag) ? imp.tags.filter((item) => item !== tag) : [...imp.tags, tag];
           renderImport();
@@ -1361,9 +1414,12 @@
             el('span', {})
           ]));
           const finished = imp.phase === 'done' && !imp.cancelled;
-          runButton.disabled = mode === 'error';
+          runButton.disabled = mode === 'error' || scope.blocking;
           runButton.textContent = mode === 'error' ? '等待重试' : imp.cancelled ? '重新开始' : finished ? '再次导入' : '开始导入';
-          status.textContent = imp.cancelled ? '导入已取消，已上传批次保留' : finished ? '导入完成，可前往搜索验证' : '导入进行中，可在后台任务查看进度';
+          status.textContent = scope.blocking ? (scope.error ? '请先修正 Scope 名称' : '请先填写 Scope 名称')
+            : imp.cancelled ? '导入已取消，已上传批次保留'
+            : finished ? '导入完成，可前往搜索验证'
+            : '导入进行中，可在后台任务查看进度';
         }
 
         const badgeHost = $('#im-phase-badge');
@@ -1453,6 +1509,7 @@
         const name = $('#wr-name');
         const group = $('#wr-group');
         const write = state.write;
+        state.scope.write = { mode: 'existing', name: '', touched: false };
         if (value === 'empty') {
           group.value = ''; name.value = ''; write.draft = ''; write.feedback = 'none';
         } else if (value === 'error') {
@@ -1469,6 +1526,7 @@
       function renderWrite() {
         const mode = state.demo.write;
         const write = state.write;
+        const scope = renderScopeControl('write');
         renderChips($('#wr-tags'), SEARCH_TAGS, write.tags, (tag) => {
           write.tags = write.tags.includes(tag) ? write.tags.filter((item) => item !== tag) : [...write.tags, tag];
           renderWrite();
@@ -1482,7 +1540,7 @@
 
         const validation = writeValidation();
         const bodyEmpty = draft.trim() === '';
-        const invalid = Boolean(validation.nameError || validation.groupError);
+        const invalid = Boolean(validation.nameError || validation.groupError || scope.blocking);
         $('#wr-group-field').classList.toggle('invalid', Boolean(validation.groupError));
         $('#wr-name-field').classList.toggle('invalid', Boolean(validation.nameError));
         $('#wr-group-err').textContent = validation.groupError;
@@ -1501,23 +1559,30 @@
         }
         if (invalid || bodyEmpty) {
           const typedName = Boolean($('#wr-name').value.trim());
+          /* Scope 名称问题只由字段下方红字说明；不额外出横幅，避免版面跳动 */
+          const onlyScopePending = scope.blocking && !validation.nameError && !validation.groupError && !bodyEmpty;
           const missing = [];
+          if (scope.blocking) missing.push('Scope 名称');
           if (validation.groupError) missing.push('Group');
           if (validation.nameError) missing.push('文档名');
           if (bodyEmpty) missing.push('正文');
-          status.textContent = invalid ? '校验未通过' : '等待填写';
+          status.textContent = scope.error || validation.nameError || validation.groupError ? '校验未通过' : '等待填写';
           saveButton.textContent = '保存';
           saveButton.disabled = true;
-          feedback.replaceChildren(mode === 'error' || (typedName && validation.nameError)
-            ? bannerEl('danger', 'alert', '写入失败', validation.nameError || validation.groupError || '正文为空，无法写入。')
-            : bannerEl('', 'edit', '尚未填写', `还需要填写：${missing.join('、')}。填写后即可保存，右侧预览会同步显示排版。`));
+          if (mode === 'error' || (typedName && validation.nameError) || validation.groupError) {
+            feedback.replaceChildren(bannerEl('danger', 'alert', '写入失败', scope.error || validation.nameError || validation.groupError || '正文为空，无法写入。'));
+          } else if (onlyScopePending) {
+            feedback.replaceChildren();
+          } else {
+            feedback.replaceChildren(bannerEl('', 'edit', '尚未填写', `还需要填写：${missing.join('、')}。填写后即可保存，右侧预览会同步显示排版。`));
+          }
           return;
         }
         if (write.feedback === 'success' && write.lastSave) {
           status.textContent = '已保存';
           saveButton.textContent = '保存';
           saveButton.disabled = false;
-          feedback.replaceChildren(bannerEl('success', 'check', write.lastSave.vectorized ? '写入成功（已建立向量索引）' : '写入成功（未向量化）', `标签：${write.lastSave.tags || '（无）'} · 已写入 ${write.lastSave.scope}/${write.lastSave.group}`, [
+          feedback.replaceChildren(bannerEl('success', 'check', write.lastSave.vectorized ? '写入成功（已建立向量索引）' : '写入成功（未向量化）', `标签：${write.lastSave.tags || '（无）'} · ${write.lastSave.created ? '已新建 Scope 并写入' : '已写入'} ${write.lastSave.scope}/${write.lastSave.group}`, [
             el('a', { class: 'button ghost sm', href: '../knowledge-workbench/index.html', text: '查看写入位置 →' })
           ]));
           return;
@@ -1708,7 +1773,7 @@
           showView(view);
         });
       }
-      window.addEventListener('resize', () => { if (window.innerWidth >= 960) closeSearchReader(); else closeNav(); });
+      window.addEventListener('resize', () => { if (window.innerWidth >= 960) closeNav(); });
       document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         closeSearchReader();
@@ -1743,7 +1808,6 @@
         $('#se-q').focus();
       });
       $('#se-close').addEventListener('click', closeSearchReader);
-      $('#se-back').addEventListener('click', closeSearchReader);
       $('#reader-scrim').addEventListener('click', closeSearchReader);
 
       $('#im-pick-files').addEventListener('click', () => {
@@ -1761,6 +1825,19 @@
         window.setTimeout(() => { state.demo.import = 'normal'; prepareImportDemo('normal'); renderImport(); syncDemoStates(); }, 900);
       });
       $('#im-scope').addEventListener('change', renderImport);
+      /* Scope 两种方式：切换「已有 / 新建」并即时校验新名称 */
+      for (const host of ['import', 'write']) {
+        const prefix = host === 'import' ? 'im' : 'wr';
+        for (const button of $$(`#${prefix}-scope-mode button`)) {
+          button.addEventListener('click', () => {
+            state.scope[host].mode = button.dataset.mode;
+            state.scope[host].touched = false;
+            render(host);
+            if (button.dataset.mode === 'new') $(`#${prefix}-scope-name`).focus();
+          });
+        }
+        $(`#${prefix}-scope-name`).addEventListener('input', (event) => { state.scope[host].name = event.target.value; state.scope[host].touched = true; render(host); });
+      }
       $('#im-group').addEventListener('input', renderImport);
       $('#im-run').addEventListener('click', () => {
         state.import.cancelled = false;
@@ -1785,7 +1862,7 @@
       $('#wr-save').addEventListener('click', () => {
         const current = $('#wr-body');
         if (current) state.write.draft = current.value;
-        state.write.lastSave = { vectorized: $('#wr-vector').checked, tags: state.write.tags.join('、'), scope: $('#wr-scope').value, group: $('#wr-group').value.trim() };
+        state.write.lastSave = { vectorized: $('#wr-vector').checked, tags: state.write.tags.join('、'), scope: effectiveScope('write'), group: $('#wr-group').value.trim(), created: state.scope.write.mode === 'new' };
         state.demo.write = 'loading';
         renderWrite();
         syncDemoStates();
