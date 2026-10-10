@@ -1,0 +1,1764 @@
+{
+  "startedAt": "2026-10-09T09:49:44.741Z",
+  "workDir": "/root/knowledge-indexer/temp/exp-cpu-1791539384741",
+  "params": {
+    "N": 8000,
+    "BATCH": 200,
+    "PASSES": 1,
+    "CAP_S": 90,
+    "DIM": 1024,
+    "TEXT_BYTES": 800,
+    "INIT": null,
+    "HZ": 100
+  },
+  "arms": [
+    {
+      "arm": "C",
+      "label": "两轮写入 + optimizeSync()（=当前封装）",
+      "config": {
+        "n": 8000,
+        "batch": 200,
+        "passes": 2,
+        "optimize": "sync",
+        "init": null
+      },
+      "statsAtCreate": {
+        "indexCompleteness": {
+          "dense": 1
+        },
+        "docCount": 0
+      },
+      "pass1End": {
+        "wallMs": 1619,
+        "cpuSeconds": 1.64,
+        "stats": {
+          "dense": 0
+        }
+      },
+      "pass2End": {
+        "wallMs": 3349,
+        "cpuSeconds": 3.39,
+        "stats": {
+          "dense": 0
+        }
+      },
+      "write": {
+        "docs": 16000,
+        "wallMs": 3357,
+        "cpuSeconds": 3.41,
+        "batchMsP50": 34,
+        "batchMsP95": 39,
+        "batches": 80,
+        "indexCompleteness": {
+          "dense": 0
+        }
+      },
+      "tail": {
+        "quietReached": true,
+        "wallMs": 2321,
+        "cpuSeconds": 0.08,
+        "maxCpuPct": 7.7,
+        "maxBusyThreads": 0,
+        "topThreads": [
+          "node"
+        ],
+        "indexCompletenessAtQuiet": {
+          "dense": 0
+        },
+        "queryMsP50": 6,
+        "queryMsP95": 16,
+        "observedMs": 2321,
+        "spikeCount": 0,
+        "spikes": []
+      },
+      "optimizeCall": "optimizeSync()",
+      "optimize": {
+        "wallMs": 3891,
+        "cpuSeconds": 15.25,
+        "indexCompleteness": {
+          "dense": 1
+        }
+      },
+      "postOptimize": {
+        "wallMs": 2036,
+        "cpuSeconds": 0.06,
+        "quietReached": true,
+        "indexCompleteness": {
+          "dense": 1
+        }
+      },
+      "reopen": {
+        "reopenMs": 93,
+        "docCountBefore": 8000,
+        "statsAtOpen": {
+          "indexCompleteness": null,
+          "docCount": null,
+          "error": "Collection is closed"
+        },
+        "hitCount": 10,
+        "statsAfterQuery": {
+          "docCount": 8000,
+          "indexCompleteness": {
+            "dense": 1
+          }
+        }
+      },
+      "finalDir": {
+        "files": 56,
+        "bytes": 53289983,
+        "lastMtimeMs": 1791539397546.5342
+      },
+      "samples": [
+        {
+          "t": 53,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 0.94,
+          "cpuPct": 96.2,
+          "totalCpuSeconds": 0.05,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 6289937,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 448,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 1.34,
+          "cpuPct": 98.7,
+          "totalCpuSeconds": 0.44,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 24616369,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 844,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 1.75,
+          "cpuPct": 103.5,
+          "totalCpuSeconds": 0.85,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 42942601,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1241,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 2.17,
+          "cpuPct": 100.8,
+          "totalCpuSeconds": 1.25,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 61268833,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1609,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 2.54,
+          "cpuPct": 103.3,
+          "totalCpuSeconds": 1.63,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 78578365,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1609,
+          "phase": "write:pass1#end",
+          "cpuProcSeconds": 2.55,
+          "cpuPct": 0,
+          "totalCpuSeconds": 1.64,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 78578365,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 10
+        },
+        {
+          "t": 1667,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 2.61,
+          "cpuPct": 103.4,
+          "totalCpuSeconds": 1.7,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 79594946,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2086,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 3.03,
+          "cpuPct": 102.6,
+          "totalCpuSeconds": 2.13,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 97921378,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2501,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 3.46,
+          "cpuPct": 101.2,
+          "totalCpuSeconds": 2.55,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 116247610,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2941,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 3.91,
+          "cpuPct": 102.3,
+          "totalCpuSeconds": 3,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 134573842,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 3332,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 4.31,
+          "cpuPct": 99.7,
+          "totalCpuSeconds": 3.39,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 3333,
+          "phase": "write:pass2#end",
+          "cpuProcSeconds": 4.33,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.39,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 16
+        },
+        {
+          "t": 3350,
+          "phase": "write#end",
+          "cpuProcSeconds": 4.34,
+          "cpuPct": 117.6,
+          "totalCpuSeconds": 3.41,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 3609,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.36,
+          "cpuPct": 7.7,
+          "totalCpuSeconds": 3.43,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 3867,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.36,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.44,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4124,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.37,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.45,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4382,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.38,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.45,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 4640,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.39,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.46,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4897,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.39,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.47,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 5155,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.4,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.47,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 5412,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.41,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.48,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 5670,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 4.42,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.49,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 9570,
+          "phase": "optimize#end",
+          "cpuProcSeconds": 21.25,
+          "cpuPct": 391,
+          "totalCpuSeconds": 18.74,
+          "topThread": "rocksdb:high",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 5
+        },
+        {
+          "t": 9826,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.25,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 18.75,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        },
+        {
+          "t": 10081,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.25,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 18.76,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 10335,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.26,
+          "cpuPct": 0,
+          "totalCpuSeconds": 18.76,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 10590,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.26,
+          "cpuPct": 0,
+          "totalCpuSeconds": 18.76,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 10844,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.27,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 18.77,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 11098,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.27,
+          "cpuPct": 0,
+          "totalCpuSeconds": 18.77,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        },
+        {
+          "t": 11353,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.28,
+          "cpuPct": 7.8,
+          "totalCpuSeconds": 18.79,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 11608,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 21.3,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 18.8,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        }
+      ],
+      "sampleCount": 31
+    },
+    {
+      "arm": "D",
+      "label": "两轮写入 + await optimize({concurrency:1})",
+      "config": {
+        "n": 8000,
+        "batch": 200,
+        "passes": 2,
+        "optimize": "async",
+        "concurrency": 1,
+        "init": null
+      },
+      "statsAtCreate": {
+        "indexCompleteness": {
+          "dense": 1
+        },
+        "docCount": 0
+      },
+      "pass1End": {
+        "wallMs": 1558,
+        "cpuSeconds": 1.61,
+        "stats": {
+          "dense": 0
+        }
+      },
+      "pass2End": {
+        "wallMs": 3184,
+        "cpuSeconds": 3.28,
+        "stats": {
+          "dense": 0
+        }
+      },
+      "write": {
+        "docs": 16000,
+        "wallMs": 3191,
+        "cpuSeconds": 3.28,
+        "batchMsP50": 32,
+        "batchMsP95": 37,
+        "batches": 80,
+        "indexCompleteness": {
+          "dense": 0
+        }
+      },
+      "tail": {
+        "quietReached": true,
+        "wallMs": 2323,
+        "cpuSeconds": 0.07,
+        "maxCpuPct": 3.9,
+        "maxBusyThreads": 0,
+        "topThreads": [
+          "node"
+        ],
+        "indexCompletenessAtQuiet": {
+          "dense": 0
+        },
+        "queryMsP50": 6,
+        "queryMsP95": 14,
+        "observedMs": 2323,
+        "spikeCount": 0,
+        "spikes": []
+      },
+      "optimizeCall": "optimize({concurrency:1})",
+      "optimize": {
+        "wallMs": 13309,
+        "cpuSeconds": 1.3,
+        "indexCompleteness": {
+          "dense": 1
+        }
+      },
+      "postOptimize": {
+        "wallMs": 2039,
+        "cpuSeconds": 0.04,
+        "quietReached": true,
+        "indexCompleteness": {
+          "dense": 1
+        }
+      },
+      "reopen": {
+        "reopenMs": 98,
+        "docCountBefore": 8000,
+        "statsAtOpen": {
+          "indexCompleteness": null,
+          "docCount": null,
+          "error": "Collection is closed"
+        },
+        "hitCount": 10,
+        "statsAfterQuery": {
+          "docCount": 8000,
+          "indexCompleteness": {
+            "dense": 1
+          }
+        }
+      },
+      "finalDir": {
+        "files": 56,
+        "bytes": 53289983,
+        "lastMtimeMs": 1791539419318.53
+      },
+      "samples": [
+        {
+          "t": 51,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 22.14,
+          "cpuPct": 100,
+          "totalCpuSeconds": 0.05,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 6289937,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 439,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 22.54,
+          "cpuPct": 105.7,
+          "totalCpuSeconds": 0.46,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 24616369,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 808,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 22.92,
+          "cpuPct": 100.3,
+          "totalCpuSeconds": 0.83,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 42942601,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1204,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 23.33,
+          "cpuPct": 106.1,
+          "totalCpuSeconds": 1.25,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 61268833,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1553,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 23.69,
+          "cpuPct": 100.3,
+          "totalCpuSeconds": 1.6,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 78578365,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1554,
+          "phase": "write:pass1#end",
+          "cpuProcSeconds": 23.69,
+          "cpuPct": 1000,
+          "totalCpuSeconds": 1.61,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 78578365,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 4
+        },
+        {
+          "t": 1602,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 23.74,
+          "cpuPct": 104.2,
+          "totalCpuSeconds": 1.66,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 79594946,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2000,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 24.15,
+          "cpuPct": 103,
+          "totalCpuSeconds": 2.07,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 97921378,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2394,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 24.55,
+          "cpuPct": 101.5,
+          "totalCpuSeconds": 2.47,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 116247610,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2790,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 24.96,
+          "cpuPct": 103.5,
+          "totalCpuSeconds": 2.88,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 134573842,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 3169,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 25.35,
+          "cpuPct": 102.9,
+          "totalCpuSeconds": 3.27,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 3170,
+          "phase": "write:pass2#end",
+          "cpuProcSeconds": 25.37,
+          "cpuPct": 1000,
+          "totalCpuSeconds": 3.28,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 14
+        },
+        {
+          "t": 3185,
+          "phase": "write#end",
+          "cpuProcSeconds": 25.37,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.28,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 3442,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.38,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.29,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 3700,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.39,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.3,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 3959,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.4,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.31,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4217,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.41,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.32,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4475,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.42,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.33,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 5
+        },
+        {
+          "t": 4733,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.42,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.33,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 4991,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.43,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.34,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 5249,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.44,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.35,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 5507,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 25.45,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.35,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 18824,
+          "phase": "optimize#end",
+          "cpuProcSeconds": 38.44,
+          "cpuPct": 9.8,
+          "totalCpuSeconds": 4.65,
+          "topThread": "rocksdb:high",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 5
+        },
+        {
+          "t": 19081,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.45,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.66,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 19336,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.45,
+          "cpuPct": 0,
+          "totalCpuSeconds": 4.66,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 19591,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.46,
+          "cpuPct": 0,
+          "totalCpuSeconds": 4.66,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 19845,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.46,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.67,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 20100,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.47,
+          "cpuPct": 0,
+          "totalCpuSeconds": 4.67,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 4
+        },
+        {
+          "t": 20356,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.47,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.68,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        },
+        {
+          "t": 20611,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.48,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.69,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 20865,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 38.48,
+          "cpuPct": 0,
+          "totalCpuSeconds": 4.69,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        }
+      ],
+      "sampleCount": 31
+    },
+    {
+      "arm": "G",
+      "label": "两轮写入 + await optimize({concurrency:4})",
+      "config": {
+        "n": 8000,
+        "batch": 200,
+        "passes": 2,
+        "optimize": "async",
+        "concurrency": 4,
+        "init": null
+      },
+      "statsAtCreate": {
+        "indexCompleteness": {
+          "dense": 1
+        },
+        "docCount": 0
+      },
+      "pass1End": {
+        "wallMs": 1521,
+        "cpuSeconds": 1.58,
+        "stats": {
+          "dense": 0
+        }
+      },
+      "pass2End": {
+        "wallMs": 3140,
+        "cpuSeconds": 3.25,
+        "stats": {
+          "dense": 0
+        }
+      },
+      "write": {
+        "docs": 16000,
+        "wallMs": 3146,
+        "cpuSeconds": 3.26,
+        "batchMsP50": 32,
+        "batchMsP95": 36,
+        "batches": 80,
+        "indexCompleteness": {
+          "dense": 0
+        }
+      },
+      "tail": {
+        "quietReached": true,
+        "wallMs": 2325,
+        "cpuSeconds": 0.07,
+        "maxCpuPct": 7.7,
+        "maxBusyThreads": 0,
+        "topThreads": [
+          "node"
+        ],
+        "indexCompletenessAtQuiet": {
+          "dense": 0
+        },
+        "queryMsP50": 6,
+        "queryMsP95": 7,
+        "observedMs": 2325,
+        "spikeCount": 0,
+        "spikes": []
+      },
+      "optimizeCall": "optimize({concurrency:4})",
+      "optimize": {
+        "wallMs": 5381,
+        "cpuSeconds": 1.27,
+        "indexCompleteness": {
+          "dense": 1
+        }
+      },
+      "postOptimize": {
+        "wallMs": 2038,
+        "cpuSeconds": 0.05,
+        "quietReached": true,
+        "indexCompleteness": {
+          "dense": 1
+        }
+      },
+      "reopen": {
+        "reopenMs": 95,
+        "docCountBefore": 8000,
+        "statsAtOpen": {
+          "indexCompleteness": null,
+          "docCount": null,
+          "error": "Collection is closed"
+        },
+        "hitCount": 10,
+        "statsAfterQuery": {
+          "docCount": 8000,
+          "indexCompleteness": {
+            "dense": 1
+          }
+        }
+      },
+      "finalDir": {
+        "files": 56,
+        "bytes": 53289983,
+        "lastMtimeMs": 1791539433066.5273
+      },
+      "samples": [
+        {
+          "t": 44,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 39.29,
+          "cpuPct": 116.3,
+          "totalCpuSeconds": 0.05,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 6289937,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 412,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 39.67,
+          "cpuPct": 103.3,
+          "totalCpuSeconds": 0.43,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 24616369,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 784,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 40.06,
+          "cpuPct": 104.8,
+          "totalCpuSeconds": 0.82,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 42942601,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1167,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 40.46,
+          "cpuPct": 104.4,
+          "totalCpuSeconds": 1.22,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 61268833,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1516,
+          "phase": "write:pass1",
+          "cpuProcSeconds": 40.82,
+          "cpuPct": 103.2,
+          "totalCpuSeconds": 1.58,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 78578365,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1517,
+          "phase": "write:pass1#end",
+          "cpuProcSeconds": 40.83,
+          "cpuPct": 0,
+          "totalCpuSeconds": 1.58,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 78578365,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 5
+        },
+        {
+          "t": 1566,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 40.87,
+          "cpuPct": 102,
+          "totalCpuSeconds": 1.63,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 79594946,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 1976,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 41.3,
+          "cpuPct": 102.4,
+          "totalCpuSeconds": 2.05,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 97921378,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2384,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 41.72,
+          "cpuPct": 107.8,
+          "totalCpuSeconds": 2.49,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 116247610,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 2775,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 42.12,
+          "cpuPct": 102.3,
+          "totalCpuSeconds": 2.89,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 134573842,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 3134,
+          "phase": "write:pass2",
+          "cpuProcSeconds": 42.49,
+          "cpuPct": 100.3,
+          "totalCpuSeconds": 3.25,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": null
+        },
+        {
+          "t": 3135,
+          "phase": "write:pass2#end",
+          "cpuProcSeconds": 42.5,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.25,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 3142,
+          "phase": "write#end",
+          "cpuProcSeconds": 42.5,
+          "cpuPct": 142.9,
+          "totalCpuSeconds": 3.26,
+          "topThread": "node",
+          "busyThreadsGt50": 1,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 5
+        },
+        {
+          "t": 3399,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.51,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.26,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 3657,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.52,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.27,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 3915,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.53,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.28,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4173,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.53,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.29,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4431,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.54,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.29,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 4689,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.55,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.3,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 4948,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.56,
+          "cpuPct": 7.7,
+          "totalCpuSeconds": 3.32,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 5207,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.57,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 3.33,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 6
+        },
+        {
+          "t": 5465,
+          "phase": "tail:pre-optimize",
+          "cpuProcSeconds": 42.58,
+          "cpuPct": 0,
+          "totalCpuSeconds": 3.33,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 29,
+          "bytes": 151883374,
+          "indexCompleteness": {
+            "dense": 0
+          },
+          "queryMs": 7
+        },
+        {
+          "t": 10854,
+          "phase": "optimize#end",
+          "cpuProcSeconds": 54.8,
+          "cpuPct": 23.6,
+          "totalCpuSeconds": 4.6,
+          "topThread": "libuv-worker",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 4
+        },
+        {
+          "t": 11110,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.81,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.61,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        },
+        {
+          "t": 11364,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.82,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.62,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 11618,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.83,
+          "cpuPct": 0,
+          "totalCpuSeconds": 4.62,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 11873,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.84,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.63,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        },
+        {
+          "t": 12128,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.85,
+          "cpuPct": 0,
+          "totalCpuSeconds": 4.63,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 12382,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.85,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.64,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 2
+        },
+        {
+          "t": 12637,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.86,
+          "cpuPct": 0,
+          "totalCpuSeconds": 4.64,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        },
+        {
+          "t": 12893,
+          "phase": "post-optimize",
+          "cpuProcSeconds": 54.86,
+          "cpuPct": 3.9,
+          "totalCpuSeconds": 4.65,
+          "topThread": "node",
+          "busyThreadsGt50": 0,
+          "files": 52,
+          "bytes": 53273812,
+          "indexCompleteness": {
+            "dense": 1
+          },
+          "queryMs": 3
+        }
+      ],
+      "sampleCount": 31
+    }
+  ],
+  "summary": [
+    {
+      "arm": "C",
+      "label": "两轮写入 + optimizeSync()（=当前封装）",
+      "write.cpuSec": 3.41,
+      "write.wallMs": 3357,
+      "tail.wallMs": 2321,
+      "tail.cpuSec": 0.08,
+      "tail.maxCpuPct": 7.7,
+      "tail.busyThreads": 0,
+      "tail.quiet": true,
+      "opt.wallMs": 3891,
+      "opt.cpuSec": 15.25,
+      "post.cpuSec": 0.06,
+      "query.p95ms": 16,
+      "finalCompleteness": "{\"dense\":0}"
+    },
+    {
+      "arm": "D",
+      "label": "两轮写入 + await optimize({concurrency:1})",
+      "write.cpuSec": 3.28,
+      "write.wallMs": 3191,
+      "tail.wallMs": 2323,
+      "tail.cpuSec": 0.07,
+      "tail.maxCpuPct": 3.9,
+      "tail.busyThreads": 0,
+      "tail.quiet": true,
+      "opt.wallMs": 13309,
+      "opt.cpuSec": 1.3,
+      "post.cpuSec": 0.04,
+      "query.p95ms": 14,
+      "finalCompleteness": "{\"dense\":0}"
+    },
+    {
+      "arm": "G",
+      "label": "两轮写入 + await optimize({concurrency:4})",
+      "write.cpuSec": 3.26,
+      "write.wallMs": 3146,
+      "tail.wallMs": 2325,
+      "tail.cpuSec": 0.07,
+      "tail.maxCpuPct": 7.7,
+      "tail.busyThreads": 0,
+      "tail.quiet": true,
+      "opt.wallMs": 5381,
+      "opt.cpuSec": 1.27,
+      "post.cpuSec": 0.05,
+      "query.p95ms": 7,
+      "finalCompleteness": "{\"dense\":0}"
+    }
+  ],
+  "finishedAt": "2026-10-09T09:50:33.072Z"
+}

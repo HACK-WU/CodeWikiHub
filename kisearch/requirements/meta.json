@@ -169,18 +169,25 @@
       "id": "REQ-20260930-002",
       "feature": "单Scope大规模数据存储与导入可用性",
       "created": "2026-09-30 12:22:52",
-      "updated": "2026-09-30 18:17:00",
+      "updated": "2026-10-09 18:37:08",
       "status": "草案",
       "tags": [
         "feat",
         "performance"
       ],
-      "version": 3,
+      "version": 10,
       "depends_on": [],
       "changelog": [
         "初始创建",
         "2026-09-30 12:24:41 v2: 落盘单 Scope 百万 chunk 存储与导入可用性需求草案",
-        "2026-09-30 18:17:00 v3: 补充阶段 0 止血需求：计数、分页、导入预算、完成后资源诊断、JSON 写放大与队列反馈"
+        "2026-09-30 18:17:00 v3: 补充阶段 0 止血需求：计数、分页、导入预算、完成后资源诊断、JSON 写放大与队列反馈",
+        "2026-10-09 11:17:49 v4: 批次 2 代码审查：2 P0 + 8 P1（含 challenger 3 条高风险）",
+        "2026-10-09 12:24:37 v5: 批次 2 修复完成：2 P0 + 8 P1 + 12 P2 全修，新增 3 测试文件/扩展 4 套件，全量回归通过（仅既有失效例外）",
+        "2026-10-09 13:08:09 v6: 第二轮代码复审：新增 P0（项目根前缀剥离致键分叉，export/query-group/delete-group 静默失真，已端到端复现）",
+        "2026-10-09 13:09:01 v7: 第二轮质疑：P0 成立且影响面扩至 5 个消费方（追加 delete-relation 单条）；修复方向 A + 3 处测试断言连带修正",
+        "2026-10-09 14:11:59 v8: 第二轮全面修复：P0 键不变量（删除无条件剥离 + 分片键随 roots→groups 迁移改名）+ 3 P1 + 8 P2；新增 group-key-invariant 测试 5 例、复现脚本全部翻转、35+ 套件全绿、tsc 基线新增 0 条",
+        "2026-10-09 17:02:57 v9: 排查：大批量导入完成后该 scope 目录加载不出 + 单核 CPU 100%（引擎收尾期间 doc-list 同 scope 队列排队）",
+        "2026-10-09 18:37:08 v10: 子需求 REQ-20261009-003 立项完成：落地本需求 R3/S0-4/S0-6，附两项隔离实验结论（索引从未建立；CPU 尾巴触发条件=对已存在数据再写一遍）"
       ],
       "commits": [],
       "branch": null,
@@ -188,11 +195,26 @@
         {
           "path": "requirement.md",
           "type": "requirement"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/debug-report.md",
+          "type": "review"
         }
       ],
-      "role": "standalone",
+      "role": "parent",
       "parent_id": null,
-      "child_ids": []
+      "child_ids": [
+        "REQ-20261009-003",
+        "REQ-20261010-001"
+      ]
     },
     "2026-09-30-知识库浏览工作台 Demo": {
       "id": "REQ-20260930-003",
@@ -253,11 +275,257 @@
       "role": "standalone",
       "parent_id": null,
       "child_ids": []
+    },
+    "2026-10-09-导入部分成功可用、失败重试与导入页交互修": {
+      "id": "REQ-20261009-001",
+      "feature": "导入部分成功可用、失败重试与导入页交互修复",
+      "created": "2026-10-09 14:30:14",
+      "updated": "2026-10-09 16:41:50",
+      "status": "已完成",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 12,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-09 14:31:07 v2: PM 需求分析（M1）：4 条诉求现状取证（代码直读）+ 根因链 + 需求清单 R1-R4 + 影响面 + 8 条负向需求 + 7 项待拍板",
+        "2026-10-09 14:50:36 v3: 用户拍板 Q1-Q5/Q7 闭环（Q1 文件级完成口径、Q2 CLI/Web 同口径、Q3 只清 UI、Q4 新建、Q5 忽略、Q7 显式按钮+失焦确认）+ 新增 R5 对话删除（取证：单删已存在，缺口为批量/清空入口/可发现性）+ Q6 展示方案两选一待确认",
+        "2026-10-09 14:53:36 v4: Q6 定案：默认方案（Browse 不出现，清单落导入页结果区+任务中心）；新增 §10 可实现性分析：R3/R4/R5-(2)(3) 可直接开工，R1 可实现且改动收敛在 2 个决定点（文件级判定与逐文件提交通路已存在），R2 依赖 R1 清单，遗留 D1/D2/D3 三个决策点",
+        "2026-10-09 15:12:58 v5: R1 落地（批 2+3）：系统停止改文件级部分提交 + 取消路径统一 + CLI/Web 同口径出口；新增 import-partial-success 测试 3/3，import-vector-rebuild 用例改写为新语义",
+        "2026-10-09 15:22:56 v6: R2 落地（批 4）：未完成清单 scope 级持久化 + onlyRelPaths 子集重试（CLI --retry-incomplete / HTTP / Web「重试未完成 N 篇」复用同一 uploadId）；新增 import-retry 测试 2/2 与浏览器实测 6/6",
+        "2026-10-09 15:59:12 v7: 实现报告归档：R1–R5 全部落地（文件级部分成功 + 只重试未完成 + 导入页三处交互）；验收清单 11 项全通过并带证据；登记 6 项遗留",
+        "2026-10-09 15:59:16 v8: 状态置为已完成（R1–R5 全部落地并通过验收清单）",
+        "2026-10-09 16:10:46 v9: 完成代码审查（1 P0 + 3 P1，含 2 个新发现）",
+        "2026-10-09 16:10:46 v10: 完成 challenger 二次质疑（8 条成立质疑）",
+        "2026-10-09 16:26:51 v11: 修复 P0-1：部分成功态切页保留结果与重试入口（方案 A），浏览器实测 16/16 + web 58/58 + build 通过",
+        "2026-10-09 16:41:50 v12: review 剩余问题全量修复：tag/path 辅助向量降级、daemon 状态口径、清单跨源备份、onlyRelPaths 净化、files.scanned/skipped、Web 展示 retryFilter 等；结论更新为可直接合入"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "report.md",
+          "type": "report"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-09-全屏阅读与AI对话协同及文档引用": {
+      "id": "REQ-20261009-002",
+      "feature": "全屏阅读与AI对话协同及文档引用",
+      "created": "2026-10-09 15:19:00",
+      "updated": "2026-10-09 20:23:33",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 10,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-09 15:19:26 v2: 合并两条用户诉求（全屏面板共存 + 输入框文档段落引用）并完成需求定稿",
+        "2026-10-09 15:21:05 v3: 完成交互设计（共存策略A + 引用交互 S-01~S-09）",
+        "2026-10-09 17:31:04 v4: 需求 A（全屏面板共存）实现完成，实机验证通过；待验收 R4-R6 余项",
+        "2026-10-09 17:38:06 v5: 需求A走查修正：面板打开时保留全屏导航（撤销 display:none 强制隐藏），验证 1600/1440/1280 三档通过",
+        "2026-10-09 17:46:39 v6: 需求 B（输入框引用文档片段）实现完成：契约 ChatRef + 后端软提示注入 + 前端选择器与可删标签；后端 6/6 与端到端验证通过",
+        "2026-10-09 17:52:35 v7: 引用入口交互修正：取消必弹模态框，改为在当前打开的文档正文里直接划选（无文档时回退弹层）",
+        "2026-10-09 19:30:57 v8: 完成代码审查（深度模式）：P1×2 已修复（parseRefs 长度上限+补测、parity 补 ChatRef），后端 30/30 + web 58/58 全绿，结论 ✅ 可合入（建议拆 3 commit）",
+        "2026-10-09 19:33:00 v9: 完成 challenger 对抗式质疑：6 项质疑均不成立（无阻塞级），合入结论维持 ✅；2 项语义确认项并入跟进",
+        "2026-10-09 20:23:33 v10: 走查 bug 修复：引用块由 system 注入改为并入本轮 user（修复答非所问/复述错乱）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/interaction-design.md",
+          "type": "design"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/debug-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-09-导入完成口径与索引整理阶段": {
+      "id": "REQ-20261009-003",
+      "feature": "导入完成口径两级化与索引整理阶段",
+      "created": "2026-10-09 17:18:46",
+      "updated": "2026-10-10 19:10:23",
+      "status": "设计中",
+      "tags": [
+        "feat",
+        "ux",
+        "performance"
+      ],
+      "version": 16,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-09 17:51:01 v2: 实验 1 完成：optimize() 的真实代价与「不调它」的后果（现网全库 indexCompleteness.dense=0；并发度只改变核数/墙钟不改变总 CPU；生产 11 分钟≈660 单核秒 vs 索引构建≈20 单核秒 ⇒ 尾巴主体不是建索引）",
+        "2026-10-09 18:37:08 v3: 实验 2 记录归档 + 完成立项：需求条目 R1–R7（含实验 2 衍生的 R7「跳过未变重写」）、影响面、负向需求 N1–N8、验收 A1–A8、待拍板 Q1–Q5",
+        "2026-10-09 20:20:43 v4: auto-review 完成：1 P0 + 1 阻塞质疑（C1）已修复并复验（协调器测试 8/8、套件 notok=0、e2e read 0ms）",
+        "2026-10-09 20:20:43 v5: challenger 二次质疑完成（5 条成立：1 阻塞已修复，4 条登记 P1/P2）",
+        "2026-10-10 10:26:48 v6: 现场二（ai-docs-v4）排障并入：新增 R8/R9、N9~N11、A9~A11、Q6/Q7；修正 H1/H4；补实现状态；需求升至 v2",
+        "2026-10-10 10:50:20 v7: R8 第一期落地：vector/status/refresh 超时 5s 降级（handler 内超时以释放队列槽）；新增 lib/timeout.ts；实测撞锁 5003ms 降级 + 紧随 doc/list 2ms",
+        "2026-10-10 11:10:03 v8: W4 设计输入包落盘（Q6 三条路线取舍 + Q7 结论 + R9/R2/R1/R4/R6/R7 约束/证据/依赖）",
+        "2026-10-10 11:10:03 v9: 补登实验 3（Q7 核定）报告",
+        "2026-10-10 11:23:57 v10: R8 二期代码审查（第 2 轮，修复 2xP1+7xP2）",
+        "2026-10-10 11:23:57 v11: R8 二期自动质疑（0 阻塞；1 条经现网实测证伪）",
+        "2026-10-10 14:57:47 v12: 完成技术设计（父文档 + 4 子需求：索引整理能力/完成口径与阶段/就绪判据与可观测/写侧不变量与读全旁路）",
+        "2026-10-10 15:00:11 v13: 设计评审第 1 轮：❌ 不通过（3 阻断 + 3 疑似阻断 + 12 警告 + 4 建议）",
+        "2026-10-10 15:08:26 v14: 设计按评审第 1 轮修复（🔴3+疑似3+🟡12+🟢4 全部处置）；第 2 轮增量再审 ✅ 通过（新增 2 项同轮修复 + 1 项记录）",
+        "2026-10-10 19:10:23 v15: 执行台账快照复制到需求目录 plan/（plan.md）",
+        "2026-10-10 19:10:23 v16: 执行台账快照复制到需求目录 plan/（checklist.md）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "review/exp-1-indexing-cpu.md",
+          "type": "review"
+        },
+        {
+          "path": "review/exp-2-indexing-compaction.md",
+          "type": "review"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/debug-report.md",
+          "type": "review"
+        },
+        {
+          "path": "design/design-input.md",
+          "type": "design"
+        },
+        {
+          "path": "review/exp-3-index-completeness-semantics.md",
+          "type": "review"
+        },
+        {
+          "path": "review/code-review-r8-phase2.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report-r8-phase2.md",
+          "type": "review"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_索引整理能力_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_完成口径与阶段展示_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_索引就绪判据与可观测_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_写侧不变量与读全旁路_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "plan/plan.md",
+          "type": "report"
+        },
+        {
+          "path": "plan/checklist.md",
+          "type": "report"
+        }
+      ],
+      "role": "child",
+      "parent_id": "REQ-20260930-002",
+      "child_ids": []
+    },
+    "2026-10-10-导入路径口径对齐与增量导入": {
+      "id": "REQ-20261010-001",
+      "feature": "导入路径口径对齐与增量导入",
+      "created": "2026-10-10 11:03:12",
+      "updated": "2026-10-10 12:15:51",
+      "status": "已确认",
+      "tags": [
+        "feat",
+        "bugfix",
+        "ux",
+        "performance"
+      ],
+      "version": 5,
+      "depends_on": [
+        "REQ-20261009-003"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-10-10 11:04:05 v2: 完成 Bug 排查（根因：Web/CLI 入口 rel 口径错位导致重复导入与跳过未生效）；落盘最小复现与排错报告；Q4 表单重置已实施并实机验证 15/15",
+        "2026-10-10 11:09:33 v3: v3：拍板 Q1~Q3 —— 做重复导入预检提示（导入前确认）；增量导入做成「同名文档处理」下拉第一项且为默认（撞名兜底=自动后缀）；剥离破坏面不额外提示（仅文档层记录）。新增 D6~D8、A10、R7",
+        "2026-10-10 11:38:25 v4: v4：追加拍板 D9（CLI/Web 同默认 incremental）与 D10（增量对同名一律直接覆盖，不引入后缀兜底）；实现与文档/契约注释已同步（auto-review + challenger：修正 5 处过期表述，补上传层耦合注释）",
+        "2026-10-10 12:15:51 v5: S-03 落地：新增 REPEAT 预检（只读端点 /api/import/preflight + import-preflight.ts + 导入页确认卡）；Web 流程改为「上传不带 finalize → 预检 → 确认 → 显式 run」，取消零写入；test/import-preflight 3/3、真实 HTTP 实测命中/不命中；文档同步（docs/import.md 预检章节、docs/mcp-http.md 端点表与流程描述）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "review/debug-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "child",
+      "parent_id": "REQ-20260930-002",
+      "child_ids": []
     }
   },
   "id_counters": {
     "REQ-20260928": 2,
     "REQ-20260929": 1,
-    "REQ-20260930": 3
+    "REQ-20260930": 3,
+    "REQ-20261009": 3,
+    "REQ-20261010": 1
   }
 }
