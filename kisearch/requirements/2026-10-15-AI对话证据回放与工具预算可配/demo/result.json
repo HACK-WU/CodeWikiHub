@@ -1,0 +1,81 @@
+[
+  {
+    "name": "T1 基线（无证据 · 现状口径）",
+    "httpStatus": 200,
+    "userChars": 55,
+    "ttfbMs": 957,
+    "totalMs": 3754,
+    "promptTokens": 549,
+    "completionTokens": 175,
+    "calledTool": true,
+    "toolCalls": [
+      {
+        "name": "ki_search",
+        "args": "{\"query\": \"kubectl rollout restart 工作原理 rolling update\", \"mode\": \"hybrid\"}"
+      },
+      {
+        "name": "ki_search",
+        "args": "{\"query\": \"rollout restart annotation kubectl-restart-requested Deployment 滚动更新\", \"mode\": \"hybrid\"}"
+      }
+    ],
+    "answerHead": "",
+    "answerChars": 0
+  },
+  {
+    "name": "T2 有证据 · 旧口径（复现用户抱怨）",
+    "httpStatus": 200,
+    "userChars": 139,
+    "ttfbMs": 747,
+    "totalMs": 4188,
+    "promptTokens": 596,
+    "completionTokens": 236,
+    "calledTool": true,
+    "toolCalls": [
+      {
+        "name": "ki_search",
+        "args": "{\"query\": \"kubectl rollout restart 工作原理\", \"mode\": \"hybrid\"}"
+      },
+      {
+        "name": "ki_search",
+        "args": "{\"query\": \"rolling update 滚动更新 Deployment maxSurge maxUnavailable\", \"mode\": \"hybrid\"}"
+      }
+    ],
+    "answerHead": "",
+    "answerChars": 0
+  },
+  {
+    "name": "T3 有证据 · 新口径（S-03 判据）",
+    "httpStatus": 200,
+    "userChars": 1013,
+    "ttfbMs": 540,
+    "totalMs": 19398,
+    "promptTokens": 959,
+    "completionTokens": 893,
+    "calledTool": false,
+    "toolCalls": [],
+    "answerHead": "## 一、`kubectl rollout restart` 做了什么 它并不直接去删 Pod，而是**改 Deployment 的 Pod 模板**：在 `spec.template.metadata.annotations` 里写入一个 `kubectl.kubernetes.io/restartedAt` 时间戳（值为当前 UTC 时间）。 模板一变，Pod template hash 就变",
+    "answerChars": 1375
+  },
+  {
+    "name": "T4 长证据 20000 字符 · 新口径（R-01/R-02）",
+    "httpStatus": 200,
+    "userChars": 21294,
+    "ttfbMs": 1343,
+    "totalMs": 6324,
+    "promptTokens": 10183,
+    "completionTokens": 307,
+    "calledTool": true,
+    "toolCalls": [
+      {
+        "name": "ki_search",
+        "args": "{\"query\": \"kubectl rollout restart 原理 annotation restarted-at 触发新的 ReplicaSet\", \"mode\": \"hybrid\", \"limit\": 10}"
+      },
+      {
+        "name": "ki_search",
+        "args": "{\"query\": \"rollout restart 与 rolling update 区别 rollout history undo revision\", \"mode\": \"hybrid\", \"limit\": 10}"
+      }
+    ],
+    "answerHead": "",
+    "answerChars": 0
+  }
+]

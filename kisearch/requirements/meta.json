@@ -519,6 +519,376 @@
       "role": "child",
       "parent_id": "REQ-20260930-002",
       "child_ids": []
+    },
+    "2026-10-13-AI对话上下文占用量展示与超限预警": {
+      "id": "REQ-20261013-001",
+      "feature": "AI对话上下文占用量展示与超限预警",
+      "created": "2026-10-13 18:01:35",
+      "updated": "2026-10-13 18:54:19",
+      "status": "草案",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-13 18:14:50 v3: 用户澄清口径：按字符/K 大小统计（非消息条数）、上限 1000K；R5 实时性升为 P0",
+        "2026-10-13 18:54:19 v4: 完成二次质疑：修复隐私门禁缺口/摘要失败出路/压缩后旧值，keepRecent 守卫"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-14-AI对话上下文上限可配置": {
+      "id": "REQ-20261014-001",
+      "feature": "AI对话上下文上限可配置",
+      "created": "2026-10-14 10:00:10",
+      "updated": "2026-10-14 10:00:10",
+      "status": "草案",
+      "tags": [
+        "feat",
+        "ux",
+        "config"
+      ],
+      "version": 1,
+      "depends_on": [],
+      "changelog": [
+        "初始创建"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-14-文档内搜索与命中导航": {
+      "id": "REQ-20261014-002",
+      "feature": "文档内搜索与命中导航",
+      "created": "2026-10-14 12:17:03",
+      "updated": "2026-10-14 14:31:17",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 5,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-14 12:19:49 v3: 按 challenger 质疑修订为 v2（2🔴5🟡 全部处置）",
+        "2026-10-14 13:13:30 v4: 实施完成：端到端 45/45、web 单测 247/247（含用户两轮反馈改造：就地展开 + 字面词表）；未提交",
+        "2026-10-14 14:31:17 v5: 修复文档内查找两处回归缺陷（高亮碎片累积 / 预填不恢复高亮），端到端 48/48"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/debug-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-14-混合检索高亮与高亮开关": {
+      "id": "REQ-20261014-003",
+      "feature": "混合检索高亮与高亮开关",
+      "created": "2026-10-14 13:03:06",
+      "updated": "2026-10-14 14:56:39",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 6,
+      "depends_on": [
+        "REQ-20261014-002"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-10-14 13:04:10 v2: M1 需求分析落盘：两处高亮缺口取证 + 8 条需求 + 7 条负向 + 影响面 10 行 + Q1-Q8",
+        "2026-10-14 13:06:31 v3: 完成 challenger 二次质疑（0🔴3🟡3🟢，报告落 review/challenge-report.md）并按全部意见修订为 v2：开关判据改 resultMode + 补 J1-J5 + R2 三档 + N8/N9",
+        "2026-10-14 14:14:45 v4: v3：依用户第二轮澄清重定范围（列表不高亮、只做文档内高亮、降级恒开、复用 REQ-002 已实施的文档内搜索）；撤销 v2 的 R1/R2/R6 与 Q1/Q2；新增 Q1/Q2/Q7",
+        "2026-10-14 14:21:59 v5: v4 定稿：Q8 不滚动（新增 R6，需 ModuleDrawer 加'打开不自动滚动'能力）、Q2 调整（开关只看 resultMode，撤销降级恒开）、其余 Q 项采纳（降级列表高亮 R5 / 开关禁用 / 默认开 / 参数行 .ki-switch / localStorage 持久化）；需求状态置已确认",
+        "2026-10-14 14:56:39 v6: 实现完成（未提交）：判据抽 lib/searchHighlight.ts 纯函数 + 开关持久化 searchPrefs.ts + ModuleDrawer 新增 highlightAutoScroll（缺省旧行为）+ 复扫重标 --active 修复；验证：tsc 0 错 / web 单测 262/262 / e2e 14/14 + 降级注入 6/6 / 全文滚动强验证；checklist 18/20（P0=0）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-15-AI对话证据回放与工具预算可配": {
+      "id": "REQ-20261015-001",
+      "feature": "AI对话证据回放与工具预算可配",
+      "created": "2026-10-15 16:23:08",
+      "updated": "2026-10-15 17:28:05",
+      "status": "已完成",
+      "tags": [
+        "feat",
+        "config",
+        "ux"
+      ],
+      "version": 10,
+      "depends_on": [
+        "REQ-20261014-001",
+        "REQ-20261009-002"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-10-15 16:31:01 v3: D1/D2/D3 已确认（两级存储不新增config.yaml字段 / 文本证据块回放 / 轮数+总量双预算）；用户选择走技术设计（design-craft）",
+        "2026-10-15 16:35:14 v4: 完成技术设计（父文档 + 3 个子需求）",
+        "2026-10-15 16:38:08 v5: 完成设计评审（1🔴+5🟡+3🟢 已修复，增量再审通过）",
+        "2026-10-15 16:51:44 v6: challenger 二次质疑（1🔴+4🟡+2🟢）+ 按裁决修订设计 + 验证轮通过",
+        "2026-10-15 16:52:48 v7: 完成场景推演（7 场景 / 0🔴 1🟡 3🟢，有条件通过）",
+        "2026-10-15 16:56:22 v8: 完成 demo 验证（真实上游对照探测）：S-03 有效性获执行性证据、回放预算按实测评校准 20000→10000、AI 自主传 limit 获实证",
+        "2026-10-15 17:24:12 v9: 实施完成（S-03+S-01+S-02）：后端 314/314、前端 288/288、双端 tsc、build 全绿；code-review 自查修复 4 项；自评审 18/18 通过；待重启 daemon 后进行真实回放的 TTFT 观察",
+        "2026-10-15 17:28:05 v10: auto-review 完成：code-review 自查修复 4 项（含 P0 护栏 E5 端到端断言）；challenger 代码质疑 6 条（成立 1：失败步骤响应混入证据块，已修复并回归）；维持「可交付」"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_工具预算可配_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_历史证据回放_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_提示词证据复用_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/scenario-rehearsal.md",
+          "type": "rehearsal"
+        },
+        {
+          "path": "demo/verify-report.md",
+          "type": "demo"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-15-文档选区快捷键": {
+      "id": "REQ-20261015-004",
+      "feature": "文档选区快捷键（Ctrl+F 带入查找栏、Ctrl+L 加入引用）",
+      "created": "2026-10-15 17:58:52",
+      "updated": "2026-10-15 18:02:49",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 3,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-15 18:02:48 v2: 完成代码审查（结论：可直接合入，无 P0）",
+        "2026-10-15 18:02:49 v3: 完成 challenger 二次质疑（无高风险，4 项已知边界）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-16-AI对话思考级别可配置": {
+      "id": "REQ-20261016-001",
+      "feature": "AI对话思考级别可配置",
+      "created": "2026-10-16 10:45:40",
+      "updated": "2026-10-16 11:45:34",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "config"
+      ],
+      "version": 13,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-16 10:47:47 v3: auto-review 结构补强：补 §0 关键结论、用户原话、现状→预期图示（Mermaid+面板 ASCII）、特殊值语义与「不做内置取值表」表注、N11/N12；修正章节引用；标签补 config",
+        "2026-10-16 10:49:44 v4: 完成 challenger 二次质疑（6 条 🟡 建议，无 🔴；裁决=修改后进入设计），并按其建议修订报告 v3：影响面补多轮叠加与计费、D4 语义三态定死、补双白名单坑与字段贯通表注、统计措辞降级、N3 策略推荐",
+        "2026-10-16 11:04:11 v5: 用户确认 D1–D6；D5 补充口径：模型配置须 OpenAI 协议通用、不做厂商适配（deepseek 仅调试样本）⇒ D3「关闭思考」改为不采纳（thinking 属厂商特有参数）、R7 由 P2 升 P1；报告定稿 v4",
+        "2026-10-16 11:16:14 v6: 完成技术设计（单文档 14 章，含字段贯通表/接口契约/5 项实现级决策/3 批实施计划）",
+        "2026-10-16 11:17:42 v7: 完成设计评审（第1轮 1🔴+6🟡+2🟢 → 已全部修复；第2轮增量再审通过）",
+        "2026-10-16 11:19:12 v8: challenger 二次质疑（feature 策略：3🟡+1🟢，无🔴）→ 已按建议修复设计（R7 落点 mapUpstreamError、读取宽松/保存严格双模式 + 决策7、清单元素≤20、徽标列为可选增强）→ design-review 第3轮验证通过",
+        "2026-10-16 11:19:59 v9: 完成场景推演（4 角色 / 8 场景）：无 🔴，3 🟡（哨兵撞名风险、默认档 fail-loud 后果未点明、400 文案可能被误判为工具不支持）+ 1 🟢，结论=有条件通过（推演，未实测）",
+        "2026-10-16 11:23:39 v10: 场景推演 3 项 🟡 已按建议修复设计：哨兵改保留字 __follow_default__（清单/默认档禁用它、PUT 拒绝它）、fail-loud 后果与出路写入 §11、looksLikeToolsUnsupported 增加档位前置排除；推演报告已补处理记录",
+        "2026-10-16 11:28:20 v11: 实施 B1+B2（后端内核+配置贯通）：config-schema(2 字段+跨字段校验+保留字/长度/数量护栏)、config.ts(LlmConfig+解析)、tool-loop(三级链装配+两路径下发)、llm-client(顶层 reasoning_effort+未配置不下发+R7 指引+工具不支持误判排除)、prompt-config(字段+两段校验+读取宽松/保存严格)、chat-routes(GET 下发 4 字段)。验证：temp 脚本 7/7；回归 prompt-config 33/prompt-config-routes 12/context-limit-config 25/llm-stream-integrity 15/config-doctor 59 全绿；tsc 仅 2 条基线错误。实施中发现并修复：读取软模式误忽略脱离清单的值（与设计 §11「照发」冲突、且致保存死锁复现）",
+        "2026-10-16 11:45:00 v12: 实施 B3（前端面板）+ 收尾：chatContract 加 1+4 字段；新增 web/src/lib/reasoningEffort.ts（哨兵/选项构建/三态派生）；PromptConfigLayer 新增「思考级别」分组（下拉+恢复默认+三态徽标+4 条文案+旧版 daemon 降级提示）与 cloneConfig 显式搬运；新增 web/test/reasoning-effort.test.mjs(10 例) 与 test/chat/reasoning-effort.test.ts(7 例，由 temp 脚本转正)；docs/configuration.md 同步两字段。验证：web 325/325、web tsc 0 错、web build 通过、后端新测试 7/7",
+        "2026-10-16 11:45:34 v13: 补充 D4 回归守卫（compaction.ts 不得出现 reasoningEffort，防将来误改）；复跑受影响回归全绿：reasoning-effort 8/8、prompt-config 33、context-limit-config 25、llm-stream-integrity 15、compaction 13。B1/B2/B3 实施全部完成，状态保持「实施中」——待 daemon 重启后的运行时验收"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/scenario-rehearsal.md",
+          "type": "rehearsal"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-16-总览当前知识库嵌入模型与维度面板": {
+      "id": "REQ-20261016-002",
+      "feature": "总览当前知识库嵌入模型与维度面板",
+      "created": "2026-10-16 10:47:35",
+      "updated": "2026-10-16 11:18:57",
+      "status": "已完成",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 6,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-16 10:48:14 v2: M1 需求分析落盘（草案）：R1-R5 + 负向 7 项 + 影响面 10 项 + 待拍板 D1-D7",
+        "2026-10-16 10:54:12 v3: 决策定稿 D1-D7（D2 修正：不加“配置”字样；D3 事实纠正：健康项实际检查上游返回维度而非集合）→ 实施计划已启动",
+        "2026-10-16 11:07:38 v4: 实施完成：tsc 0 错 / web 单测 316-316 / 隔离实例 API 23-23 / 真实页面走查 35-35；daemon 已重启，真实模型名上屏；challenger 质疑 8 项（成立 4，已修 refetchOnMount 放大、空串兜底、文档订正；1 项需用户明示）",
+        "2026-10-16 11:11:27 v5: code-review（整体 A / 无 P0）：P1 已修——后端不变量原仅由 temp 脚本验证，补正式回归测试 test/vector-dimension-snapshot.test.ts（7/7，含环境隔离断言）；第二轮增量质疑 4 项（Δ4 测试污染真实环境成立已修）",
+        "2026-10-16 11:18:57 v6: P2 完成（用户授权）：订正 ki 记忆「导入期间读被队列阻塞」中 /api/vector/status(GET) 仍走 write 的记载（代码无 submit + 隔离探针 4/4：车道占用期 activeWorkers=1、第二写任务 queuedMs=3697ms、该端点 1ms）；新增 ki 踩坑记忆「隔离探针勿 import mcp-server.ts」"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-10-16-服务健康异常信息明细面板": {
+      "id": "REQ-20261016-003",
+      "feature": "服务健康异常信息明细面板",
+      "created": "2026-10-16 11:24:53",
+      "updated": "2026-10-16 12:28:37",
+      "status": "已确认",
+      "tags": [
+        "feat"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-10-16 12:26:17 v3: 完成代码审查：修复 P0（面板空态文案在加载中/不可达态误报为旧 daemon）",
+        "2026-10-16 12:28:37 v4: 完成二次质疑：修复 2 条成立质疑（二次跳转死链 / 未授权窄屏宽度变更）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
     }
   },
   "id_counters": {
@@ -526,6 +896,10 @@
     "REQ-20260929": 1,
     "REQ-20260930": 3,
     "REQ-20261009": 3,
-    "REQ-20261010": 1
+    "REQ-20261010": 1,
+    "REQ-20261013": 1,
+    "REQ-20261014": 3,
+    "REQ-20261015": 4,
+    "REQ-20261016": 3
   }
 }

@@ -76,3 +76,4 @@ desktop.ini
 # Local secrets (never commit)
 *.env.local
 .secrets
+kb/
