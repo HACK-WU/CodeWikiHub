@@ -1,0 +1,6 @@
+---
+groupPath: 数据流/知识库专家
+relation: knowledge_document_vector与collection
+exportedAt: "2026-10-16T03:53:30.128Z"
+---
+【数据流｜knowledge_document_vector 与 knowledge_document_collection】\n- 实体类型：**两张表不是 TypeORM 实体**，由 `RagCreateVStoreHandler.createPgVectorStore` 运行期 `ensureTableInDatabase()` / `ensureCollectionTableInDatabase()` 建表（**运行期建表**这一事实对 ORM 可见性影响最大）\n- 结构：物理列映射 `id`/`vector`/`content`/`metadata`，PG 实现另用 `collection_id` 归属；`addVectors` 传 `ids` 时做**幂等 upsert**（不先删旧向量）\n- collection 名派生：active = `knowledgebase.embeddingCollectionName ?? knowledgebase.id`；图谱 = `` `${active}:graph-entities` ``；重建期 = `pendingEmbeddingCollectionName`\n- 向量 id 语义：`createCollectionScopedVectorId(collectionName, chunkId) = uuidv5(\"${collectionName}:${chunkId}\", VECTOR_ID_NAMESPACE)`；未配置 `vectorIdCollectionName` 时退化为 `chunkId`\n- 查询：`INNER JOIN knowledge_document_chunk`（`COALESCE(c.metadata ->> 'chunkId', c.id::text) = v.metadata ->> 'chunkId'`）并过滤 `knowledgebaseId` / `document.disabled` / `metadata.enabled`\n- 生产方：摄取消费者、检索侧 `import`、图谱 `syncEntityVectors`；**查询路径 `getOrCreateCollection()` 也会触发 DDL**\n- 业务用途：chunk 与图谱实体向量的物理载体；collection 隔离保证 active/pending 向量 id 不冲突\n- 详细流向：见 .module-experts/后端专题/知识库专家/C4-数据流向与消费.md §5

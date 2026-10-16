@@ -1,0 +1,39 @@
+# 认证与准入 · 接口反查（xpert-cloud）
+
+| 方法 | 接口 | 直接调用页面 | 间接候选 | 定义/证据位置 |
+|---|---|---|---|---|
+| GET | `/api/auth/alive` | `/auth/verify` | 1 | `apps/cloud/src/app/@core/state/auth.service.ts；apps/cloud/src/app/auth/verify-email/verify-email.component.ts` |
+| GET | `/api/auth/authenticated` | `/auth/verify` | 1 | `apps/cloud/src/app/@core/state/auth.service.ts` |
+| POST | `/api/auth/login` | `/auth/verify` | 1 | `apps/cloud/src/app/@core/state/auth.service.ts` |
+| GET | `/api/auth/permission` | `/auth/verify`、`/onboarding/tenant` | 1 | `apps/cloud/src/app/@core/auth/auth-strategy.service.ts；apps/cloud/src/app/@core/state/auth.service.ts` |
+| GET | `/api/auth/refresh` | `/auth/verify`、`/onboarding/tenant` | 1 | `apps/cloud/src/app/@core/auth/auth-strategy.service.ts；apps/cloud/src/app/@core/state/auth.service.ts` |
+| POST | `/api/auth/register` | `/auth/verify`、`/onboarding/tenant` | 1 | `apps/cloud/src/app/@core/auth/auth-strategy.service.ts；apps/cloud/src/app/@core/state/auth.service.ts` |
+| POST | `/api/auth/request-password` | `/auth/verify`、`/onboarding/tenant` | 1 | `apps/cloud/src/app/@core/auth/auth-strategy.service.ts；apps/cloud/src/app/@core/state/auth.service.ts` |
+| POST | `/api/auth/reset-password` | `/auth/verify`、`/onboarding/tenant` | 1 | `apps/cloud/src/app/@core/auth/auth-strategy.service.ts；apps/cloud/src/app/@core/state/auth.service.ts` |
+| GET | `/api/auth/role` | `/auth/verify`、`/onboarding/tenant` | 1 | `apps/cloud/src/app/@core/auth/auth-strategy.service.ts；apps/cloud/src/app/@core/state/auth.service.ts` |
+| POST | `/api/auth/signup` | `/auth/verify`、`/onboarding/tenant` | 1 | `apps/cloud/src/app/@core/auth/auth-strategy.service.ts；apps/cloud/src/app/@core/state/auth.service.ts` |
+| GET | `/api/auth/sso/bind/challenge` | `/auth/register`、`/auth/sso-bind` | 0 | `apps/cloud/src/app/auth/register/register.component.ts；apps/cloud/src/app/auth/sso-bind/sso-bind.component.ts` |
+| POST | `/api/auth/sso/bind/complete` | `/auth/sso-bind` | 0 | `apps/cloud/src/app/auth/sso-bind/sso-bind.component.ts` |
+| GET | `/api/auth/sso/bind/current-user/challenge` | `/auth/sso-confirm` | 0 | `apps/cloud/src/app/auth/current-user-sso-confirm/current-user-sso-confirm.component.ts` |
+| POST | `/api/auth/sso/bind/current-user/complete` | `/auth/sso-confirm` | 0 | `apps/cloud/src/app/auth/current-user-sso-confirm/current-user-sso-confirm.component.ts` |
+| POST | `/api/auth/sso/bind/register` | `/auth/register` | 0 | `apps/cloud/src/app/auth/register/register.component.ts` |
+| GET | `/api/auth/sso/providers` | `/auth/login`、`/auth/register` | 0 | `apps/cloud/src/app/auth/login/login.component.ts；apps/cloud/src/app/auth/register/register.component.ts` |
+| GET | `/api/auth/verify` | `/auth/verify` | 1 | `apps/cloud/src/app/@core/state/auth.service.ts；apps/cloud/src/app/auth/verify-email/verify-email.component.ts` |
+| POST | `/api/connector/bindings/:param/cancel-authorization` | `/w/connectors、w/clawxpert-connectors` | 0 | `apps/cloud/src/app/features/xpert/workspace/connectors/connectors.component.ts` |
+| GET | `/api/invite` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| PUT | `/api/invite/:param` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| POST | `/api/invite/candidate` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| POST | `/api/invite/contact` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| POST | `/api/invite/emails` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| POST | `/api/invite/employee` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| PUT | `/api/invite/organization-contact/:param` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| POST | `/api/invite/resend` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| POST | `/api/invite/user` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| GET | `/api/invite/validate` | `/auth/accept-invite`、`/users/invites` | 0 | `apps/cloud/src/app/@core/state/invite.service.ts` |
+| GET | `/api/mcp-publications/:param/oauth-policy` | `//operations` | 0 | `apps/cloud/src/app/features/operations/mcp-publications/publications.component.ts` |
+| DELETE | `⟨base⟩/reset/:param` | `//`、`/organizations、organizations/:id`、`/settings/password`、`/settings/profile`、`/users`、`/users/edit/:id、users/:id` | 4 | `apps/cloud/src/app/@core/state/users.service.ts` |
+| GET | `⟨referral⟩/availability` | `/auth/register`、`/auth/accept-invite` | 0 | `apps/cloud/src/app/auth/accept-invite/accept-invite-form/accept-invite-form.component.ts；apps/cloud/src/app/auth/register/register.component.ts` |
+| GET | `⟨referral⟩/me` | `/settings/account` | 0 | `apps/cloud/src/app/features/setting/account/account.component.ts` |
+| POST | `⟨referral⟩/me/regenerate` | `/settings/account` | 0 | `apps/cloud/src/app/features/setting/account/account.component.ts` |
+| GET | `⟨referral⟩/relations` | `/settings/referrals` | 0 | `apps/cloud/src/app/features/setting/referrals/referrals.component.ts` |
+| GET | `⟨referral⟩/validate` | `/auth/register`、`/auth/accept-invite` | 0 | `apps/cloud/src/app/auth/accept-invite/accept-invite-form/accept-invite-form.component.ts；apps/cloud/src/app/auth/register/register.component.ts` |

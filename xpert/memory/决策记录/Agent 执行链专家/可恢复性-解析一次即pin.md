@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/Agent 执行链专家
+relation: 可恢复性-解析一次即pin
+exportedAt: "2026-10-16T03:54:17.314Z"
+---
+【决策记录｜解析一次即 pin，恢复不得静默回退】\n- 分类：可恢复性 / provider 生命周期\n- 动机（避坑）：现象——恢复时按 provider 名重新解析到另一个实现；后果——在途调用语义漂移，且升级/下线会悄悄改变历史行为\n- 决策：解析 provider 一次并把 `providerSource` 快照与 `target.revision` 固定落库；后续 `inspect`/`cancel`/`respond` 一律走 `pinned()`（`registry.getPinned(provider, providerSource)`），失效即 `ProviderChanged`（409），**不静默回退**\n- 背景约束：binding 创建**拒绝 `provider ∈ {xpert, xpert-task}`**；`target.revision` 建时 `randomUUID()` 固定；换配置/版本必须新建绑定\n- 被否决方案：找不到快照时降级到另一个实现或按 provider 名重新解析（明确否决）\n- 重新评估触发条件：下线/升级某 runtime provider 时必须保证旧快照仍可解析，否则在途调用集体 409——**这是设计使然，不应被「修掉」**\n- 关联代码：agent-invocation/invocation-runtime.ts；agent-invocation/runtime-bindings.controller.ts\n- 证据来源：docs/plans/2026-09-22-unified-agent-invocation.md 逐字——「Resolve a provider once and pin its source. Removal or upgrade must never silently fall back to a different implementation during recovery.」「A provider-version mismatch blocks continuation instead of selecting a fallback.」

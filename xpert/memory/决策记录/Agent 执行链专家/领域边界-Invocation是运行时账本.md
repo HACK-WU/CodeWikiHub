@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/Agent 执行链专家
+relation: 领域边界-Invocation是运行时账本
+exportedAt: "2026-10-16T03:54:17.313Z"
+---
+【决策记录｜Invocation 是运行时账本，Task 保留业务决策】\n- 分类：领域边界 / 架构分层\n- 动机（避坑）：现象——把「传输成功」当作任务完成，或让 runtime 再注册一个执行器去驱动 Task；后果——账本与业务决策耦合、重复执行、任务被误判完成\n- 决策：Invocation 作为运行时账本；Project Task 保留业务决策；复用既有 Handoff 队列（持久化 outbox/inbox/consumer claim），**不注册第二个执行器**、**不从传输成功推断完成**\n- 背景约束：native Task 保留自身会话/Redis 流传输；`AssistantTask` 仍是兼容门面，**其底层执行器不得回调该门面递归**\n- 被否决方案：为 Agent runtime 另注册执行器；由传输成功推断 Task 完成；让底层执行器回调 `startTask` 门面（递归）\n- 重新评估触发条件：Task 生命周期语义变更需跨域确认（`xpert-project` 侧）\n- 关联代码：handoff/runtime-messaging/README.md；xpert-agent-execution/runtime/assistant-task-runtime.service.ts；docs/plans/2026-09-22-unified-agent-invocation.md\n- 证据来源：runtime-messaging/README.md 逐字——「Invocation remains the runtime ledger. Project Tasks retain business decisions. This host infrastructure uses the existing Handoff queues with persisted outbox, inbox and consumer claims; it does not register another executor or infer Task completion from transport success.」

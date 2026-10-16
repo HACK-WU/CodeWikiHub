@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/Agent 执行链专家
+relation: prompt工作流-命令档案
+exportedAt: "2026-10-16T03:54:47.085Z"
+---
+[强关联] prompt_workflow 与 xpert.commandProfile 命令档案\n强度：必改——改 `prompt_workflow` 的 `name`/`template`/`sourceTemplateId` 语义或档案快照结构 → 运行时命令解析与 xpert 发布必改（发布时固化的档案与运行时展开不一致）；改 xpert 的 commandProfile 结构 → 工作流侧必同步\n原因：作者态模板与运行时档案通过 `resolveRuntimeCommandProfile` / `snapshotCommandProfile` 两层耦合；`sourceTemplateId` 是 server-owned provenance\n\n工作流端：\n- PromptWorkflow（唯一 (workspaceId,name)；sourceTemplateId；associatedXpertIds）@ packages/server-ai/src/prompt-workflow/prompt-workflow.entity.ts\n- PromptWorkflowService.validateCommandProfile/snapshotCommandProfile/resolveRuntimeCommandProfile/resolveCapabilityScopes @ packages/server-ai/src/prompt-workflow/prompt-workflow.service.ts\n- ResolvePromptWorkflowInvocationQuery @ packages/server-ai/src/prompt-workflow/queries/\n\n消费端：\n- Xpert.commandProfile（发布时固化）@ packages/server-ai/src/xpert/xpert.entity.ts\n- PromptWorkflowController.getUsage（使用面）@ packages/server-ai/src/prompt-workflow/prompt-workflow.controller.ts

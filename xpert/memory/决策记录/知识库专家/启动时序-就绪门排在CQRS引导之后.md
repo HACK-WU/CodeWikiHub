@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/知识库专家
+relation: 启动时序-就绪门排在CQRS引导之后
+exportedAt: "2026-10-16T03:53:30.130Z"
+---
+【决策记录｜用显式 CqrsModule 依赖把就绪门排在 CQRS 引导之后】\n- 分类：启动时序 / 避坑\n- 动机（避坑）：**现象** Bull 在 `onModuleInit` 注册 worker，早于 CQRS 注册它的 handler；任务在启动窗口被取走时消费者拿到尚未可用的 CommandBus。**后果** 摄取主链与派生索引派发在冷启动/滚动升级瞬间失败，且表现为「命令处理器不存在」，极难定位\n- 决策：引入 `KnowledgeProcessingLifecycleModule` 作为启动就绪门，`imports: [CqrsModule]` 强制排序；`KnowledgeProcessingReadyService implements OnApplicationBootstrap` 持 promise，消费者在任务体最开始 `await this.lifecycle.waitUntilReady()`。源码逐字：「Bull registers workers in onModuleInit, before CQRS registers its handlers.」/「The explicit CqrsModule dependency orders this gate after CQRS bootstrap.」\n- 背景约束：Bull worker 注册时机由 `@Processor` 驱动，无法改到 `onApplicationBootstrap`；只能依赖排序 + 任务体内自阻塞。**未就绪门控者**：`KnowledgeGraphIndexConsumer`、`KnowledgeWikiGenerationConsumer`、`KnowledgebaseRebuildEmbeddingConsumer`、`FAQSemanticPrewarmProcessor`（构造器不含该服务）\n- 被否决方案：无\n- 重新评估触发条件：升级 Nest/Bull 后 worker 注册不早于 CQRS 引导；或消费者改为不经 CommandBus 的直连调用\n- 关联代码：`KnowledgeProcessingReadyService.waitUntilReady` / `KnowledgeProcessingLifecycleModule`；等待方 `KnowledgeDocumentConsumer`、`KnowledgeAutoTaggingConsumer`、`KnowledgeQuestionsConsumer`\n- 证据来源：processing-lifecycle.module.ts（首两行注释逐字）；document.job.ts

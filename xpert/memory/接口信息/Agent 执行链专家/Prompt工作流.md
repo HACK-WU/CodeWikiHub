@@ -1,0 +1,6 @@
+---
+groupPath: 接口信息/Agent 执行链专家
+relation: Prompt工作流
+exportedAt: "2026-10-16T03:54:17.312Z"
+---
+【接口信息｜Prompt 工作流】\n- 子功能：工作空间命令模板的作者态维护、命令档案校验与快照、运行时解析、用途与关联\n- 所属模块：Agent 执行链专家\n- 接口列表（前缀 `/api/prompt-workflow`，**全部 `@UseGuards(WorkspaceAuthoringGuard)`**）：\n  - `GET /by-workspace/:workspaceId`：列工作空间内工作流\n  - `POST /workspace/:workspaceId`：建（`createInWorkspace`）\n  - `PUT /workspace/:workspaceId/:id`：改（`updateInWorkspace`）\n  - `POST /workspace/:workspaceId/archive`：归档\n  - `POST /workspace/:workspaceId/duplicate`：复制\n  - `GET /workspace/:workspaceId/usage`：使用面/关联（`getUsage`）\n  - `POST /workspace/:workspaceId/validate-profile`：校验命令档案（`validateCommandProfile`）\n- 关键约束：唯一 `(workspaceId,name)`（**不含 `deletedAt`**，故置空名后仍占用）；`name` 需匹配 `/^[a-z0-9][a-z0-9_-]{0,63}$/`；`sourceTemplateId` 是 **server-owned provenance，绝不按同名推断**；`associatedXpertIds` 与 `organizationTags`（→`prompt_workflow_tag`）是两套数据，只写一套会导致使用面/检索面不一致\n- 运行时面（无 HTTP）：`ResolvePromptWorkflowInvocationQuery` → `resolveRuntimeCommandProfile` / `snapshotCommandProfile` / `resolveCapabilityScopes` / `findActiveWorkflowMap`\n- 已知坑：同名并发创建/重命名冲突；`initializeDefaultsInWorkspace` 用事务 + `pessimistic_write`

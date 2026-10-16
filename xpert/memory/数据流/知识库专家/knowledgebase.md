@@ -1,0 +1,6 @@
+---
+groupPath: 数据流/知识库专家
+relation: knowledgebase
+exportedAt: "2026-10-16T03:53:30.128Z"
+---
+【数据流｜knowledgebase】\n- 实体类型：表（Knowledgebase extends WorkspaceBaseEntity，KB 聚合根）\n- 结构：唯一 `@Index(['tenantId','organizationId','name'])`；关键列 `permission`(默认 Private)、`vectorStore`、`metadataSchema`(jsonb)、`recall`(json 默认 `{topK:10}`)、模型族 `copilotModelId/rerankModelId/visionModelId/chatModelId/wikiModelId`、向量族 `embeddingCollectionName/embeddingModelFingerprint/rebuildTaskId`、**wiki 状态列族**（`wikiConfig/wikiStatus/wikiAvailability/wikiActiveRevision/wikiStagedRevision/wikiConfigFingerprint/wikiRebuildRequiredReason/wikiBuildError/wikiGeneratorVersion`）、图谱状态列族（`graphRag/graphStatus/graphIndexError`）；`keywordAnalyzer/keywordAnalyzerLocked` 为 **`update:false`**（条件 SQL 独占写）\n- 生产方：`KnowledgebaseService.create/createExternal/updateKnowledgebase/startEmbeddingRebuild/promoteEmbeddingRebuild`\n- 主要消费方：knowledgebase(19)、knowledge-wiki(19)、graphrag(9)、plugin-resource(3)、knowledge-processing-lifecycle(1)、knowledge-document(1)、knowledge-identity(1) `[基于引用扫描，未深入验证]`\n- 业务用途：KB 聚合根——作用域、可见性、模型绑定，以及**所有派生索引的状态列都挂在这一行上**\n- 详细流向：见 .module-experts/后端专题/知识库专家/C4-数据流向与消费.md §2

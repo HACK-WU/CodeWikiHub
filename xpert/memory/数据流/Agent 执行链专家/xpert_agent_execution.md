@@ -1,0 +1,6 @@
+---
+groupPath: 数据流/Agent 执行链专家
+relation: xpert_agent_execution
+exportedAt: "2026-10-16T03:54:17.313Z"
+---
+【数据流｜xpert_agent_execution】\n- 实体类型：执行与用量账本（`XpertAgentExecution`）\n- 结构：表 `xpert_agent_execution`；索引 `(parentId, tenantId, organizationId)`；关键列 `status`(`running/success/error/pending/timeout/interrupted`)、**`completedAt`(timestamptz，只表真终态)**、`elapsedTime`(numeric)、`tokens/embedTokens/inputTokens/outputTokens`(bigint) + 定价列、`threadId`、`checkpointNs/checkpointId`、`parentId`(自关联 CASCADE)、`channelName`、`parent_thread_id`、`operation`\n- 生产方：`XpertAgentExecutionService.create/update/recordUsage`（CQRS；`update` 事务 + `pessimistic_write`）\n- 主要消费方：handoff-queue、chat-group、agent-invocation、server-ai、ai、model-execution、xpert-agent-execution、chat-conversation、xpert-project、xpert-project-access、assistant-binding（11 个，归纳为「本域写入方 + 会话/队列消费面 + 项目与计费面」）`[基于引用扫描，未深入验证]`\n- 业务用途：一次执行的状态、时间与用量/定价的权威账本；**审计时间戳不接受调用方值；终局化不得重放初始行**（会覆盖更新的 timestamp 与用量）\n- 详细流向：见 .module-experts/后端专题/Agent 执行链专家/C4-数据流向与消费.md §4 与迁移 `20261008-execution-completed-at.sql`（**不 backfill**）

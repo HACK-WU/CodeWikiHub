@@ -1,0 +1,36 @@
+{
+  "slug": "xpert",
+  "kind": "backend",
+  "root": "/root/xpert",
+  "scope": [
+    "."
+  ],
+  "framework": "nestjs",
+  "commit": "80f5676fd7ede1145e6d7dcd7705a94e02685cdd",
+  "generated": "2026-10-16",
+  "stats": {
+    "frontend_files_skipped": 1431,
+    "framework": "nestjs",
+    "files": 4976,
+    "global_prefix": "api",
+    "src_dirs": [
+      "apps",
+      "packages",
+      "libs"
+    ],
+    "event_edges": 204,
+    "default_named_tables": 0,
+    "modules": 145,
+    "controllers": 194,
+    "routes": 1541,
+    "tables": 226,
+    "deps_edges": 562,
+    "experts": 1,
+    "modules_with_experts": 0
+  },
+  "scanner": "scan_backend.py v2.0.0",
+  "check_cmd": "python3 scan_backend.py --root /root/xpert --check --index /root/xpert/.fe-index/xpert",
+  "notes": [
+    "2026-10-16 环境事故后重建：骨架由 scan_backend.py v2.0.0 重扫（commit 80f5676fd7，145 模块 / 226 表 / 562 边）；语义层为最小重建（业务域分组 + 模块级专家指认 73 行 + 专家资产入口），逐卡职责行待重生成。模块级专家指认：8 个专家覆盖 73 个模块，未覆盖 72 个（批次 5+）。"
+  ]
+}

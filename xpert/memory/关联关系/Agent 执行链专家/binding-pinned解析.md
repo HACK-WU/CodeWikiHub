@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/Agent 执行链专家
+relation: binding-pinned解析
+exportedAt: "2026-10-16T03:54:47.084Z"
+---
+[强关联] agent_runtime_binding.target.revision 与 provider pin 解析\n强度：必改——改 `target` json 结构（provider/reference/revision/configuration）、允许 provider 取 `xpert|xpert-task` 或允许就地改 revision → 全部在途 Invocation 的 `pinned()` 解析与 inspect/cancel/respond 必改（可能集体 409 或静默漂移）；改 pin 解析实现 → binding 写入面必同步\n原因：**解析一次即 pin**——`providerSource` 固定落库后，后续一律 `registry.getPinned(provider, providerSource)`，找不到即 `ProviderChanged` 409，**不降级**\n\nbinding 端：\n- AgentRuntimeBindingEntity.target / workspaceIds / enabled @ packages/server-ai/src/agent-invocation/invocation.entity.ts\n- AgentRuntimeBindingsController（zod strict + 拒绝 xpert/xpert-task + revision randomUUID 固定）@ packages/server-ai/src/agent-invocation/runtime-bindings.controller.ts\n\n运行时端：\n- AgentInvocationRuntime.pinned / save（providerSource 落库）@ packages/server-ai/src/agent-invocation/invocation-runtime.ts\n- AgentInvocationFactoryService.resolve/明确 target @ packages/server-ai/src/agent-invocation/invocation-factory.service.ts

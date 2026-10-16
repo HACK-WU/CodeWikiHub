@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/知识库专家
+relation: 缓存边界-splitter设置不进transform快照
+exportedAt: "2026-10-16T03:53:30.130Z"
+---
+【决策记录｜splitter / image-understanding 设置故意不进 transform 快照指纹】\n- 分类：缓存失效边界 / 避坑\n- 动机（避坑）：**现象** splitter 与 image-understanding 设置都在「切片之前」的配置面上，若纳入快照指纹，动一下切片参数就会让快照失效。**后果** 每次调切片策略都退化为重跑转换器（含视觉模型），成本与耗时成倍上升，而转换器输出其实完全可复用\n- 决策：`computeKnowledgeDocumentTransformFingerprint` 只捕获「会改变转换器**切片前**输出」的设置（`sourceHash`/`metadata`/`sourceKey`/`sourceType`/`sourceConfig`/`type`/`category`/文件标识/`name`），splitter 与 image-understanding 排除在外。源码逐字：「Identifies the reusable converter result. Splitter/image-understanding settings are deliberately excluded because changing them must not invalidate a transform snapshot used for rechunking.」\n- 背景约束：快照在「切片前」边界持久化 NDJSON + 完整性 manifest；`rechunk` 复用快照、不调转换器\n- 被否决方案：无\n- 重新评估触发条件：出现某个 splitter 或 image-understanding 设置会改变转换器输出的场景\n- 关联代码：`computeKnowledgeDocumentTransformFingerprint` / `resolveKnowledgeDocumentTransformerIdentity` / `computeKnowledgeDocumentProcessingHash`\n- 证据来源：document-hash.ts（JSDoc 逐字）

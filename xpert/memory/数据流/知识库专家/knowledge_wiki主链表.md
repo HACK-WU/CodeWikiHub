@@ -1,0 +1,6 @@
+---
+groupPath: 数据流/知识库专家
+relation: knowledge_wiki主链表
+exportedAt: "2026-10-16T03:53:30.129Z"
+---
+【数据流｜knowledge_wiki 主链（job / page / page_version / page_evidence / page_link）】\n- 实体类型：五张核心表（生成链台账与页面）\n- 结构：`_job`：`jobKey(768)`、`type`、`status`(默认 queued)、`isCurrent`、`generationRevision`、`generationAttempt`、`configFingerprint`、`generatorVersion`、`rootJobId/parentJobId`、`sourceDocumentIdSnapshot`、`expectedChildren/succeededChildren/failedChildren`、租约 `lockedAt/leaseExpiresAt/heartbeatAt`，唯一 `(knowledgebaseId, jobKey)`（**单模块 43 引用的高引用表**）；`_page`：`pageKey(768)`、`pageType`、`canonicalName/normalizedCanonicalName`、`identityId`、`slug(600)`、`status(默认 building)`、`projectionStatus(默认 pending)`、`activeVersionId`、`publishedAt`，唯一 `(knowledgebaseId,pageKey)` / `(knowledgebaseId,identityId)` / `(knowledgebaseId,slug)`；`_page_version`（唯一 `(pageId, producerJobId, generationAttempt)`）；`_page_evidence`（`sourceDocumentIdSnapshot`/`sourceChunkIdSnapshot`/`quote`/`ordinal`/`sourceContentHash`）；`_page_link`（唯一 `(sourcePageVersionId, targetPageId, sectionAnchor)`）\n- 生产方：`KnowledgeWikiGenerationService.enqueueSource/rebuild/retry`、`KnowledgeWikiProjectionService`\n- 主要消费方：knowledge-wiki（43/24/16/7/8）、knowledgebase(3) `[基于引用扫描，未深入验证]`\n- 业务用途：生成链 job 台账 + 页面主行 + 内容版本化 + **来源定格（快照 id 而非可空 FK）** + 页间链接\n- 详细流向：见 .module-experts/后端专题/知识库专家/C4-数据流向与消费.md §8

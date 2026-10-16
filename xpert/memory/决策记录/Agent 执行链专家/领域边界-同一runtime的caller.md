@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/Agent 执行链专家
+relation: 领域边界-同一runtime的caller
+exportedAt: "2026-10-16T03:54:17.314Z"
+---
+【决策记录｜中间件工具/工作流节点/后台任务是同一 runtime 的 caller】\n- 分类：领域边界 / 统一调用面\n- 动机（避坑）：现象——各调用面各自持有另一 Agent 的图、进程、会话或协议；后果——授权与取消口径分裂、无法审计、行为不可收敛\n- 决策：中间件工具、工作流 Agent 节点、后台任务**都是同一 `AgentInvocationRuntime` 的 caller**，不得各自拥有另一 Agent 的 graph/process/session/protocol；工作流调用走同一 runtime，但不要求 LLM 去调工具\n- 背景约束：本地 sub-agent 与 Collaborator 是作者态概念，均解析为 Xpert target；外部 provider（Codex/Pi/Claude Code/OpenCode）由插件提供策略；标准 Agent Plugin 包只能引用已批准绑定，不能加载 server 代码\n- 被否决方案：保留旧的 `getMiddlewareDelegations` 私有符号通道不迁移（仅在等价的中断与输出投影测试通过后才替换为普通可调用工具）\n- 重新评估触发条件：某调用面确实需要独立执行语义（如新增非 CLI 域作业）时，先在 `runtime-task` 统一策略内扩展\n- 关联代码：shared/agent/middleware-runtime/middleware-runtime.service.ts；agent-invocation/invocation-factory.service.ts\n- 证据来源：docs/plans/2026-09-22-unified-agent-invocation.md 逐字——「Introduce an AgentInvocationRuntime and plugin SDK execution strategies. Middleware tools, workflow Agent nodes and background tasks are callers of the same runtime. They do not own another Agent's graph, process, session or protocol.」

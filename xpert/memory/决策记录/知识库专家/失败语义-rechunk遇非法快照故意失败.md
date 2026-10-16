@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/知识库专家
+relation: 失败语义-rechunk遇非法快照故意失败
+exportedAt: "2026-10-16T03:53:30.130Z"
+---
+【决策记录｜rechunk 遇到非法快照故意失败，而不是静默转换】\n- 分类：失败语义 / 避坑\n- 动机（避坑）：**现象** 快照缺失/过期/损坏时最省事的写法是「没快照就现跑一次转换器」。**后果** 用户以为在做 `rechunk`（只重切），实际重跑了转换器与视觉模型，计费与耗时与预期不符且不可从结果看出差异；同时让 `getReprocessCapabilities` 给出的 `rechunk.available/reason` 失去意义\n- 决策：`load()` 仅在 `sourceHash` 与转换器 fingerprint 同时匹配时可用，否则以 `TransformSnapshotUnavailableError` 的 `missing | stale | corrupt` 显式报错，**绝不回退去调用转换器**。源码逐字：「Restores converter output only when the source and converter fingerprint still match.」/「Rechunk intentionally fails on invalid snapshots rather than silently running conversion.」\n- 背景约束：`rechunk` 的语义契约是「复用不可变快照」；能力探测由 `getReprocessCapabilities` 对外暴露，调用方应据此决定是否降级为 `full`\n- 被否决方案：无\n- 重新评估触发条件：业务愿意接受「rechunk 自动降级为 full 并显式告知」\n- 关联代码：`KnowledgeDocumentTransformSnapshotService.load/getReprocessCapabilities/inspect`；`TransformSnapshotUnavailableError`；`GET :id/reprocess-capabilities`、`POST estimate`\n- 证据来源：transform-snapshot.service.ts（load 上方 JSDoc 逐字）

@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/知识库专家
+relation: wiki状态列-KB表与前缀
+exportedAt: "2026-10-16T03:54:47.083Z"
+---
+[强关联] Wiki 状态列（KB 表）与 Wiki 服务/API 前缀空间\n强度：必改——改 KB 表上的 wiki* 列名或语义，或改 `wikiConfigFingerprint` 计算口径 → Wiki 重建触发、`getStatus` 投影与 `PUT config` 校验必改（会出现「改了配置但不重建」或反复重建）；改 Wiki 服务内部实现 → KB 表不用管\n原因：**状态在 KB 行、内容在 15 张 wiki 表**；且 `KnowledgebaseModule` 与 `KnowledgeWikiModule` 各自 `RouterModule.register({path:'/knowledgebase'})`，状态列与接口共处同一前缀空间\n\nKB 端：\n- Knowledgebase.wikiConfig/wikiStatus/wikiActiveRevision/wikiStagedRevision/wikiConfigFingerprint/wikiRebuildRequiredReason/wikiBuildError/wikiGeneratorVersion @ packages/server-ai/src/knowledgebase/knowledgebase.entity.ts\n- KnowledgebaseService.updateKnowledgebase（wikiInput 分支）@ packages/server-ai/src/knowledgebase/knowledgebase.service.ts\n\nWiki 端：\n- KnowledgeWikiService.getStatus/updateConfiguration/rebuild/retry @ packages/server-ai/src/knowledgebase/wiki/knowledge-wiki.service.ts\n- KnowledgeWikiGenerationService.enqueueSource/rebuild/retry @ packages/server-ai/src/knowledgebase/wiki/knowledge-wiki-generation.service.ts\n- knowledge-wiki.module.ts（RouterModule path '/knowledgebase'）@ packages/server-ai/src/knowledgebase/wiki/

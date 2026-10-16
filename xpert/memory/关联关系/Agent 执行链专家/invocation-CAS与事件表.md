@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/Agent 执行链专家
+relation: invocation-CAS与事件表
+exportedAt: "2026-10-16T03:54:47.084Z"
+---
+[强关联] agent_invocation.revision CAS 与 agent_invocation_event 唯一约束\n强度：必改——改 `revision` 语义（如换成自增/`@VersionColumn`）、去掉事件表唯一 `(invocationId, revision)` 或在事务外写事件 → 整个 Invocation 状态机必改（会出现并发覆盖、事件空洞、CAS 失效）；改事件表列 → CAS 路径不用管\n原因：状态与 append-only 观察历史**必须同一事务**，事件表唯一约束是 CAS 的守门人（重复 revision 直接约束报错并回滚整个 replace）\n\n状态端：\n- AgentInvocation.revision / invocation / providerSource @ packages/server-ai/src/agent-invocation/invocation.entity.ts\n- TypeOrmAgentInvocationStore.replace(record, expectedRevision) @ packages/server-ai/src/agent-invocation/typeorm-invocation.store.ts\n- AgentInvocationRuntime.start/save/control/updateLatest @ packages/server-ai/src/agent-invocation/invocation-runtime.ts\n\n事件端：\n- AgentInvocationEventEntity（唯一 (invocationId, revision)，append-only）@ packages/server-ai/src/agent-invocation/invocation.entity.ts\n- appendEvent（同事务）@ packages/server-ai/src/agent-invocation/typeorm-invocation.store.ts

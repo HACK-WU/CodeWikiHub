@@ -1,0 +1,48 @@
+{
+  "apps": [
+    {
+      "kind": "frontend",
+      "slug": "xpert-cloud",
+      "root": "/root/xpert",
+      "include": [
+        "apps/cloud/src/**"
+      ],
+      "exclude": [
+        "apps/cloud/src/**/*.spec.ts"
+      ],
+      "routes": [
+        "apps/cloud/src/**/*routes.ts",
+        "apps/cloud/src/**/*routing.module.ts"
+      ],
+      "pagesDirs": [
+        "apps/cloud/src/app/features",
+        "apps/cloud/src/app/auth",
+        "apps/cloud/src/app/onboarding",
+        "apps/cloud/src/app/xpert",
+        "apps/cloud/src/app/pages"
+      ],
+      "apiDirs": [
+        "apps/cloud/src/app/@core/services",
+        "apps/cloud/src/app/services",
+        "apps/cloud/src/app/auth/services",
+        "apps/cloud/src/app/features/xpert/studio/services",
+        "apps/cloud/src/app/features/xpert/knowledge/knowledgebase/api",
+        "apps/cloud/src/app/features/xpert/xpert/api"
+      ],
+      "aliases": {
+        "@cloud": "apps/cloud/src"
+      },
+      "requestObjects": [],
+      "maxDepth": 2
+    },
+    {
+      "kind": "backend",
+      "slug": "xpert",
+      "root": "/root/xpert",
+      "include": [
+        "packages/server/**",
+        "packages/server-ai/**"
+      ]
+    }
+  ]
+}

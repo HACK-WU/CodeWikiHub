@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/Agent 执行链专家
+relation: xpert_agent-图编译路径
+exportedAt: "2026-10-16T03:54:47.084Z"
+---
+[强关联] xpert_agent 定义 与 图编译两条路径（swarm / subgraph、native / legacy）\n强度：必改——改 `xpert_agent` 的 `leaderKey`/`collaboratorNames`/`knowledgebaseIds`/`toolsetIds` 语义或团队图结构 → `getSwarmPartners` 分派、swarm/subgraph 编译与 native 适配全部必改；改编译链内部实现 → 定义表不用管\n原因：定义是编译的唯一输入，且**编译成功不等于校验通过**（校验是草稿校验事件的订阅者）\n\n定义端：\n- XpertAgent（key/leaderKey/collaboratorNames/knowledgebaseIds/toolsetIds）@ packages/server-ai/src/xpert-agent/xpert-agent.entity.ts\n- XpertAgentController（CrudController 继承面）@ packages/server-ai/src/xpert-agent/xpert-agent.controller.ts\n\n编译端：\n- XpertAgentCompileGraphCommand → compile-graph.handler（getSwarmPartners → XpertAgentSwarmCommand / XpertAgentSubgraphCommand）@ packages/server-ai/src/xpert-agent/commands/\n- XpertAgentGraphValidator / XpertAgentNodeValidator（草稿校验事件订阅者）@ packages/server-ai/src/xpert-agent/{graph-validator,agent-validator}.ts\n- NativeAgentCompiler / native-graph-adapter / AgentInvocationGraphService（native 兼容）@ packages/server-ai/src/agent-invocation/

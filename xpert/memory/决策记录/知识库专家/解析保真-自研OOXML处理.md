@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/知识库专家
+relation: 解析保真-自研OOXML处理
+exportedAt: "2026-10-16T03:53:30.130Z"
+---
+【决策记录｜自研 OOXML 处理（DOCX 编号 / PPTX 表格），不依赖现成 loader】\n- 分类：解析保真 / 避坑\n- 动机（避坑）：**现象 A（DOCX）** Word 把列表与标题编号存在 `numbering.xml` 与 `w:numPr`，段落文本 `w:t` **不含**这些生成的编号。**后果 A** 直接用现成 loader 时编号后的段落丢失条目序号，切片后语义断裂。**现象 B（PPTX）** `PPTXLoader` 向 officeparser 要纯文本，该 reader 收集每个 `a:p` 却**从不**下探 `a:tbl/a:tr/a:tc`。**后果 B** 知识切片只看到段落，chunking 停留在 recursive-character，表格结构彻底丢失\n- 决策：自研两个 OOXML 处理器。① `docx-numbering.ts` 解析 `numbering.xml` + `w:numPr` 还原编号，不变量：`numId 0` 关闭编号；每个 `numId` 独立计数器；更浅级别重置同 `numId` 的更深级别，除非 `lvlRestart` 为 0。② `pptx-slides.ts` 走 `presentation.xml` 取幻灯片顺序，把 `graphicFrame` 表格转 Markdown 并输出 `contentFormat = markdown` 以便自动 chunking 选到结构感知策略；**无表格的 deck 保留旧的纯文本 loader**（渐进增强）\n- 背景约束：两者都用 `JSZip` + `xmldom` 直读 OOXML 包；`pptx-slides` 返回 `null` 表示「本次不接管」\n- 被否决方案：无\n- 重新评估触发条件：上游 loader（officeparser / LangChain PPTXLoader）开始下探表格或还原编号\n- 关联代码：`loadDocxNumbering` 系列 / `DocxNumPr` / `DocxStyleNumbering`；`loadPptxStructuredMarkdown` / `PptxBlock` / `PackageRelationship`\n- 证据来源：docx-numbering.ts（Why this exists + Invariants 逐字）；pptx-slides.ts（JSDoc 逐字）

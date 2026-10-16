@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/知识库专家
+relation: 源文档FINISH-派生索引派发
+exportedAt: "2026-10-16T03:54:47.083Z"
+---
+[强关联] 源文档 FINISH 时点 与 派生索引派发\n强度：必改——改文档状态机（`KBDocumentStatusEnum`/`ProcessingMode`）、`contentChanged` 判定或 `processingHash` 语义 → 派生索引派发必改（标签/问题/图谱/Wiki 会漏发或重跑）；改派生面内部实现 → 主链不用管\n原因：派生索引只在**源文档 durable FINISH** 后由单一入口派发，并以 `contentChanged` 分流（真→enqueue 抽取；假→只 retry 文档，不重跑抽取）\n\n主链端：\n- KnowledgeDocument.status/processingHash/sourceHash @ packages/server-ai/src/knowledge-document/document.entity.ts\n- KnowledgeDocumentConsumer（写 FINISH）@ packages/server-ai/src/knowledge-document/document.job.ts\n- KnowledgeDerivedIndexPublicationService.publish @ packages/server-ai/src/knowledge-document/derived-index-publication.service.ts\n\n派生面端：\n- KnowledgeAutoTaggingEnqueueCommand / KnowledgeQuestionsEnqueueCommand @ packages/server-ai/src/knowledgebase/{tags,questions}/\n- KnowledgeGraphEnqueueCommand / KnowledgeGraphRetryDocumentCommand @ packages/server-ai/src/graphrag/graphrag.service.ts\n- KnowledgeWikiEnqueueSourceCommand @ packages/server-ai/src/knowledgebase/wiki/knowledge-wiki-generation.service.ts

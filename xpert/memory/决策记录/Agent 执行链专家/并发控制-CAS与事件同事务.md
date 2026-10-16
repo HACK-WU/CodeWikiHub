@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/Agent 执行链专家
+relation: 并发控制-CAS与事件同事务
+exportedAt: "2026-10-16T03:54:17.314Z"
+---
+【决策记录｜CAS 状态转移 + store 与 append-only 观察历史同事务】\n- 分类：并发控制 / 事务一致性\n- 动机（避坑）：现象——并发写覆盖状态、事件与状态不一致；后果——观察历史出现空洞、审计不可信\n- 决策：状态转移一律经 `revision` CAS（`replace(record, expectedRevision)`，`affected !== 1` 即立即返回 `false`，调用方必须重读重算；`updateLatest` 上限 8 次，超限才收敛为 `ConcurrentUpdate` 409），并在**同一事务**内提交状态与 append-only 观察历史（`agent_invocation_event`，唯一 `(invocationId, revision)`）\n- 背景约束：`revision` 是**应用层乐观锁版本**，不是 DB 自增/`@VersionColumn`；任何绕过 store 直写 `invocation` 列的代码都会静默破坏一致性（唯一约束只保护事件表）\n- 被否决方案：以本地事件通知代替提交（源码注释逐字：「The due-time update is already durable; a local notification must not undo a committed result.」——通知失败即降级到轮询）\n- 重新评估触发条件：出现需要跨表强一致的新的状态载体时\n- 关联代码：agent-invocation/invocation-runtime.ts；agent-invocation/typeorm-invocation.store.ts\n- 证据来源：agent-invocation/README.md 逐字——「AgentInvocationRuntime: authorization, idempotency, pinned strategies and compare-and-swap state transitions.」「TypeOrmAgentInvocationStore: state and append-only observation history in one transaction.」

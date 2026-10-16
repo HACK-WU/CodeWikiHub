@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/知识库专家
+relation: 正确性边界-语义检索有界且不授权merge
+exportedAt: "2026-10-16T03:53:30.130Z"
+---
+【决策记录｜身份归一：语义检索有界且从不授权 merge；域/范围文本是证据不是分类】\n- 分类：正确性边界 / 成本\n- 动机：实体归一要同时避免两个错：① 把「语义上像」误当「同一个」而合并掉不同实体；② 用本地字符串规则替 LLM 裁判做分类判断\n- 决策：两条明写约束。① 有界 + 不授权合并——`identified`（标识符全等）与 `named`（名称/别名命中）**全部**返回（「Names retrieve every ambiguous match」），纯语义相似度只贡献**有界 `index < 8`** 名额且**仅用于排序**，不构成合并依据。② 域/范围文本只作 LLM 裁判的证据——「Domain/scope text is evidence for the semantic judge, not a locally inferred taxonomy.」\n- 背景约束：LLM 裁判在事务外执行（`KnowledgeIdentityService` 顶部逐字：「model calls never hold DB locks. Commit under the KB lock only if source and catalogue …」）；回写前用 catalogue fingerprint 比对，不一致返回 `null` 重试（配 `KnowledgeIdentityBusy`）；观察记录（而非任一投影）拥有持久身份归属\n- 被否决方案：无\n- 重新评估触发条件：候选规模增长到有界窗口明显漏召回；或 LLM 裁判延迟成为瓶颈需更激进的本地预筛\n- 关联代码：`canMatchIdentity` / `selectIdentityCandidates` / `identityText` / `cosineIdentitySimilarity`；`KnowledgeIdentityService.resolve/judge/lockSource/assertSource`\n- 证据来源：knowledge-identity-policy.ts（两处注释逐字）；knowledge-identity.service.ts（首两行 invariants）

@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/Agent 执行链专家
+relation: Agent执行链-对话与会话（双向）
+exportedAt: "2026-10-16T03:54:47.085Z"
+---
+[强关联] Agent 执行链 与 对话与会话（双向）\n影响线1（注册地线）：`/api/agent-invocations/:id/delivery{,/redrive}` 的 **HTTP 逻辑属对话与会话专家**，文件物理在 `handoff/runtime-messaging/`、**注册在 `agent-invocation.module.ts`**；`agent_runtime_delivery`/`agent_runtime_inbox` 两张表同样「物理在 handoff、由本模块 forFeature 注册」→ 改任一侧都要两侧确认（否则出现「改完无人负责」或双计）\n影响线2（语义线）：本域 `appendRuntimeDelivery` **必须与 Invocation CAS 同事务**；会话侧的准入（`ChatExecutionAdmissionService`）与 thread run 控制（pause/resume 租约）直接约束本域能否启动/续跑 → 改会话准入口径或 run 控制语义，本域必须连带适配\n\n本域端：\n- agent-invocation.module.ts（forFeature + 暴露 RuntimeDeliveryController）@ packages/server-ai/src/agent-invocation/\n- runtime-message-outbox.ts（与 CAS 同事务）@ packages/server-ai/src/handoff/runtime-messaging/\n- AgentInvocationRuntime / AgentInvocationMonitorService @ packages/server-ai/src/agent-invocation/\n\n对话端：\n- ChatExecutionAdmissionService @ packages/server-ai/src/chat-conversation/chat-execution-admission.service.ts\n- thread-run-control（pause/resume/进程租约 15s/90s）@ packages/server-ai/src/chat-conversation/thread-run-control.md\n- RuntimeMessageInboxService.claimWait / runtime-message-continuation @ packages/server-ai/src/handoff/runtime-messaging/

@@ -1,0 +1,11 @@
+# 准入与引导（/auth/**、/onboarding/**） · 页面 → 接口（xpert-cloud）
+
+| 路由 | 页面文件 | 用到的接口 | 直接依赖（深度1） | 证据 |
+|---|---|---|---|---|
+| `/auth/accept-invite` | `apps/cloud/src/app/auth/accept-invite/accept-invite.component.ts` | DELETE /api/invite/⟨base⟩<br>GET /api/invite<br>GET /api/invite/validate<br>GET ⟨referral⟩/availability<br>GET ⟨referral⟩/validate<br>POST /api/invite/candidate<br>POST /api/invite/contact<br>POST /api/invite/emails<br>POST /api/invite/employee<br>POST /api/invite/resend<br>POST /api/invite/user<br>PUT /api/invite/organization-contact/⟨base⟩<br>PUT /api/invite/⟨base⟩ | — | `apps/cloud/src/app/@core/state/invite.service.ts:24` 🟡 |
+| `/auth/consent` | `apps/cloud/src/app/auth/consent/consent.component.ts` | GET ⟨base⟩/oidc/interaction/⟨base⟩/consent | — | `apps/cloud/src/app/auth/consent/consent.component.ts:46` 🟢 |
+| `/auth/login` | `apps/cloud/src/app/auth/login/login.component.ts` | GET /api/auth/sso/providers | — | `apps/cloud/src/app/auth/login/login.component.ts:84` 🟢 |
+| `/auth/register` | `apps/cloud/src/app/auth/register/register.component.ts` | GET /api/auth/sso/bind/challenge<br>GET /api/auth/sso/providers<br>GET ⟨referral⟩/availability<br>GET ⟨referral⟩/validate<br>POST /api/auth/sso/bind/register | — | `apps/cloud/src/app/auth/register/register.component.ts:239` 🟢 |
+| `/auth/sso-bind` | `apps/cloud/src/app/auth/sso-bind/sso-bind.component.ts` | GET /api/auth/sso/bind/challenge<br>POST /api/auth/sso/bind/complete | — | `apps/cloud/src/app/auth/sso-bind/sso-bind.component.ts:82` 🟢 |
+| `/auth/sso-confirm` | `apps/cloud/src/app/auth/current-user-sso-confirm/current-user-sso-confirm.component.ts` | GET /api/auth/sso/bind/current-user/challenge<br>POST /api/auth/sso/bind/current-user/complete | — | `apps/cloud/src/app/auth/current-user-sso-confirm/current-user-sso-confirm.component.ts:59` 🟢 |
+| `/auth/verify` | `apps/cloud/src/app/auth/verify-email/verify-email.component.ts` | GET /api/auth/alive<br>GET /api/auth/authenticated<br>GET /api/auth/permission<br>GET /api/auth/refresh<br>GET /api/auth/role<br>GET /api/auth/verify<br>POST /api/auth/login<br>POST /api/auth/register<br>POST /api/auth/request-password<br>POST /api/auth/reset-password<br>POST /api/auth/signup | — | `apps/cloud/src/app/auth/verify-email/verify-email.component.ts:38` 🟢 |

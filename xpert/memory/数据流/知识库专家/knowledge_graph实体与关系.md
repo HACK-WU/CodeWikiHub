@@ -1,0 +1,6 @@
+---
+groupPath: 数据流/知识库专家
+relation: knowledge_graph实体与关系
+exportedAt: "2026-10-16T03:53:30.128Z"
+---
+【数据流｜knowledge_graph 实体与关系（4 表）】\n- 实体类型：四张图数据表（entity / relation / mention / community）\n- 结构：`knowledge_graph_entity`：`identityId`(可空)、`type(120)`、`name(512)`、`normalizedName(512)`、`origin`(默认 extracted)、`visibility`(默认 active)、`aliases`(jsonb)、`confidence`、`mentionCount`、`revision`，**唯一 `(knowledgebaseId, identityId)`** + **部分唯一 `IDX_graph_manual_entity_name WHERE identityId IS NULL`**；`_relation`：`sourceEntityId/targetEntityId`、`type(160)`、`normalizedType`、`origin/visibility`、`confidence`、`weight`、`evidenceCount`、`revision`，唯一 `(knowledgebaseId, sourceEntityId, targetEntityId, type)`，两端 CASCADE；`_mention`：`entityId/relationId/documentId/chunkId`、`quote`(text)、`confidence`、`startOffset/endOffset`、`revision`（证据锚点）；`_community`：`key(160)`/`title`/`summary`/`entityIds`(jsonb)，唯一 `(knowledgebaseId, key)`\n- 生产方：`processIndexJob`（抽取链）与手工 `POST entities`/`relations`\n- 主要消费方：graphrag(10/8/5/3) `[基于引用扫描，未深入验证]`\n- 业务用途：图谱节点/边/证据/社区；**`identityId` 唯一索引即身份归一的落地点**；软隐藏靠 `visibility`（DELETE 端点不是物理删除）\n- 详细流向：见 .module-experts/后端专题/知识库专家/C4-数据流向与消费.md §6

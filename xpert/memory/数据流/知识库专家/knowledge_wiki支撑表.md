@@ -1,0 +1,6 @@
+---
+groupPath: 数据流/知识库专家
+relation: knowledge_wiki支撑表
+exportedAt: "2026-10-16T03:53:30.129Z"
+---
+【数据流｜knowledge_wiki 支撑表（reduce / source_state / projection_state / 组织 / 计费）】\n- 实体类型：约十张支撑表（归并输入、来源与投影状态、目录与分类、模型调用计费）\n- 结构要点：`_page_reduce_input`（唯一 `(stageJobId, generationAttempt)`）・`_page_reduce_input_source`（唯一 `(inputId, sourceDocumentIdSnapshot)`）・`_source_map_result`（唯一 `(sourceJobId, candidateKey)`）；`_source_state`（`lastEventType ∈ finish|content_changed|enabled|disabled|soft_deleted|hard_deleted`、`eligible`/`cleanupPending`/`generationPending`、`desiredRootJobId`；唯一 `(knowledgebaseId, sourceDocumentIdSnapshot)`）；`_projection_state`（唯一 `(knowledgebaseId)` 与 `(projectionDocumentId)`；**投影文档 `sourceKey='system:knowledge-wiki'`**）；`_taxonomy`（`enabled` 默认 false；唯一 `(knowledgebaseId)`）・`_folder`（`parentId` 自引用 RESTRICT）・`_placement`（唯一 `(pageId)`）；`_model_invocation`（`requestId(1024)`、`stage(map|dedup|reduce|classify|links)`、`status`、`reconciliationStatus`（含 `indeterminate`）、`billingStatus`、`tokenUsage`，唯一 `(requestId)`）\n- 生产方：`KnowledgeWikiPageReduceService`、消费者与对账器、`KnowledgeWikiOrganizationController`/`TaxonomyService`、生成链调用预算服务\n- 主要消费方：knowledge-wiki（各 2~14 引用）、knowledgebase(3) `[基于引用扫描，未深入验证]`\n- 业务用途：多来源归并的可重放输入；源变更到生成意图的映射；目录树与归类；**`indeterminate` / `requiresAdditionalChargeConfirmation` 的数据来源**\n- 详细流向：见 .module-experts/后端专题/知识库专家/C4-数据流向与消费.md §8

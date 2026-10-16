@@ -1,0 +1,6 @@
+---
+groupPath: 接口信息/知识库专家
+relation: 知识库CRUD与检索
+exportedAt: "2026-10-16T03:53:30.127Z"
+---
+【接口信息｜知识库 CRUD 与检索】\n- 子功能：知识库生命周期、可见性、向量重建、检索测试与日志、文件上传\n- 所属模块：知识库专家\n- 接口列表（前缀 `/api/knowledgebase`）：\n  - `GET /`：可访问列表（分支展开为「我创建的」+「组织共享且非我创建」；**9 个路由带 `PermissionGuard` + `KNOWLEDGEBASE_EDIT`**）\n  - `GET /my`（仅我创建）・`GET /public`（`permission ∈ {Organization, Public}` 且非我创建）・`GET /count`・`GET /pagination`・`GET /by-workspace/:workspaceId`（工作区创作守卫）\n  - `POST /`（创建；作用域三键来自上下文，`permission` 默认 Private；同名 23505 转可读错误）・`GET /detail/:id`（含 canManage）・`GET /:id` ・`PUT /:id`（**唯一更新入口**，同时支持模型切换/可见性/结构化过滤/Wiki 配置；embedding 变更自动转重建）・`DELETE /:id`（软删走写断言）\n  - `POST /:id/test`（检索试跑：query/k/score/rerankModel/rerankThreshold/filters/variables/retrieval/contentScope）\n  - `POST /:id/rebuild-embedding`（置 rebuilding + pending 模型）・`POST /:id/cancel-pending-embedding-model`\n  - `POST /:id/file`（上传到知识库卷；内部再断言任务写权限 + `assertNotRebuilding`）・`GET /:id/logs`（检索日志分页）\n  - `:id/task` 系（`PermissionGuard`：`POST :id/task`/`POST :id/task/:taskId/process`）\n- 鉴权要点：`@Public()` 无；其余仅登录态 + service 断言（`assertKnowledgebaseWriteAccess` / `assertKnowledgebaseTaskWriteAccess` / `assertNotRebuilding`）

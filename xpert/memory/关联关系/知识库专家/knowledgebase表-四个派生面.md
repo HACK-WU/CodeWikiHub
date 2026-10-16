@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/知识库专家
+relation: knowledgebase表-四个派生面
+exportedAt: "2026-10-16T03:54:47.083Z"
+---
+[强关联] knowledgebase 表 与 四个派生面\n强度：必改——改 `knowledgebase` 的 wiki*/graph*/embedding*/`permission` 等状态列语义或新增派生面状态列 → graph/wiki/tag/重建四条消费路径必改；改某派生面内部实现 → KB 表不用管\n原因：**所有派生索引的配置与状态列都挂在 KB 行上**（wiki 九列 + graph 三列 + embedding 三列），派生面内容却在各自独立表；一次 `GET :id` 会同时读多方状态\n\nKB 端：\n- Knowledgebase @ packages/server-ai/src/knowledgebase/knowledgebase.entity.ts（wiki*/graphRag/graphStatus/embeddingCollectionName 等）\n- KnowledgebaseService.updateKnowledgebase（唯一更新入口，同时改模型/可见性/过滤/Wiki 配置，embedding 变更自动转重建）\n\n派生面端：\n- KnowledgeWikiService.getStatus/updateConfiguration @ packages/server-ai/src/knowledgebase/wiki/knowledge-wiki.service.ts\n- GraphragService.getStatus/markJobSuccess|Failed @ packages/server-ai/src/graphrag/graphrag.service.ts\n- 自动打标消费者（队列 knowledge-automatic-tagging）@ packages/server-ai/src/knowledgebase/tags/\n- 重建链 startEmbeddingRebuild/promoteEmbeddingRebuild/cleanupEmbeddingCollection @ packages/server-ai/src/knowledgebase/knowledgebase.service.ts

@@ -1,0 +1,6 @@
+---
+groupPath: 关联关系/知识库专家
+relation: 向量collection-检索与重建
+exportedAt: "2026-10-16T03:54:47.083Z"
+---
+[强关联] 向量 collection 与 检索/写入两条路径 + 换模重建\n强度：必改——改 collection 命名派生（`embeddingCollectionName ?? id`、`:graph-entities` 后缀、pending 命名）或 `createCollectionScopedVectorId` 的 uuidv5 口径 → 检索命中、幂等 upsert、重建提升全部必改（向量 id 对不上会表现为「重建后检索为空」）；改检索侧实现 → 重建链不用管\n原因：向量表不是实体（运行期建表），collection 名与向量 id 都是**拼出来的隐式契约**；查询路径的 `getOrCreateCollection()` 还会触发 DDL\n\n写入/重建端：\n- KnowledgeDocumentStore.prepareChunksForEmbedding/addKnowledgeChunks @ packages/server-ai/src/knowledgebase/vector-store.ts\n- KnowledgebaseService.startEmbeddingRebuild/promoteEmbeddingRebuild/cleanupEmbeddingCollection @ packages/server-ai/src/knowledgebase/knowledgebase.service.ts\n\n检索/DDL 端：\n- RagCreateVStoreHandler.createPgVectorStore / ensureTableInDatabase / ensureCollectionTableInDatabase @ packages/server-ai/src/rag-vstore/commands/handlers/create.handler.ts\n- KnowledgePGVectorStore @ packages/server-ai/src/rag-vstore/knowledge-pg-vector.store.ts\n- 检索侧 JOIN（COALESCE(c.metadata->>'chunkId', c.id::text) = v.metadata->>'chunkId'）@ packages/server-ai/src/knowledgebase/retriever.ts

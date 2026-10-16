@@ -1,0 +1,6 @@
+---
+groupPath: 决策记录/知识库专家
+relation: 对外契约-schema与citation故意精简
+exportedAt: "2026-10-16T03:53:30.130Z"
+---
+【决策记录｜面向 provider 的工具 schema 与 citation 输出故意精简】\n- 分类：对外契约 / 避坑\n- 动机（避坑）：**现象 A** 把字段/操作符/类型的精确校验塞进工具 schema，会让模型侧承担本应由编译器承担的校验。**后果 A** 一次非法动态过滤会让 LangChain 在回退策略生效前直接拒掉整个工具调用，用户看到「工具报错」而非「过滤被忽略并回退到固定边界」。**现象 B** 让引用摘要复述 chunk metadata。**后果 B** 每次检索返回体积随 metadata 膨胀，挤占模型上下文\n- 决策：① provider schema 保持紧凑，精确校验下放给 `KnowledgeFilterCompiler`，非法动态过滤安全回退到固定边界并记为 `invalid_dynamic_filter`；同时接受 `string`（max 32_768）形式以兼容把嵌套工具参数序列化成 JSON 文本的 provider。② 引用摘要剥离 metadata，只保留 Agent 与 citation URL 需要的紧凑 provenance\n- 背景约束：工具面由 `KnowledgeRetriever.toFilterOptionsTool/toFolderOptionsTool/toGraphExplorerTool` 生成；过滤可审计性由 `knowledge_retrieval_log` 的 `filterStatus`/`fallbackReason` 承载\n- 被否决方案：无\n- 重新评估触发条件：接入的 provider 不再出现嵌套参数 JSON 文本序列化（可去掉 string 分支）；或 citation 体积不再是瓶颈\n- 关联代码：`createDynamicFilterToolInputSchema` / `resolveKnowledgeFilterOptionKind`；`formatKnowledgebaseRetrievalToolOutput` / `createKnowledgebaseCitationFromDocument` / `KNOWLEDGEBASE_CITATION_MARKDOWN_INSTRUCTION`\n- 证据来源：retriever.ts 与 citation.ts 内注释逐字

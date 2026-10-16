@@ -1,0 +1,6 @@
+---
+groupPath: 接口信息/Agent 执行链专家
+relation: Agent定义与直连对话
+exportedAt: "2026-10-16T03:54:17.312Z"
+---
+【接口信息｜Agent 定义与直连对话】\n- 子功能：Agent 定义 CRUD、草稿态直连对话（SSE）、单节点调试、中间件策略与工具面\n- 所属模块：Agent 执行链专家\n- 接口列表（真实前缀 `/api/xpert-agent`，由 `RouterModule.register([{ path: '/xpert-agent' }])` 提供）：\n  - `GET|POST|PUT|DELETE /`：定义 CRUD（`XpertAgentController extends CrudController<XpertAgent>`，含继承的 `count`/`pagination`/`my`/`:id`）\n  - `POST /chat`（`@Sse()`）：草稿态直连对话；`XpertAgentService.chatAgent` 固定 `isDraft: true` / `store: null` / `from: 'debugger'`；支持 `action: 'resume'` 作人工决策恢复\n  - `POST /xpert/:id/test/:key`：单节点调试（`WorkflowTestNodeCommand(id, key, body.state)`）；任意错误被包成 `HttpException(msg, 500)`\n  - `GET /middlewares`：列草稿可用中间件策略（`getMiddlewareStrategies()`）\n  - `POST /middlewares/:provider/tools`：列某 provider 的中间件工具（`getMiddlewareTools(provider, {xpertId?, options?})`）\n  - 工具试跑：`POST /middlewares/:provider/tools/:toolName/test`（`testMiddlewareTool`）\n- 关键约束：图编译与校验不在同一链——校验是草稿校验事件（`EventNameXpertValidate`/`XpertDraftValidateEvent`）的订阅者（`XpertAgentGraphValidator`/`XpertAgentNodeValidator` + plugins/workflow 下的 validator），**编译成功不等于校验通过**\n- 多智能体分派：`getSwarmPartners` 判定伙伴数 > 1 → `XpertAgentSwarmCommand`（leader/followers + handoff 工具 + `installThreadPauseGuards`），否则 `XpertAgentSubgraphCommand`；子图成环报 `AGENT_SUBGRAPH_BUILD_CYCLE`

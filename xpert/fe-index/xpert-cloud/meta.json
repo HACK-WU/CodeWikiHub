@@ -1,0 +1,13 @@
+{
+  "slug": "xpert-cloud",
+  "root": "/root/xpert",
+  "scope": [
+    "apps/cloud/src/**"
+  ],
+  "commit": "80f5676fd7ede1145e6d7dcd7705a94e02685cdd",
+  "generated": "2026-10-16",
+  "routes": 202,
+  "pages": 81,
+  "apis": 205,
+  "scanner": "scan_frontend.py v1.0.0"
+}
