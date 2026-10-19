@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ki · 后台任务 UI 草案</title>
+  <style>
+    :root { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#1d1d1f; background:#f7f8fa; --blue:#0071e3; --line:#e6e8ec; --muted:#767a83; --surface:#fff; --sidebar:#f4f5f7; --red:#bc352e; --green:#17834a; --amber:#915d00; }
+    * { box-sizing:border-box; } body { margin:0; } button,select { font:inherit; } button { cursor:pointer; } button:focus-visible,select:focus-visible,a:focus-visible { outline:3px solid #7ab7ff; outline-offset:2px; }
+    .shell { display:grid; grid-template-columns:232px minmax(0,1fr); min-height:100vh; }
+    aside { background:var(--sidebar); border-right:1px solid var(--line); display:flex; flex-direction:column; }
+    .brand { height:72px; display:flex; align-items:center; gap:10px; padding:0 20px; font-size:15px; font-weight:700; }
+    .logo { width:28px; height:28px; display:grid; place-items:center; border-radius:8px; color:#fff; background:linear-gradient(135deg,#38aeef,#0071e3); font-size:14px; }
+    .nav-label { margin:18px 20px 9px; font-size:10px; color:#9a9ca3; letter-spacing:.12em; font-weight:700; }
+    .nav { display:grid; gap:3px; padding:0 12px; }
+    .nav button { width:100%; border:0; background:none; border-radius:9px; text-align:left; height:36px; padding:0 12px; color:#555b65; font-size:13px; display:flex; align-items:center; gap:12px; }
+    .nav button:hover { background:#e8edf5; } .nav button.active { background:#e0ebfc; color:#0969c7; font-weight:650; }
+    .nav-icon { width:15px; font-size:16px; text-align:center; } .nav-count { margin-left:auto; border-radius:20px; padding:1px 6px; background:var(--blue); color:#fff; font-size:10px; }
+    .aside-foot { margin-top:auto; border-top:1px solid var(--line); padding:17px 18px; font-size:11px; color:#a0a3aa; }
+    .main { min-width:0; } .topbar { min-height:64px; padding:0 25px; display:flex; align-items:center; gap:12px; background:var(--surface); border-bottom:1px solid var(--line); }
+    .top-title { font-size:16px; font-weight:650; white-space:nowrap; } .spacer { flex:1; }
+    .task-chip { display:inline-flex; align-items:center; gap:8px; padding:8px 11px; border:0; border-radius:9px; background:var(--blue); color:#fff; font-size:12px; font-weight:700; white-space:nowrap; box-shadow:0 2px 8px rgba(0,113,227,.2); }
+    .task-chip.failed { background:#fff0ee; box-shadow:none; color:#a52b23; border:1px solid #f3cac5; }
+    .task-chip.hidden { display:none; } .spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:spin .75s linear infinite; flex:none; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .scope-select { min-width:150px; height:34px; padding:0 10px; border:1px solid var(--line); border-radius:9px; background:#fafafa; color:#343840; font-size:12px; }
+    .service { display:flex; align-items:center; gap:7px; background:#f8f8f9; border:1px solid var(--line); border-radius:18px; padding:7px 11px; font-size:11px; color:#666b73; white-space:nowrap; }
+    .dot { width:7px; height:7px; border-radius:50%; background:#20b96c; }
+    .banner { margin:18px 25px 0; background:#fff1f0; border:1px solid #f4d6d3; border-left:4px solid #e44b40; border-radius:10px; padding:14px 17px; display:flex; gap:14px; align-items:flex-start; }
+    .banner.hidden { display:none; } .banner-icon { color:#ce4037; font-size:18px; font-weight:800; line-height:20px; }
+    .banner-copy { flex:1; min-width:0; } .banner-title { font-weight:700; color:#94302a; font-size:14px; margin-bottom:4px; } .banner-desc { color:#765754; font-size:12px; line-height:1.55; }
+    .banner-actions { display:flex; gap:8px; margin-top:9px; flex-wrap:wrap; align-items:center; } code { font-family:SFMono-Regular,Menlo,Consolas,monospace; font-size:11px; background:#fff; border:1px solid #f1c6c1; border-radius:6px; padding:5px 7px; overflow-wrap:anywhere; }
+    .small-btn { border:1px solid #dadde2; color:#454b55; background:#fff; border-radius:7px; padding:5px 9px; font-size:11px; font-weight:600; }
+    .small-btn:hover { background:#f4f7fb; }
+    .content { max-width:1180px; padding:27px 25px 100px; margin:auto; }
+    h1 { font-size:23px; margin:0 0 4px; letter-spacing:-.02em; } .subtitle { color:var(--muted); font-size:12px; margin:0; }
+    .page-head { display:flex; align-items:flex-start; gap:16px; } .head-actions { margin-left:auto; display:flex; align-items:center; gap:9px; }
+    .updated { color:#999da5; font-size:11px; white-space:nowrap; }
+    .refresh { border:1px solid #d5d9e0; border-radius:8px; background:white; padding:7px 11px; font-size:12px; color:#4b5461; }
+    .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:23px 0 22px; }
+    .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:0 1px 2px rgba(22,34,52,.025); }
+    .stat-label { color:#777d87; font-size:11px; } .stat-value { margin-top:7px; font-size:23px; font-weight:730; font-variant-numeric:tabular-nums; }
+    .stat-active .stat-value { color:var(--blue); } .stat-failed .stat-value { color:var(--red); }
+    .list-card { background:#fff; border:1px solid var(--line); border-radius:13px; overflow:hidden; box-shadow:0 2px 10px rgba(22,34,52,.025); }
+    .list-head { display:flex; align-items:center; padding:16px 18px; gap:12px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+    .list-title { font-size:14px; font-weight:700; margin-right:auto; } .filters { display:flex; gap:6px; }
+    .filter { border:1px solid transparent; background:transparent; border-radius:7px; padding:6px 10px; color:#7c828b; font-size:11px; }
+    .filter.selected { background:#eaf3ff; color:#086dcf; font-weight:700; } .source-select { border:1px solid var(--line); border-radius:7px; background:#fff; color:#5a626e; font-size:11px; padding:6px; }
+    .task-row { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,.55fr) auto; align-items:center; gap:18px; padding:18px; border-bottom:1px solid #edf0f2; }
+    .task-row:last-child { border-bottom:0; } .task-row.hidden { display:none; }
+    .row-left { display:flex; gap:11px; min-width:0; } .status-icon { width:31px; height:31px; display:grid; place-items:center; border-radius:9px; flex:none; font-size:16px; font-weight:700; }
+    .running .status-icon { background:#e6f2ff; color:var(--blue); } .queued .status-icon { background:#f1f3f5; color:#6e7885; } .failed .status-icon { background:#ffefed; color:var(--red); } .done .status-icon { background:#e9f7ef; color:var(--green); } .unknown .status-icon { background:#fff4e1; color:var(--amber); }
+    .task-name { font-size:13px; font-weight:700; margin:0 0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .task-meta { display:flex; align-items:center; gap:8px; color:#9298a1; font-size:11px; } .source { display:inline-block; padding:2px 6px; border:1px solid #e1e5ea; border-radius:5px; color:#606976; font-size:10px; font-weight:700; }
+    .source.cli { color:#7560a2; background:#f6f2fb; border-color:#e8ddf3; }
+    .progress-label { font-size:11px; color:#626a76; display:flex; justify-content:space-between; gap:8px; margin-bottom:7px; }
+    .track { height:6px; border-radius:10px; overflow:hidden; background:#e8edf3; } .fill { height:100%; background:var(--blue); border-radius:10px; }
+    .failed .fill { background:#dc554c; } .done .fill { background:#27a362; }
+    .row-note { color:#777d86; font-size:11px; line-height:1.5; } .failed .row-note { color:#b0433b; }
+    .row-state { font-size:11px; font-weight:700; text-align:right; } .running .row-state { color:#0870d1; } .queued .row-state { color:#6b7581; } .failed .row-state { color:#b13730; } .done .row-state { color:#19804b; } .unknown .row-state { color:#8a5f08; }
+    .row-time { margin-top:5px; color:#a0a5ad; font-size:10px; text-align:right; white-space:nowrap; }
+    .details { border:0; background:none; color:#0870d1; padding:6px 0; font-size:11px; font-weight:700; white-space:nowrap; }
+    .detail-panel { grid-column:1/-1; background:#f8fafc; border:1px solid #e5eaf0; border-radius:9px; padding:13px 15px; color:#515b66; font-size:11px; line-height:1.7; display:none; }
+    .task-row.open .detail-panel { display:block; } .detail-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:8px; } .detail-grid b { display:block; font-size:14px; color:#303842; }
+    .empty { padding:40px 24px; color:#777; font-size:13px; text-align:center; display:none; }
+    .placeholder { background:#fff; border:1px solid var(--line); border-radius:12px; margin-top:23px; padding:30px; color:#818894; min-height:270px; }
+    .demo-controls { position:fixed; bottom:18px; right:18px; z-index:5; background:#202c3b; color:#fff; padding:12px; border-radius:12px; box-shadow:0 12px 36px rgba(0,0,0,.22); font-size:11px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; max-width:min(540px,calc(100vw - 24px)); }
+    .demo-controls strong { margin-right:4px; } .demo-controls button { border:1px solid #516276; background:#324357; color:#fff; border-radius:6px; padding:5px 8px; font-size:11px; } .demo-controls button:hover { background:#46617b; }
+    @media(max-width:900px) { .task-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; gap:12px; } .row-note { display:none; } .topbar { flex-wrap:wrap; padding:12px 18px; } .spacer { flex-basis:15%; } .banner { margin:14px 18px 0; } .content { padding:23px 18px 100px; } }
+    @media(max-width:700px) { .shell { grid-template-columns:1fr; } aside { display:block; grid-row:1; border-right:0; border-bottom:1px solid var(--line); overflow:hidden; } .brand,.nav-label,.aside-foot { display:none; } .nav { display:flex; gap:3px; overflow-x:auto; padding:8px 12px; } .nav button { width:auto; flex:none; white-space:nowrap; padding:0 9px; } .nav-count { margin-left:2px; } .topbar { gap:8px; } .top-title { flex:1; } .spacer { display:none; } .service { display:none; } .scope-select { min-width:105px; max-width:120px; } .task-chip { max-width:155px; overflow:hidden; text-overflow:ellipsis; } .banner { flex-wrap:wrap; } .page-head { flex-wrap:wrap; } .head-actions { margin-left:0; width:100%; justify-content:space-between; } .stats { grid-template-columns:repeat(3,1fr); gap:7px; } .stat { padding:12px; } .stat-value { font-size:20px; } .task-row { grid-template-columns:1fr auto; gap:10px; } .row-progress { grid-column:1/-1; grid-row:2; } .row-note { display:block; grid-column:1; } .row-right { grid-column:2; grid-row:1; } .detail-grid { grid-template-columns:repeat(3,1fr); } }
+    @media(prefers-reduced-motion:reduce) { .spinner { animation:none; } }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="brand"><span class="logo">ki</span>ki 知识库</div>
+    <div class="nav-label">导航</div>
+    <nav class="nav" aria-label="主导航">
+      <button data-page="总览"><span class="nav-icon">◧</span>总览</button>
+      <button data-page="知识库浏览"><span class="nav-icon">☰</span>知识库浏览</button>
+      <button data-page="语义搜索"><span class="nav-icon">⌕</span>语义搜索</button>
+      <button data-page="上传导入"><span class="nav-icon">⇪</span>上传导入</button>
+      <button data-page="知识写入"><span class="nav-icon">✎</span>知识写入</button>
+      <button data-page="后台任务" class="active"><span class="nav-icon">◷</span>后台任务<span class="nav-count" id="navCount">2</span></button>
+    </nav>
+    <div class="aside-foot">ki v1.0.0-beta · UI 交互草案</div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <span class="top-title">ki 知识库</span><span class="spacer"></span>
+      <button class="task-chip" id="taskChip"><span class="spinner" id="chipSpinner"></span><span id="chipText">2 个任务进行中</span></button>
+      <select class="scope-select" id="scopeSelect" aria-label="当前 Scope"><option value="kafka">kafka</option><option value="demo">demo</option></select>
+      <span class="service"><span class="dot"></span>MCP HTTP 已就绪</span>
+    </header>
+    <section class="banner" id="banner" role="alert">
+      <span class="banner-icon">!</span>
+      <div class="banner-copy"><div class="banner-title" id="bannerTitle">kafka 的语义检索暂不可用</div>
+        <div class="banner-desc">当前 embedding 为 1024 维，旧向量集合为 4096 维。全文检索仍可使用。</div>
+        <div class="banner-actions"><code id="command">ki restore kafka --rebuild-vector --yes</code><button class="small-btn" id="copyBtn">复制命令</button><button class="small-btn" id="checkBtn">重新检查</button></div>
+      </div>
+    </section>
+    <main class="content">
+      <section id="tasksPage">
+        <div class="page-head"><div><h1>后台任务</h1><p class="subtitle">集中查看 CLI 与网页发起的导入和向量重建任务</p></div><div class="head-actions"><span class="updated" id="updated">刚刚更新</span><button class="refresh" id="refreshBtn">↻ 刷新任务</button></div></div>
+        <div class="stats"><div class="stat stat-active"><div class="stat-label">进行中</div><div class="stat-value" id="runningCount">2</div></div><div class="stat"><div class="stat-label">排队中</div><div class="stat-value" id="queuedCount">1</div></div><div class="stat stat-failed"><div class="stat-label">最近失败</div><div class="stat-value" id="failedCount">1</div></div></div>
+        <div class="list-card"><div class="list-head"><div class="list-title">任务列表</div><div class="filters" aria-label="状态筛选"><button class="filter selected" data-filter="all">全部</button><button class="filter" data-filter="active">进行中</button><button class="filter" data-filter="failed">失败</button><button class="filter" data-filter="done">已结束</button></div><select class="source-select" id="sourceFilter" aria-label="任务来源"><option value="all">全部来源</option><option value="CLI">CLI</option><option value="网页">网页</option></select></div>
+          <div id="rows">
+            <article class="task-row running" data-state="active" data-source="CLI"><div class="row-left"><span class="status-icon">◌</span><div><div class="task-name">重建向量 · kafka</div><div class="task-meta"><span class="source cli">CLI</span><span>ki restore --rebuild-vector</span></div></div></div><div class="row-progress"><div class="progress-label"><span>正在向量化</span><span>182 / 438</span></div><div class="track"><div class="fill" style="width:42%"></div></div></div><div class="row-note">已写入 182 项<br>约 2 分钟前开始</div><div class="row-right"><div class="row-state">进行中</div><div class="row-time">14:32 开始</div><button class="details">查看详情 ↓</button></div><div class="detail-panel"><div class="detail-grid"><div>已完成<b>182</b></div><div>失败<b>0</b></div><div>未处理<b>256</b></div></div><div>来源：CLI · jobId: cli-rebuild-kafka-82a1</div><div>当前阶段：分批生成 dense 向量。状态由任务服务自动同步。</div></div></article>
+            <article class="task-row running" data-state="active" data-source="网页"><div class="row-left"><span class="status-icon">◌</span><div><div class="task-name">上传导入 · demo</div><div class="task-meta"><span class="source">网页</span><span>Markdown 目录</span></div></div></div><div class="row-progress"><div class="progress-label"><span>正在导入</span><span>28 / 64</span></div><div class="track"><div class="fill" style="width:44%"></div></div></div><div class="row-note">已处理 28 个文件<br>约 1 分钟前开始</div><div class="row-right"><div class="row-state">进行中</div><div class="row-time">14:33 开始</div><button class="details">查看详情 ↓</button></div><div class="detail-panel"><div class="detail-grid"><div>已完成<b>28</b></div><div>失败<b>0</b></div><div>未处理<b>36</b></div></div><div>来源：网页 · jobId: web-import-demo-4c27</div><div>在“上传导入”页可以查看文件级明细。</div></div></article>
+            <article class="task-row queued" data-state="active" data-source="CLI"><div class="row-left"><span class="status-icon">⋯</span><div><div class="task-name">导入文档 · kafka</div><div class="task-meta"><span class="source cli">CLI</span><span>ki import</span></div></div></div><div class="row-progress"><div class="progress-label"><span>等待同 scope 写入完成</span><span>0 / —</span></div><div class="track"><div class="fill" style="width:0%"></div></div></div><div class="row-note">尚未开始处理<br>等待队列</div><div class="row-right"><div class="row-state">排队中</div><div class="row-time">14:34 提交</div><button class="details">查看详情 ↓</button></div><div class="detail-panel">来源：CLI · jobId: cli-import-kafka-9f31<br>任务正在等待同 scope 的向量重建结束。</div></article>
+            <article class="task-row failed" data-state="failed" data-source="CLI"><div class="row-left"><span class="status-icon">!</span><div><div class="task-name">导入文档 · kafka</div><div class="task-meta"><span class="source cli">CLI</span><span>ki import</span></div></div></div><div class="row-progress"><div class="progress-label"><span>向量服务不可用，已停止</span><span>64 / 320</span></div><div class="track"><div class="fill" style="width:20%"></div></div></div><div class="row-note">后续 256 项未处理<br>已完成部分保留</div><div class="row-right"><div class="row-state">失败</div><div class="row-time">13:18 结束</div><button class="details">查看详情 ↓</button></div><div class="detail-panel"><div class="detail-grid"><div>已完成<b>64</b></div><div>失败<b>0</b></div><div>未处理<b>256</b></div></div><div>原因：embedding 服务持续不可用，任务已停止调度后续批次。</div><div>建议：检查服务和维度配置，恢复后重新发起导入；已提交数据按任务结果核对。</div></div></article>
+            <article class="task-row done" data-state="done" data-source="网页"><div class="row-left"><span class="status-icon">✓</span><div><div class="task-name">上传导入 · demo</div><div class="task-meta"><span class="source">网页</span><span>Markdown 文件</span></div></div></div><div class="row-progress"><div class="progress-label"><span>全部完成</span><span>18 / 18</span></div><div class="track"><div class="fill" style="width:100%"></div></div></div><div class="row-note">18 个文件已导入<br>无失败项</div><div class="row-right"><div class="row-state">已完成</div><div class="row-time">12:06 结束</div><button class="details">查看详情 ↓</button></div><div class="detail-panel">来源：网页 · jobId: web-import-demo-2cd9<br>18 个文件导入完成。</div></article>
+          </div><div class="empty" id="empty">此筛选条件下没有任务。</div>
+        </div>
+        <p class="subtitle" style="margin-top:14px">演示数据 · 最近结束任务按预设保留期展示；正式产品需要明确跨进程任务发现与历史保留。</p>
+      </section>
+      <section id="otherPage" hidden><div class="page-head"><div><h1 id="otherTitle">总览</h1><p class="subtitle">此页面仅用于预览跨页面的顶部任务状态与维度告警</p></div></div><div class="placeholder">页面内容占位。切换左侧导航后，顶部的“后台任务”状态与向量维度告警仍保持可见。</div></section>
+    </main>
+  </div>
+</div>
+<div class="demo-controls"><strong>预览状态</strong><button id="twoRunning">2 个进行中</button><button id="onlyFailure">仅失败</button><button id="noneActive">无活动任务</button><button id="toggleBanner">切换维度告警</button></div>
+<script>
+  const $ = (s) => document.querySelector(s);
+  const nav = [...document.querySelectorAll('.nav button')];
+  const chip = $('#taskChip');
+  function goPage(name) { nav.forEach(b => b.classList.toggle('active', b.dataset.page === name)); $('#tasksPage').hidden = name !== '后台任务'; $('#otherPage').hidden = name === '后台任务'; $('#otherTitle').textContent = name; }
+  nav.forEach(b => b.addEventListener('click', () => goPage(b.dataset.page)));
+  chip.addEventListener('click', () => goPage('后台任务'));
+  function setChip(mode) { chip.classList.toggle('hidden', mode === 'none'); chip.classList.toggle('failed', mode === 'failed'); $('#chipSpinner').style.display = mode === 'running' ? '' : 'none'; $('#chipText').textContent = mode === 'running' ? '2 个任务进行中' : '1 个任务失败'; $('#navCount').textContent = mode === 'running' ? '2' : mode === 'failed' ? '1' : ''; $('#navCount').style.display = mode === 'none' ? 'none' : ''; }
+  $('#twoRunning').onclick = () => setChip('running'); $('#onlyFailure').onclick = () => setChip('failed'); $('#noneActive').onclick = () => setChip('none');
+  $('#toggleBanner').onclick = () => $('#banner').classList.toggle('hidden');
+  $('#scopeSelect').addEventListener('change', e => { const scope = e.target.value; $('#banner').classList.toggle('hidden', scope !== 'kafka'); $('#bannerTitle').textContent = scope + ' 的语义检索暂不可用'; $('#command').textContent = 'ki restore ' + scope + ' --rebuild-vector --yes'; });
+  $('#copyBtn').onclick = async () => { try { await navigator.clipboard.writeText($('#command').textContent); $('#copyBtn').textContent = '已复制'; setTimeout(() => $('#copyBtn').textContent = '复制命令', 1600); } catch { $('#copyBtn').textContent = '复制失败'; } };
+  $('#checkBtn').onclick = () => { $('#checkBtn').textContent = '检查中…'; setTimeout(() => $('#checkBtn').textContent = '重新检查', 900); };
+  $('#refreshBtn').onclick = () => { $('#updated').textContent = '刚刚更新'; $('#refreshBtn').textContent = '↻ 已刷新'; setTimeout(() => $('#refreshBtn').textContent = '↻ 刷新任务', 1200); };
+  document.querySelectorAll('.details').forEach(b => b.addEventListener('click', () => { const row = b.closest('.task-row'); row.classList.toggle('open'); b.textContent = row.classList.contains('open') ? '收起详情 ↑' : '查看详情 ↓'; }));
+  let statusFilter = 'all'; let sourceFilter = 'all';
+  function filterRows() { let shown = 0; document.querySelectorAll('.task-row').forEach(row => { const okStatus = statusFilter === 'all' || row.dataset.state === statusFilter || statusFilter === 'done' && row.dataset.state === 'done'; const okSource = sourceFilter === 'all' || row.dataset.source === sourceFilter; row.classList.toggle('hidden', !(okStatus && okSource)); if (okStatus && okSource) shown++; }); $('#empty').style.display = shown ? 'none' : 'block'; }
+  document.querySelectorAll('.filter').forEach(b => b.onclick = () => { statusFilter = b.dataset.filter; document.querySelectorAll('.filter').forEach(x => x.classList.toggle('selected',x === b)); filterRows(); });
+  $('#sourceFilter').onchange = e => { sourceFilter = e.target.value; filterRows(); };
+</script>
+</body>
+</html>
