@@ -1230,18 +1230,31 @@
       "id": "REQ-20261019-005",
       "feature": "Group 命令重构（ki group）",
       "created": "2026-10-19 18:17:24",
-      "updated": "2026-10-19 18:18:06",
-      "status": "已确认",
+      "updated": "2026-10-19 23:31:49",
+      "status": "实施中",
       "tags": [
         "cli",
         "refactor",
         "ux"
       ],
-      "version": 2,
+      "version": 15,
       "depends_on": [],
       "changelog": [
         "初始创建",
-        "2026-10-19 18:18:06 v2: 需求落盘：Group 命令重构（ki group）；已定 D1/D2/D5，待拍板 D3/D4/D6"
+        "2026-10-19 18:18:06 v2: 需求落盘：Group 命令重构（ki group）；已定 D1/D2/D5，待拍板 D3/D4/D6",
+        "2026-10-19 22:37:42 v3: 完成需求场景推演（3 红 / 11 黄 / 2 绿）",
+        "2026-10-19 22:41:20 v4: 补入推演 R1/R2/R4（旧删组实现/空节点复用/core 归属/create 禁补全），新增 M-18/M-19，增量推演已闭合",
+        "2026-10-19 22:43:55 v5: D6-3：MCP 删组保留 NEG-15，工具定名 ki_group_delete_empty（方案 B），同步 §1/§5.4/M-13/M-15/skill 清单",
+        "2026-10-19 22:45:02 v6: 第三轮推演：无新增 🔴；新增 N1 chat 标签矛盾、N2 skill 非法参数、N3 文档级草稿守卫（3 🟡）+ N4 M-18 判据（🟢）",
+        "2026-10-19 22:48:05 v7: 补入 N1 chat 标签 / N2 skill 非法参数 / N3 文档级草稿守卫，同步 M-13/M-14/M-17",
+        "2026-10-19 22:49:40 v8: 第四轮推演：无 🔴；新增 P1 MCP create 缺 parents、P2 group list 缺 --json（2 🟡）+ P3/P4（🟢）；建议冻结需求进入设计",
+        "2026-10-19 22:52:35 v9: 参数形态最终拍板：全族取消 --parent/--name/--parents（CLI+MCP），create 只建单节点；P1 结案，同步 S3/§5.4/M-15/D6-2",
+        "2026-10-19 22:56:53 v10: 完成技术设计（父文档 + 4 个子需求）",
+        "2026-10-19 22:57:34 v11: 设计定稿：预览契约/FTS/部分失败/scope_list 调度/--json/RENAMED 粒度全部闭合；M-06/M-09/S8 文字修订",
+        "2026-10-19 23:01:25 v12: 完成设计评审：0 阻断 / 7 警告（已修复）/ 2 建议",
+        "2026-10-19 23:02:30 v13: 完成 challenger 二次质疑：1 致命 / 4 重要 / 2 建议",
+        "2026-10-19 23:05:10 v14: challenger 修复闭环：sourcePath 归属校验、两段提交窗口、RPC 过渡别名、topGroupsStale、--json opt-in；增量评审通过",
+        "2026-10-19 23:31:49 v15: 实现完成：S-01/02/03/04 落地，148 tests pass，typecheck 0；验收 round-1 有条件通过（M-09/M-10 非阻断）"
       ],
       "commits": [],
       "branch": null,
@@ -1249,6 +1262,38 @@
         {
           "path": "requirement.md",
           "type": "requirement"
+        },
+        {
+          "path": "review/scenario-rehearsal.md",
+          "type": "rehearsal"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_删除core与安全_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_CLI命令族_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_MCP表面_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_文档与skill同步_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
         }
       ],
       "role": "standalone",
