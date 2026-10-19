@@ -1230,14 +1230,14 @@
       "id": "REQ-20261019-005",
       "feature": "Group 命令重构（ki group）",
       "created": "2026-10-19 18:17:24",
-      "updated": "2026-10-19 23:31:49",
+      "updated": "2026-10-20 00:12:09",
       "status": "实施中",
       "tags": [
         "cli",
         "refactor",
         "ux"
       ],
-      "version": 15,
+      "version": 16,
       "depends_on": [],
       "changelog": [
         "初始创建",
@@ -1254,7 +1254,8 @@
         "2026-10-19 23:01:25 v12: 完成设计评审：0 阻断 / 7 警告（已修复）/ 2 建议",
         "2026-10-19 23:02:30 v13: 完成 challenger 二次质疑：1 致命 / 4 重要 / 2 建议",
         "2026-10-19 23:05:10 v14: challenger 修复闭环：sourcePath 归属校验、两段提交窗口、RPC 过渡别名、topGroupsStale、--json opt-in；增量评审通过",
-        "2026-10-19 23:31:49 v15: 实现完成：S-01/02/03/04 落地，148 tests pass，typecheck 0；验收 round-1 有条件通过（M-09/M-10 非阻断）"
+        "2026-10-19 23:31:49 v15: 实现完成：S-01/02/03/04 落地，148 tests pass，typecheck 0；验收 round-1 有条件通过（M-09/M-10 非阻断）",
+        "2026-10-20 00:12:09 v16: 登记已知问题清单：K-01 ki-relation 共享向量残留、K-03/K-04 legacy 预览/创建分叉，F-01~F-08 已修，A-01~A-05 验收缺口"
       ],
       "commits": [],
       "branch": null,
@@ -1293,6 +1294,10 @@
         },
         {
           "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/known-issues.md",
           "type": "review"
         }
       ],
