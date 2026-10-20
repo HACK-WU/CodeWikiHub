@@ -87,6 +87,15 @@
 
 **已完成（2026-10-20 第二轮）**：K-01 / K-02 / K-03 / K-04 / N-01 / N-02 / U-03 + 共享 docId 误删。
 
+**跟进项处置（2026-10-20 第三轮）**：
+
+1. ✅ **真引擎 filter 契约测试**：新增 `test/group-vector-contract.test.ts`（6 例，静态契约：schema 声明 `group` 且 indexed / 中文组名 / 单引号转义 / and-or 结构 / 未声明字段 fail-loud）+ `test/zvec-engine-engine.test.mjs` 的 `TC-GROUP-01`（真引擎：中文组名 OR 过滤、含 `'` 值、无 group 字段文档不被命中、limit 截断可观测）。
+2. ✅ **「无 group 字段的历史辅助向量」判定为理论问题，本机不适用**（🟢 证据链）：
+   - `GROUP_FIELD` 与写入端传 `group` 均引入于 **2026-08-05**（`12d14c4`），`sync-relation` 侧 2026-08-13（`184145e`）；
+   - 本机全部 99 个向量集合的 **birth time 最早为 2026-09-10**（`stat %w`），晚于引入一个多月 ⇒ 不存在"前 group 时代"写入；
+   - 抽样 `ai-docs`（1882 条关系）/ `consul` / `xpert-memory` 的 `ki-relation` 命中，`group` 字段**全部存在**。
+   - 结论：仅在"用 2026-08-05 之前的版本导入过关系向量"的机器上才需要回填；`docs/group.md` 保留该 caveat 与 `ki rebuild-vector` 兜底。
+
 **剩余待办**：
 
 1. **U-02**（空父自动清理后 MCP 再删父返回 `GROUP_NOT_FOUND`）：建议在结果里返回 `prunedParents`，让调用方知道父组已被清理。
