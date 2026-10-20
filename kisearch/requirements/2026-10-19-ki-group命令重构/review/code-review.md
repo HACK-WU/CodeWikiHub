@@ -57,3 +57,45 @@
 | R3 | 验收报告指标 M-08 只覆盖磁盘，未覆盖向量层 | 删组后 `doc list` 仍剩 2 条 `ki-relation` | 记录为「已知残留」：`ki-relation` docId 跨组共享，按 id 删会误删他组；需持久化辅助 id 或加 group 元数据 |
 
 复跑：`tsc` 0；`delete-group` 7/7、`delete-relation-wiki` 4/4、`group-create` 7/7、`group-cli` 5/5、`integration` 10/10、`error-handling` 15/15。
+
+---
+
+## 7. 第二轮审查（2026-10-20，auto-review · 针对 K-01~K-04 修复）
+
+> 对象：`6131808` 之上的工作区改动（7 文件，+438/−41）。整体评分 **A**（7 维均值 8.9，无未修复 P0）。
+> 关联质疑：`review/code-challenge-report.md`（challenger 二次质疑，1 🔴 已在审查内修复）。
+
+### 7.1 结论
+
+上一轮登记的三条「已知残留」中的两条（R3 的 `ki-relation` 幽灵、K-02 的 `ki-path` 开关）在本轮被解决，且**不需要改存储格式** —— 向量层的 `group` 早已是可过滤的已索引标量字段。
+
+### 7.2 维度评分
+
+| 维度 | 分数 | 说明 |
+|---|---|---|
+| 🔑 语义一致性 | 9 | 注释与实现一致；预览 hint 补「共享向量会保留」消除新的预期落差 |
+| ⚠️ 安全性 | 9 | filter 值经 `renderValue` 转义，字段受白名单约束；无新增外部输入面 |
+| 🐛 Bug 风险 | 8 | 审查内生并修复 3 处（截断静默、初始化语义回退、扫描失败未兜底） |
+| 📐 代码规范 | 9 | 顺带修掉 TS2456 自引用类型与 Promise 返回类型（root `tsc` 恢复 2 条既有错误） |
+| 🏗️ 架构设计 | 9 | 枚举能力下沉 vector-client，业务保护留在 group-delete，依赖方向正确 |
+| ⚡ 性能 | 9 | `ai-docs`（634 组 / 15.5k 内容向量）全量引用扫描实测 **30ms**；纯树删除短路跳过扫描 |
+| 🧪 测试覆盖 | 8 | 新增 7 例；真引擎 filter 契约仍靠人工 e2e（登记跟进） |
+
+### 7.3 审查内修复
+
+| # | 问题 | 级别 | 修复 |
+|---|---|---|---|
+| R4 | `listIds` 无 offset 分页，命中顶到 limit 时**静默截断** → 会把「没枚举完」当「无残留」 | 🔴 | 返回 `{ docs, truncated }`，截断即 warning；新增用例 |
+| R5 | 为修 K-03 曾把「scope 是否初始化」改成 `existsSync`（无授权的行为变更） | 🟡 | 回退为「不可解析即未初始化」原语义 |
+| R6 | 新增的存活组扫描是全新失败面（兄弟分片损坏会让删除中断） | 🟡 | 包 try/catch → `degraded` + 退回旧行为 |
+| R7 | `group-create.ts` 的 `TreeNode` 自引用（TS2456）与 `withScopeWriteLock` 返回类型错误 | 🟡 | 改索引签名 + `async` 回调 |
+| R8 | 共享场景预览与实际反向偏离（预览 5 / 实际 1） | 🟡 | hint 明说「共享向量会保留，实际删除数可能少于预览」 |
+
+### 7.4 验证（已验证，非静态推断）
+
+`delete-group` 13/13 · `group-create` 9/9 · `group-cli` 5/5 · `group-cache` 20/20 · `group-key-invariant` 5/5 · `delete-relation-wiki` 4/4 · `lib` 37/37 · `fts-only-client` 2/2 · `tsc -p tsconfig.src.json` 0 · root `tsc` 仅 2 条既有错误 · `npm run build` exit 0；真实 daemon 链路：删组后 `doc list` 0 条、`search a-01` 空、同内容 A/B 场景删 A 后 B 的 5 条向量与检索完好。
+
+### 7.5 跟进项
+
+1. `vectorListAuxDocsByGroups` 的真引擎 filter 契约纳入 `test/zvec-engine*.test.mjs`。
+2. 早期版本写入、无 `group` 字段的辅助向量清不到 → 兜底 `ki rebuild-vector`（已写入 `docs/group.md`）。
