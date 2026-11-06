@@ -26,18 +26,23 @@ document_type: design
 
 ## 2. 现状（AS-IS）
 
-| 事实 | 位置 |
+> 以下行号于 **2026-10-20** 对照 HEAD 复核（此前一版为 10-19 行号，代码已变更）。
+
+| 事实 | 位置（2026-10-20 复核） |
 |---|---|
-| `ImportResult` 有 **3 个** return 构造点：主完成路径、整批未变早退、全部 skip 早退 | `src/lib/import.ts:1843-1885`、`:1063-1092`、`:1101-1125` |
-| `ImportStats` 在 `:1847-1868` 内联组装（无独立函数） | 同上 |
-| job 的 `result` **原样透传整个 `ImportResult`**，无裁剪 | `src/lib/mcp-http-api.ts:1867`、`:1991` |
-| `/api/import/status` 响应里 `result: job.result` | `:1982-2004` |
-| 路由为一条 `if` 链，`/import/run` 在 `:661`、`/import/preflight` 在 `:662` | `:650-690` |
-| `UploadSession` 字段：`scope/updatedAt/state/batchCount/completedBatches/jobId/errors` | `:116-124` |
-| `executeBatchDelete(scope, items)` 已存在，内部有 scope 写锁；`items` 元素 `{group, relation}` | `src/delete-relation.ts:733`、`:687-690` |
-| `BatchDeleteItem` / `BatchDeleteResult` / `DeleteResult` **均未导出** | `:687`、`:692`、`:67` |
-| 批量层**不做**草稿卫兵：单条有草稿 → 该条 `ok:false`，批量整体仍 `ok:true` | `:138-147`、`:704-728`、`:730` |
-| `/api/import/run` 已用 coordinator `submit` 串行化 | `:1554-1561` |
+| `ImportResult` 有 **3 个** return 构造点：整批未变早退 / 全部 skip 早退 / 主路径 | `src/lib/import.ts:1169`、`:1210`、`:1955` |
+| `ImportResult` 已含 `duplicatesSkipped` / `duplicatesSkippedTruncated`；`stats.files.duplicatesSkipped` 是 `skipped` 的子集 | `src/lib/import.ts:198-239`、`:154` |
+| `HandleDirectImportArgs` 现含 `skipDuplicates?`、`jobId?`（**无** pickMode / pruneStale / preserveRels） | `:241-308` |
+| job 的 `result` **原样透传整个 `ImportResult`**，无裁剪 | `src/lib/mcp-http-api.ts:1961-1963`、`:2121` |
+| `/api/import/*` 路由分发行区间，新接口应插在 `/import/retry-incomplete`(:706) 之后 | `:679-706` |
+| `UploadSession` 已有 **`params?: { skipDuplicates?: boolean }`** 参数快照（pickMode 应并入此处，不新开顶层字段） | `:120-133` |
+| `JOB_TTL_MS = 1h`（候选有效期上限）、`MAX_JOBS = 50`、`MAX_ONLY_REL_PATHS = 50000` | `:251-252`、`:118` |
+| `sanitizeOnlyRelPaths`（路径入参净化，`/run` 与 `/preflight` 共用） | `:1410-1415` |
+| `executeBatchDelete(scope, items)` 已存在，内部有 scope 写锁；`items` 元素 `{group, relation}` | `src/delete-relation.ts:481`、`:435` |
+| `BatchDeleteItem` / `BatchDeleteResult` / `DeleteResult` **均未导出** | `:435`、`:440`、`:69` |
+| 批量层**不做**草稿卫兵：单条有草稿 → 该条 `ok:false`，批量整体仍 `ok:true` | `:143-155`、`:453` |
+| `/api/import/run` 已用 coordinator `submit` 串行化；`activeImportTasks` 判据只看 `operation==='import'` 的 `queued\|running` | `:1683-1687` |
+| 前端 `RunImportResponse` 已有 `code?`（用于 `ALL_FILES_DUPLICATES` / `IMPORT_JOB_PARAMS_MISMATCH` 分流），可直接复用于 `PRUNE_NOT_DIR_MODE` | `web/src/api/httpApi.ts:149-156` |
 
 ## 3. 方案（TO-BE）
 
@@ -90,7 +95,7 @@ const prune: ImportPrunePlan | undefined = args.pruneStale
 
 ### 3.2 HTTP 侧：新增 `POST /api/import/prune`
 
-插入位置：`src/lib/mcp-http-api.ts` 路由链 `:664`（`/import/cancel`）之后、`:665`（`/import/incomplete`）之前。
+插入位置：`src/lib/mcp-http-api.ts` 路由分发行 `:679-706` 段内，紧跟 `POST /import/retry-incomplete`（`:706`）之后（2026-10-20 复核：原 `:661/~:665` 行号已因重复判定改造与任务详情增强而漂移）。
 
 **接口契约**
 
@@ -210,6 +215,14 @@ const incomplete = (session.errors?.length ?? 0) > 0
 > `preserveRels` 必须**复用 `sanitizeOnlyRelPaths`**（拒绝绝对路径 / `..` / 超长，上限 50 000 条），与 `onlyRelPaths` 同规则——它直接改变"哪些文档不进候选"，属安全敏感入参（challenger 意见 3）。
 
 `preserveRels` 与完整性校验是**叠加关系**：有失败清单时走 `preserveRels`（只排除这些文件、其余照常清理）；拿不到失败清单时退化为 `UPLOAD_INCOMPLETE`（整次不给清理）。两者都没有 → 硬门槛生效，绝不产候选。
+
+**三条来自 2026-10-20 代码核对的实现约束**
+
+| # | 约束 | 理由 |
+|---|---|---|
+| N-1 | `pickMode` 写入 **`session.params.pickMode`**，不新开 `UploadSession` 顶层字段 | `UploadSession` 已有 `params?` 参数快照（`:132`），与 `skipDuplicates` 同处，便于统一回溯 |
+| N-2 | `/api/import/prune` 的 `group` **取导入参数快照**（`session.params.group`），不取前端当前表单值 | 用户可能在导入后改了 Group 输入框；用表单值会让作用域漂移，重算候选偏离 → 恒 409 或误判 |
+| N-3 | `prune` 候选**不进 `TaskResultSnapshot`** | 任务台账快照有 20 条明细上限与 32KB 整体上限（`task-registry.ts:60-64`），候选可达 500 条，塞进去会让快照被逐级剥离甚至整体不可读 |
 
 > 为什么 upload 也要落：`/import/run` 可能由「刷新页面后恢复」路径触发，此时前端可能不再持有 pickMode；从 session 回落可避免误判。run 显式值优先保证可控。
 

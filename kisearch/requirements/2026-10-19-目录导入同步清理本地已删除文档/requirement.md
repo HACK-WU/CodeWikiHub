@@ -38,14 +38,17 @@ document_type: requirement
 ```
 浏览器选目录/文件（showDirectoryPicker / webkitdirectory / 拖拽）
   └─▶ base64 分片 POST /api/import/upload ─▶ ~/.ki/import-uploads/<uploadId>/
-        └─▶ POST /api/import/preflight（只读：内容重复检测）
-              └─▶ POST /api/import/run ─▶ handleDirectImport(sourceDir = 暂存目录)
-                    └─▶ 幂等追加写 relations-cache / local KB / 向量 / FTS
+        └─▶ POST /api/import/preflight（只读：疑似重复检测）
+              └─▶ 双动作确认：「跳过这 N 篇疑似重复」/「仍然导入」（skipDuplicates）
+                    └─▶ POST /api/import/run ─▶ handleDirectImport(sourceDir = 暂存目录)
+                          └─▶ 幂等追加写 relations-cache / local KB / 向量 / FTS
 ```
+
+> **2026-10-20 代码核对**：`skipDuplicates` 由服务端在导入阶段剔除（`duplicate-index.ts`），被剔除的文件**仍在暂存目录里**。因此「本次目录有哪些文件」必须以 `collectMarkdownFiles` 的**全量扫描**为准，不能用剔除后的 `filesForImport` —— 否则"被跳过的重复文档"会被判成"本地已删"（见 S01 §3.3）。
 
 - 每篇文档在 `relations-cache.json` 的 `hot_relations[].sourcePath` 记录「相对源目录的 posix 路径」，**这是唯一可靠的逐文件来源坐标**。
 - `sourcePath` 可能为空（历史 `sync-relation` 手工写入，`src/lib/relation-map.ts:33`）。
-- `--group` 缺省时，落点 = 文件的相对目录（顶层子目录名即根节点），**一次目录导入会散到多个 group**（`src/lib/import.ts:286-293`）。
+- `--group` 缺省时，落点 = 文件的相对目录（顶层子目录名即根节点），**一次目录导入会散到多个 group**（`src/lib/import.ts:342` 附近 `collectMarkdownFiles` + group 推导）。
 
 ---
 
@@ -68,7 +71,7 @@ document_type: requirement
 
 | 项 | 定义 |
 |---|---|
-| 本次 `rel` 集合 | 本次**目录扫描**到的全部文档相对路径（`collectMarkdownFiles`）。**不是**实际写入/更新的文件——增量跳过重算（`unchanged`）的文件必须算"有" |
+| 本次 `rel` 集合 | 本次**目录扫描**到的全部文档相对路径（`collectMarkdownFiles` 全量）。**不是**实际写入/更新的文件——以下三类必须算"有"：① 增量跳过重算（`unchanged`）；② `skipDuplicates` 被服务端剔除的疑似重复；③ 预算/单文件上限剔除 |
 | 库中坐标集合 | 作用域内所有 `relation.sourcePath`，**排除空值** |
 | 候选 | 库中坐标 − 本次 `rel`（按 `(group, relation)` 定位） |
 | 无法判定区 | `sourcePath` 为空的文档：**永不进候选**，单列「N 篇无法判定来源，不参与清理」 |
@@ -126,7 +129,7 @@ document_type: requirement
 
 | # | 需求 | 优先级 | 验收标准 |
 |---|---|---|---|
-| R1 | 上传端声明 `pickMode: 'dir' \| 'files'`，仅目录模式计算候选 | P0 | 选择文件上传时，后端收到 `pruneStale=true` 直接 400 |
+| R1 | 上传端声明 `pickMode: 'dir' \| 'files' \| 'mixed'`（从已有 `PendingSelection.kind` 派生；**目录+文件混合选择禁止清理**，因路径口径不一致），仅 `dir` 计算候选 | P0 | 选择文件 / 混合选择时后端收到 `pruneStale=true` → 400 `PRUNE_NOT_DIR_MODE` |
 | R2 | `ImportResult` 新增 `prune`（按 group 分组 + 计数 + 明细上限 50 + 双闸门指标 + `untouchedGroups` + `token`） | P0 | 结果结构向后兼容；旧消费方不受影响 |
 | R3 | 新增 `POST /api/import/prune`：服务端**凭 `uploadId` 重扫暂存目录** + 比对 token + 复用 `executeBatchDelete` 执行；支持 `dryRun`（只重算并返回清单与 token，不删除） | P0 | 候选已空 → **200 `allDone`**（不报错）；候选非空但 token 不同 → 409；已删/不存在不算错（幂等）；前端拼清单实现则视为不符合 |
 | R4.1 | 闸门 A：重合率 < 80% → 关闭清理，不产候选 | P0 | 按 §3.4 场景表 2/3/5 验证 |
@@ -162,6 +165,7 @@ document_type: requirement
 | N11 | **上传阶段有文件失败**（网络中断 / 单文件超限 / 浏览器读失败） | 见 R11：不产候选，或把这些 `rel` 并入 `preserveRels` 排除。**绝不能把它们判为"本地已删"**（否则会删掉本地仍在的文档） |
 | N12 | 删除中途中断（断网 / 关页面） | 已删除部分不可回滚；重新进入后先用 **`dryRun` 重算候选**再继续删；前端需提示"部分可能已删除，请刷新核对" |
 | N13 | 候选清单过期 | **实际有效期 = min(job TTL 1h, 暂存 24h) = 1 小时**（`JOB_TTL_MS`），服务重启立即失效；过期后需重新导入一次。暂存被清理时删除接口返回 `PRUNE_SOURCE_UNAVAILABLE` |
+| N15 | 删除后想恢复 | **系统无回收站**（`src/delete-relation.ts:390` `unlinkWithinSourceDir` 为物理 `unlinkSync`；`.ki/trash` 已不存在，见 `docs/group.md:99`）：wiki 原文、向量、全文索引、local KB 原文一并删除，只能靠备份或重新导入恢复。界面必须明示「不可恢复」 |
 | N14 | 重复点击删除 / 并发两个删除请求 | 重算后候选已空 → **200 `allDone`（不报错）**；候选非空但 token 不同 → 409。前端对 `allDone` 显示"已无剩余候选" |
 
 ---
@@ -174,7 +178,7 @@ document_type: requirement
 | 导入结果 / 任务中心 | 展示 | 无感（新增字段） | `ImportResult` `src/lib/import.ts:171-205` | 新增 `prune` 向后兼容 | 否 |
 | 上传链路（`/import/upload` 分批） | 数据 | **破坏（若未校验）** | `UploadSession.completedBatches` / `errors`（`mcp-http-api.ts:116-124`） | R11 前置校验：上传不完整不产候选 | 否（必做） |
 | 检索 / 文档列表 | 展示 | 预期内：删除即刻不可见 | `executeDeleteRelation` 链路 | 确认清单写明 | 否 |
-| wiki 源文件 | 数据 | 无感：进 `.ki/trash` | 既有 `moveToTrash` | 文案说明可人工取回 | 否 |
+| wiki 源文件 | 数据 | **破坏（不可逆）**：物理 `unlinkSync`，**无回收站** | `src/delete-relation.ts:390`（`unlinkWithinSourceDir`） | 文案必须明示不可恢复 | 否（代码事实） |
 | CLI `ki import` | 展示 | 无感（默认关） | `src/import.ts:170-174` | R10 可选 | 否 |
 | `Relation` / `relations-cache` 结构 | 数据/外部契约 | **无影响** | 本需求不扩字段 | 规避双向耦合（`import.ts` / `sync-relation.ts` / `delete-relation.ts`） | 否 |
 | 同 group 小比例混装 | 数据 | 降级（可能误删小比例） | 见 N10 | 已接受风险 | 已拍板 |
@@ -207,7 +211,7 @@ document_type: requirement
 │   │ [x] 组 wiki/docs   old-b.md  → 「old-b」       │    │
 │   └──────────────────────────────────────────────┘    │
 │   ▸ 本次上传未涉及的组（默认不勾选）3 篇  ② → [展开]    │
-│   ⓘ 删除后即刻从列表与检索消失；原文移入回收站 ③        │
+│   ⓘ 删除后即刻消失且不可恢复（原文+向量物理删除）③     │
 │                                                        │
 │   [ 忽略 ]                      [ 删除所选 2 篇 ]  ④   │
 └────────────────────────────────────────────────────────┘
@@ -227,7 +231,7 @@ document_type: requirement
 |---|---|---|---|
 | ① | 状态 | 候选区标题 | 仅开关开启且目录模式出现 |
 | ② | 交互 | 未触及 group 分组 | 单列、默认不勾（R4.6） |
-| ③ | 文案 | 恢复说明 | 原文进 `.ki/trash`；向量/FTS 不可撤销 |
+| ③ | 文案 | 不可恢复警告 | **无回收站**：wiki 原文物理 unlink、向量与 FTS 一并删除，删除即不可逆 |
 | ④ | 交互 | 删除按钮 | 文案带数量；>500 时改为提示分批/CLI |
 
 ---

@@ -19,7 +19,7 @@ document_type: design
 
 | 术语 | 定义 |
 |---|---|
-| `scannedRels` | 本次 `collectMarkdownFiles(sourceDir)` 返回的全部文档相对路径（posix）。**不是**实际写入/更新的文件——增量下内容未变被跳过的文件也算"有" |
+| `scannedRels` | 本次 `collectMarkdownFiles(sourceDir)` 返回的**全量**文档相对路径（posix）。**绝不能用** `filesForImport` / `budgetFiles` / `fileRecords` 等"实际参与导入的集合"——以下三类文件没被写入，但**仍在本次目录里**，必须算"有"：① 增量下内容未变（`unchanged`）；② `skipDuplicates=true` 时被服务端剔除的疑似重复（`duplicatesSkipped`，`duplicate-index.ts`，2026-10-20 新增）；③ 预算 / 单文件上限剔除的文件 |
 | 候选 | 作用域内 `sourcePath` 非空、且 `sourcePath ∉ scannedRels` 的文档 |
 | 路径重合率（闸门 A） | `|scannedRels ∩ libRels| / min(|scannedRels|, |libRels|)`，两端均按去重集合 |
 | 候选占比（闸门 B） | `候选数 / judicable` |

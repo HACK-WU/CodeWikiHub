@@ -87,10 +87,11 @@ flowchart LR
 | `src/lib/import-prune.ts` | 新增 | S-01 |
 | `test/import-prune.test.ts` | 新增 | S-01 |
 | `src/lib/import.ts` | 改：参数、3 个 return 点挂 `prune` | S-02 |
-| `src/lib/mcp-http-api.ts` | 改：upload/run 收参、新增 `/import/prune`、`UploadSession.pickMode` | S-02 |
+| `src/lib/mcp-http-api.ts` | 改：upload/run 收参、新增 `/import/prune`、`UploadSession.params.pickMode`（复用既有 `params` 快照，**不新开顶层字段**） | S-02 |
 | `src/delete-relation.ts` | 改：导出 3 个类型（无逻辑变更） | S-02 |
-| `web/src/api/httpApi.ts` | 改：新增类型与 `pruneImportCandidates` | S-03 |
-| `web/src/pages/ImportPage.tsx` | 改：`pickMode` 采集、开关、结果卡候选区 | S-03 |
+| `web/src/api/httpApi.ts` | 改：新增 `pruneImport` + 类型；`runImport`/`uploadFiles` 补 `pickMode`/`pruneStale`/`preserveRels` | S-03 |
+| `web/src/pages/ImportPage.tsx` | 改：从既有 `PendingSelection.kind` 派生 `pickMode`、开关、结果卡候选区、删除动作 | S-03 |
+| `web/src/styles/ki.css` | 改：候选区样式（**追加**，不改既有规则） | S-03 |
 
 ---
 
@@ -115,6 +116,8 @@ flowchart LR
 | G5 | 跨群同 `rel` 重复文档 | 若本次目录含该 `rel`，两篇都不删 | 保守策略（宁可少删），S-01 明确 |
 | G6 | 暂存目录 24h 清理 | 事后无法靠 uploadId 重算 | 客户端 `scannedRels` 降级通道 + 明确过期提示（N13） |
 | G7 | **上传阶段文件缺失**（网络中断/超限/读失败） | 本地仍在的文档被判「本次没有」→ 误删 | R11 硬门槛（`UPLOAD_INCOMPLETE`）+ `preserveRels` 并集；两闸门对此**无感**，不能替代 |
+| G8 | **`skipDuplicates` 剔除的文件**（2026-10-19 后新增能力）被误当作「本次没有」 | 被跳过的重复文档被判「本地已删」→ 误删 | `scannedRels` 必须取 `collectMarkdownFiles` **全量扫描**，禁止用 `filesForImport`/`budgetFiles`（S01 术语表已写死） |
+| G9 | `prune` 候选塞进任务台账快照 | 快照有 20 条明细上限 + 32KB 整体上限，候选可达 500 条 → 快照被逐级剥离甚至不可读 | 明确 `prune` **不进** `TaskResultSnapshot`（S02 N-3） |
 
 **接口契约变化总览**
 

@@ -29,13 +29,15 @@ document_type: design
 
 | 事实 | 位置 |
 |---|---|
-| 目录/文件来源信息在汇合处**丢失**：`openDirPicker` 直接调 `collectRawFiles`，文件选择走 `scanSelectedFiles` | `web/src/pages/ImportPage.tsx:925`、`:861`、`:845` |
-| 三个选入口：目录选择器（`showDirectoryPicker` + `webkitdirectory` 回退）、多选文件、拖拽 | `:905-951`、`:953-977` |
-| 结果卡为「卡 2：结果摘要」，含 stats、部分成功块、同名处理列表、错误列表、动作区 | `:1939-2074` |
-| `result` 的 inline 类型是前端对 `ImportResult` 的局部镜像 | `:1251-1268` |
-| `ImportJob.result` 未强类型化（`Record<string, unknown>`） | `web/src/api/httpApi.ts:163-190` |
-| 轮询在 `useEffect` 内 `setInterval`，2s 一次 | `:718-813` |
-| 页内 `phase`：`idle \| scanning \| uploading \| importing \| done \| failed \| unknown` | `:326-330`、`:483` |
+| 选择层**已有** `PendingSelection.kind: 'file' \| 'directory'`（按 name 是否含 `/` 推断），但**未进入上传/run 载荷** ⇒ 服务端无法区分目录/文件 | `web/src/pages/ImportPage.tsx:55-60`、`classifyPendingFiles:217-272`、`buildSelections:274+` |
+| 上传载荷只发 `{name, content}`，且 `name` 经 `stripTopSegment` 剥掉顶层段 | `:1158-1161`、`stripTopSegment:138` |
+| 结果摘要卡当前区间（右轨 `ki-import-track`；卡 2 不参与 sticky，修复过被进度卡遮挡 107px） | `:2345-2511`、`:2246-2248` |
+| 预检面板已改版为**导入前**双动作确认：「跳过这 N 篇疑似重复」/「仍然导入」 | `:2092-2190` |
+| 三个选入口：目录选择器（`showDirectoryPicker` + `webkitdirectory` 回退）、多选文件、拖拽 | `openDirPicker:1006`、`collectSelectedFiles:936`、`scanSelectedFiles:962` |
+| `result` 的 inline 类型是前端对 `ImportResult` 的局部镜像，已含 `duplicatesSkipped` / `duplicatesSkippedTruncated` | `:1453-1483` |
+| `ImportJob.result` 未强类型化（`Record<string, unknown>`），前端各页自行 cast | `web/src/api/httpApi.ts:165-196` |
+| 轮询在 `useEffect` 内 `setInterval`，2s 一次 | `:718-813` 区间附近（2026-10-20 未变） |
+| 页内 `phase`：`idle \| scanning \| uploading \| importing \| done \| failed \| unknown`；新增中间态 `awaiting-confirm`（预检确认） | `:326-330`、`:483`、预检条件 `:2092` |
 
 ## 3. 方案（TO-BE）
 
@@ -54,14 +56,24 @@ const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Se
 const [pruning, setPruning] = useState(false);
 ```
 
-| 入口 | 现有位置 | 改动 |
-|---|---|---|
-| 目录选择器（FS Access） | `openDirPicker` `:905-951` | 选完调 `collectRawFiles(files, 'dir')` |
-| 目录选择器（`webkitdirectory` 回退） | `:938-951` | 同上 |
-| 拖拽 | `:953-977`（`webkitGetAsEntry`） | 有任一 entry `isDirectory` → `'dir'`，否则 `'files'` |
-| 多选文件 `<input multiple>` | 文件选择分支 | `collectRawFiles(files, 'files')` |
+**2026-10-20 复核修正**：选择层**已有** `PendingSelection.kind`（`:55-60`），不必改 `collectRawFiles` 签名，直接从 selections 派生即可：
 
-`collectRawFiles(files, mode)` 在现有 `:845` 基础上加第二参数，内部 `setPickMode(mode)`；若 `mode === 'files'` 则 `setPruneStale(false)`（切模式自动关闭，防「先开开关后换文件选择」）。
+```ts
+function derivePickMode(selections: PendingSelection[]): 'dir' | 'files' | 'mixed' {
+  const hasDir = selections.some((s) => s.kind === 'directory');
+  const hasFile = selections.some((s) => s.kind === 'file');
+  if (hasDir && hasFile) return 'mixed';
+  return hasDir ? 'dir' : 'files';
+}
+```
+
+| 情形 | `derivePickMode` | 开关可用性 |
+|---|---|---|
+| 只选目录（FS Access / `webkitdirectory` / 拖拽目录） | `'dir'` | ✅ 可用 |
+| 只选文件（多选 `<input>` / 拖拽文件） | `'files'` | 禁用 |
+| **目录 + 文件混合** | `'mixed'` | 禁用（**混合选择禁止清理**：目录部分被 `stripTopSegment` 剥了顶层段、文件部分没有，路径口径不一致，差集不可信） |
+
+派生结果在 `collectRawFiles`（`:946`）末尾 `setPickMode(derivePickMode(next))`；非 `'dir'` 时同步 `setPruneStale(false)`（切模式自动关闭，防「先开开关后换选择方式」）。上传时把 `pickMode` 并入 `session.params`（见 S02 N-1）。
 
 `resetAfterImport()`（`:569` 附近）追加 `setPickMode(null)`、`setPruneStale(false)`、`setSelectedCandidates(new Set())`。
 
@@ -81,11 +93,14 @@ const [pruning, setPruning] = useState(false);
 |---|---|
 | `pickMode === null` | 勾选框 `disabled`，辅助文案「请先选择要导入的目录」 |
 | `pickMode === 'files'` | `disabled` + 文案「仅「选择目录」上传可用」 |
+| `pickMode === 'mixed'` | `disabled` + 文案「目录与文件混合选择时不支持清理（路径口径不一致），请分开导入」 |
 | `pickMode === 'dir'` | 可用，默认未勾 |
 
 ### 3.3 结果卡候选区
 
-插入位置：结果卡 stats 文案之后（`:1966-1973`）、部分成功块之前（`:1986`）。只读 `result.prune`，不额外请求。
+插入位置：结果摘要卡（`ki-import-track` 内卡 2，当前 `:2345-2511`）的 stats 文案之后、部分成功块之前。只读 `result.prune`，不额外请求。
+
+> **与「导入前预检面板」的关系**：`skipDuplicates` 的预检确认在**导入前**（`:2092-2190`，`phase === 'awaiting-confirm'`），本需求的候选清理在**导入后**的结果卡里。两者是不同阶段、不同动作，**不合并**——否则用户会在"要不要跳过重复"和"要不要删旧文档"之间被迫二选一。
 
 ```mermaid
 stateDiagram-v2
@@ -143,7 +158,7 @@ stateDiagram-v2
 │                                                         │
 │ ⚠ 本次将删除库中 45% 的文档（超过 20% 阈值）              │
 │   请在下框输入「删除」以确认（challenger 意见 1）  [____]  │
-│ ⓘ 删除后即刻从列表与检索消失；原文移入回收站             │
+│ ⓘ 删除后即刻消失且**不可恢复**（无回收站）               │
 │ ⓘ 本清单 1 小时内有效（服务重启即失效），过期需重新导入   │
 │ [ 忽略 ]                          [ 删除所选 2 篇 ]      │
 └─────────────────────────────────────────────────────────┘
