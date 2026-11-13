@@ -1950,6 +1950,211 @@
       "role": "standalone",
       "parent_id": null,
       "child_ids": []
+    },
+    "2026-11-12-scope-usage-cold-hot": {
+      "id": "REQ-20261112-001",
+      "feature": "总览 scope 冷热状态与读写调用量",
+      "created": "2026-11-12 11:04:28",
+      "updated": "2026-11-12 11:45:26",
+      "status": "设计中",
+      "tags": [
+        "web",
+        "dashboard",
+        "usage",
+        "冷热治理"
+      ],
+      "version": 5,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-12 11:27:52 v2: 完成技术设计（父文档 + 3 个子需求）",
+        "2026-11-12 11:29:54 v3: 完成设计评审（1 阻断 + 9 警告全部修复，增量再审通过）",
+        "2026-11-12 11:35:52 v4: 完成 challenger 二次质疑（1 致命 + 7 重要）",
+        "2026-11-12 11:45:26 v5: 按 challenger 8 条意见完成设计修复（含 1 条致命），增量再审通过"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_调用量采集与存储_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_冷热分区与列表契约_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_总览列表展示_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-13-mcp-stateless-ask": {
+      "id": "REQ-20261113-001",
+      "feature": "MCP 无状态 AI 问答工具",
+      "created": "2026-11-13 11:15:27",
+      "updated": "2026-11-13 13:01:09",
+      "status": "实施中",
+      "tags": [
+        "mcp",
+        "chat",
+        "需求分析"
+      ],
+      "version": 8,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-13 11:35:22 v2: 完成 demo 验证（形态 B 有条件通过）：客户端工具超时 60s、真实耗时 6~62s（轮次主导）、质量对照通过、maxToolRounds=Infinity 需限流",
+        "2026-11-13 11:56:00 v3: 完成技术设计：父文档 + S-01 执行器 + S-02 工具面与安全闸门（13 处登记点、错误码表、限流与审计）",
+        "2026-11-13 11:58:31 v4: 生成实施计划：5 批次 / 20 个工作项 / 验证矩阵 / 回滚策略 / DoD",
+        "2026-11-13 12:02:17 v5: 设计评审：3 阻断 + 1 疑似阻断 + 12 警告 + 5 建议，结论不通过",
+        "2026-11-13 12:05:16 v6: 第一轮评审 20 项问题全部修复；增量再审通过（新增 2 项 🟢 可实施时顺手改）",
+        "2026-11-13 12:30:59 v7: B0~B5 全部完成：5 新源码 + 4 测试(22例) + 11 处修改；build 0、test:chat 与基线一致、真链路 12/12；deviation 2 处已回写设计",
+        "2026-11-13 13:01:09 v8: auto-review+challenger：修 question 长度上限、ChatEvent 前端副本漂移、sources 静默截断（补 sourcesTotal）；askMaxRounds 可观测性建议未采纳"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "demo/verify-report.md",
+          "type": "demo"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_问答执行器_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_工具面与安全闸门_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/impl-report.md",
+          "type": "impl"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-13-fts-residual-after-dense-switch": {
+      "id": "REQ-20261113-002",
+      "feature": "FTS-only 转向量化后旧全文索引残留",
+      "created": "2026-11-13 15:01:33",
+      "updated": "2026-11-13 15:03:21",
+      "status": "草案",
+      "tags": [
+        "bug",
+        "索引一致性",
+        "检索准确性"
+      ],
+      "version": 2,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-13 15:03:21 v2: 需求文档落盘：实测复现 + 根因定位 + 需求 R1-R8 + 验收 A1-A10"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-13-event-source-analysis": {
+      "id": "REQ-20261113-003",
+      "feature": "事件源码分析（只读）",
+      "created": "2026-11-13 17:50:57",
+      "updated": "2026-11-13 17:51:43",
+      "status": "草案",
+      "tags": [
+        "需求",
+        "事件",
+        "源码分析",
+        "AI",
+        "只读工具"
+      ],
+      "version": 2,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-13 17:51:43 v2: 需求文档落盘：现状盘点（数据源已支持 git）+ 方案边界（代码不入库/只读永久约束）+ R1-R10 + A1-A12 + 负向 N1-N10 + 工作量分期"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-13-knowledge-governance": {
+      "id": "REQ-20261113-004",
+      "feature": "知识治理（文档分类 / 事件 / 回收站）",
+      "created": "2026-11-13 19:09:32",
+      "updated": "2026-11-13 19:15:06",
+      "status": "草案",
+      "tags": [
+        "需求",
+        "知识治理",
+        "生命周期",
+        "事件",
+        "回收站",
+        "web"
+      ],
+      "version": 3,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-13 19:10:32 v2: 需求文档落盘（含 demo）：四模块（分类/事件/回收站/参考文档）+ 数据模型 + R1-R36 + A1-A16 + 负向 N1-N12 + 三期路线",
+        "2026-11-13 19:15:06 v3: 文档审查修订：静态检查修 12 处（Q 编号错位、R26/Q2 矛盾、action 漂移风险→terminalAction 提到类型级、补 R37 分类预设/R38 沉淀/R39 未收口兜底/R40 group 默认分类、补流转日志模型、补关联文档抽屉、去冗余字段）；challenger 二次质疑修 5 处（未收口事件无兜底、恢复后 expiresAt 死循环、收口后 eventId 悬空、Q5 与 R11 实现冲突→已定案并写清两条搜索通道、AI 不打分类无 Plan B）；R1-R40 / A1-A19 / N1-N14 全连续"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
     }
   },
   "id_counters": {
@@ -1970,6 +2175,8 @@
     "REQ-20261030": 1,
     "REQ-20261103": 1,
     "REQ-20261104": 5,
-    "REQ-20261105": 1
+    "REQ-20261105": 1,
+    "REQ-20261112": 1,
+    "REQ-20261113": 4
   }
 }

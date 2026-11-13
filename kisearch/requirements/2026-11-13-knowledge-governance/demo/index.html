@@ -1,0 +1,4508 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>知识治理 · 文档分类 / 事件 / 回收站 · ki</title>
+<style>
+  /* =========================================================
+     知识治理三页 demo（零构建 · 单文件）
+     视觉基线：web/src/styles/ki.css 的 --ki-* token（暖中性 + 深绿 #2d6755）。
+     不新增品牌色；语义色只用于状态徽标（与 ki.css 既有约定一致）。
+
+     本 demo 要回答的三件事：
+       ① 分类徽标怎么在列表里表达「这份文档什么时候消失」
+       ② 事件阶段流水线怎么表达「现在几篇可被检索」
+       ③ 回收站怎么表达「还剩几天、恢复有代价」
+     三页共用一个 side bar，靠 .page[data-active] 切换，DOM 不销毁。
+     ========================================================= */
+
+  :root {
+    color-scheme: light;
+
+    --ki-color-bg: #f5f6f3;
+    --ki-color-bg-secondary: #f9faf8;
+    --ki-color-surface: #ffffff;
+    --ki-color-border: #e1e7e1;
+    --ki-color-border-strong: #c8d3c9;
+    --ki-color-bg-muted: #f0f2ee;
+
+    --ki-color-text: #202b27;
+    --ki-color-text-muted: #4e5f56;
+    --ki-color-text-subtle: #61716a;
+
+    --ki-color-primary: #2d6755;
+    --ki-color-primary-hover: #23513f;
+    --ki-color-primary-soft: #e8f3ed;
+    --ki-color-info: #2f6f9f;
+    --ki-color-success: #2a8055;
+    --ki-color-warning: #8a6208;
+    --ki-color-warning-soft: #fbf3db;
+    --ki-color-danger: #b14e49;
+    --ki-color-danger-soft: #fdebec;
+    --ki-color-danger-ink: #9d3a36;
+    --ki-color-skeleton: #eef1ec;
+    --ki-color-purple: #af52de;
+
+    /* 遮罩（对话框共用口径，与 ki.css 同值） */
+    --ki-scrim: rgba(18, 24, 21, 0.28);
+
+    --ki-space-1: 4px;
+    --ki-space-2: 8px;
+    --ki-space-3: 12px;
+    --ki-space-4: 16px;
+    --ki-space-5: 20px;
+    --ki-space-6: 24px;
+    --ki-space-8: 32px;
+
+    --ki-radius-sm: 6px;
+    --ki-radius-md: 10px;
+    --ki-radius-lg: 14px;
+    --ki-radius-tag: 4px;
+    --ki-radius-track: 999px;
+
+    --ki-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+      'Microsoft YaHei', sans-serif;
+    --ki-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    --ki-font-size-xs: 11px;
+    --ki-font-size-sm: 12px;
+    --ki-font-size-md: 14px;
+    --ki-font-size-lg: 15px;
+    --ki-font-size-xl: 17px;
+    --ki-font-size-heading: 20px;
+
+    --ki-header-height: 63px;
+    --ki-sidebar-width: 196px;
+
+    --ki-color-hover: rgba(26, 58, 41, 0.045);
+    --ki-color-hover-strong: rgba(26, 58, 41, 0.07);
+    --ki-color-scrollbar: rgba(26, 58, 41, 0.18);
+
+    --ki-shadow-1: 0 1px 3px rgba(26, 58, 41, 0.08);
+    --ki-shadow-2: 0 10px 32px rgba(26, 58, 41, 0.12), 0 1px 4px rgba(26, 58, 41, 0.06);
+
+    --ki-motion-fast: 150ms;
+  }
+
+  [data-theme='dark'] {
+    color-scheme: dark;
+
+    --ki-color-bg: #131715;
+    --ki-color-bg-secondary: #212724;
+    --ki-color-surface: #1b201d;
+    --ki-color-border: #2c332f;
+    --ki-color-border-strong: #3f4a44;
+    --ki-color-bg-muted: #232a26;
+
+    --ki-color-text: #e9ede8;
+    --ki-color-text-muted: #b4beb7;
+    --ki-color-text-subtle: #97a39d;
+
+    --ki-color-primary: #5fae8c;
+    --ki-color-primary-hover: #74c3a0;
+    --ki-color-primary-soft: #17322a;
+    --ki-color-info: #6fb3d9;
+    --ki-color-success: #6cc194;
+    --ki-color-warning: #d8b457;
+    --ki-color-warning-soft: #33290f;
+    --ki-color-danger: #d9817c;
+    --ki-color-danger-soft: #35191a;
+    --ki-color-danger-ink: #eda49f;
+    --ki-color-skeleton: #262d29;
+    --ki-color-purple: #bf5af2;
+    --ki-scrim: rgba(0, 0, 0, 0.55);
+
+    --ki-color-hover: rgba(233, 237, 232, 0.06);
+    --ki-color-hover-strong: rgba(233, 237, 232, 0.09);
+    --ki-color-scrollbar: rgba(233, 237, 232, 0.22);
+
+    --ki-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --ki-shadow-2: 0 10px 32px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  /* display:flex/grid 的元素会盖掉 UA 的 [hidden]{display:none}，这里显式提权。
+     .selbar / .split 都靠 hidden 控制显隐，漏了会出现「未选中也显示操作条」。 */
+  [hidden] { display: none !important; }
+
+  /* 滚动条：不动它时轨道走系统色，浅色主题下表现为一条突兀的黑边（截图已复现）。
+     统一「轨道透明 + 滑块用 --ki-color-scrollbar」，与 ki.css 的 --ki-color-scrollbar 同源。 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ki-color-scrollbar) transparent;
+  }
+
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner { background: transparent; }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--ki-color-scrollbar);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: var(--ki-radius-track);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--ki-color-border-strong);
+    background-clip: padding-box;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    font-family: var(--ki-font-family);
+    font-size: var(--ki-font-size-md);
+    line-height: 1.55;
+    color: var(--ki-color-text);
+    background: var(--ki-color-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ki-color-primary);
+    outline-offset: 2px;
+  }
+
+  /* ── 骨架 ───────────────────────────────────────────── */
+
+  .app {
+    display: grid;
+    grid-template-columns: var(--ki-sidebar-width) 1fr;
+    height: 100%;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--ki-color-bg-secondary);
+    border-right: 1px solid var(--ki-color-border);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    height: var(--ki-header-height);
+    padding: 0 var(--ki-space-4);
+    border-bottom: 1px solid var(--ki-color-border);
+    flex: none;
+  }
+
+  .brand__mark {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-primary);
+    color: #fff;
+    font-size: var(--ki-font-size-xs);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .brand__name {
+    font-size: var(--ki-font-size-lg);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--ki-space-2) var(--ki-space-2) var(--ki-space-6);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .nav__group {
+    padding: var(--ki-space-4) var(--ki-space-2) var(--ki-space-1);
+    font-size: var(--ki-font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--ki-color-text-subtle);
+  }
+
+  .nav__group:first-child { padding-top: var(--ki-space-1); }
+
+  .nav__item {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    width: 100%;
+    padding: 7px var(--ki-space-2);
+    border: 0;
+    border-radius: var(--ki-radius-sm);
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ki-color-text-muted);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .nav__item:hover { background: var(--ki-color-hover); color: var(--ki-color-text); }
+
+  .nav__item[aria-current='page'] {
+    background: var(--ki-color-primary-soft);
+    color: var(--ki-color-primary);
+    font-weight: 600;
+  }
+
+  .nav__icon {
+    flex: none;
+    width: 16px;
+    text-align: center;
+    font-size: var(--ki-font-size-sm);
+    opacity: 0.75;
+  }
+
+  .nav__item[aria-current='page'] .nav__icon { opacity: 1; }
+
+  .nav__count {
+    margin-left: auto;
+    font-size: var(--ki-font-size-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--ki-color-text-subtle);
+    background: var(--ki-color-bg-muted);
+    border-radius: var(--ki-radius-track);
+    padding: 0 6px;
+  }
+
+  .nav__item[aria-current='page'] .nav__count {
+    background: rgba(45, 103, 85, 0.12);
+    color: var(--ki-color-primary);
+  }
+
+  [data-theme='dark'] .nav__item[aria-current='page'] .nav__count {
+    background: rgba(95, 174, 140, 0.16);
+  }
+
+  .sidebar__foot {
+    flex: none;
+    padding: var(--ki-space-3) var(--ki-space-4);
+    border-top: 1px solid var(--ki-color-border);
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    font-size: var(--ki-font-size-xs);
+    color: var(--ki-color-text-subtle);
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .page {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .page[data-active] { display: flex; }
+
+  /* ── 页头 ───────────────────────────────────────────── */
+
+  .page-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-3);
+    min-height: var(--ki-header-height);
+    padding: var(--ki-space-2) var(--ki-space-6);
+    border-bottom: 1px solid var(--ki-color-border);
+    background: var(--ki-color-surface);
+  }
+
+  .page-head__path {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    min-width: 0;
+    margin: 0;
+    font-size: var(--ki-font-size-md);
+  }
+
+  .page-head__hint { color: var(--ki-color-text-subtle); }
+
+  .page-head__sep { color: var(--ki-color-border-strong); }
+
+  .page-head__group {
+    color: var(--ki-color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .page-head__title { font-weight: 600; }
+
+  .page-head__actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    flex: none;
+  }
+
+  .page-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--ki-space-5) var(--ki-space-6) var(--ki-space-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ki-space-4);
+  }
+
+  /* ── 通用组件 ───────────────────────────────────────── */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid var(--ki-color-border-strong);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-surface);
+    font: inherit;
+    font-size: 13px;
+    color: var(--ki-color-text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--ki-motion-fast), border-color var(--ki-motion-fast);
+  }
+
+  .btn:hover { background: var(--ki-color-hover); }
+
+  .btn--primary {
+    background: var(--ki-color-primary);
+    border-color: var(--ki-color-primary);
+    color: #fff;
+  }
+
+  .btn--primary:hover { background: var(--ki-color-primary-hover); border-color: var(--ki-color-primary-hover); }
+
+  /* 暗色下 primary 是浅绿（#5fae8c），白字对比度不足 3:1，改用深墨字 */
+  [data-theme='dark'] .btn--primary { color: #10201a; }
+
+  .btn--danger {
+    background: var(--ki-color-danger-soft);
+    border-color: transparent;
+    color: var(--ki-color-danger-ink);
+  }
+
+  .btn--danger:hover { background: var(--ki-color-danger-soft); filter: brightness(0.97); }
+
+  .btn--ghost { border-color: transparent; background: none; color: var(--ki-color-text-muted); }
+
+  /* 破坏性但低频：平时不抢视线，hover 才出红底 */
+  .btn--danger-ghost { border-color: transparent; background: none; color: var(--ki-color-danger-ink); }
+
+  .btn--danger-ghost:hover { background: var(--ki-color-danger-soft); }
+
+  /* AI 入口：借用 skill 的紫色语义（--ki-color-purple），但不做渐变/发光 ——
+     ki 的克制风格里，AI 的「特别」靠颜色识别，不靠特效抢戏 */
+  .btn--ai {
+    gap: 5px;
+    padding-left: 9px;
+    border-color: transparent;
+    background: none;
+    color: var(--ki-color-purple);
+  }
+
+  .btn--ai:hover { background: color-mix(in srgb, var(--ki-color-purple) 10%, transparent); }
+
+  .btn--ai__icon { width: 13px; height: 13px; flex: none; }
+
+  .btn--ghost:hover { background: var(--ki-color-hover); color: var(--ki-color-text); }
+
+  .btn--sm { height: 26px; padding: 0 9px; font-size: var(--ki-font-size-sm); }
+
+  .btn[disabled] {
+    cursor: not-allowed;
+    background: var(--ki-color-bg-muted);
+    border-color: transparent;
+    color: var(--ki-color-text-subtle);
+    opacity: 0.7;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: var(--ki-radius-tag);
+    font-size: var(--ki-font-size-xs);
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .badge--kb {
+    background: var(--ki-color-primary-soft);
+    color: var(--ki-color-primary);
+  }
+
+  .badge--muted {
+    background: var(--ki-color-bg-muted);
+    color: var(--ki-color-text-muted);
+  }
+
+  /* 分类徽标：wik = 永久（绿，与 KB 同语言） / temp = 临时（琥珀） / event = 事件（蓝） */
+  .badge--wiki { background: var(--ki-color-primary-soft); color: var(--ki-color-primary); }
+  .badge--temp { background: var(--ki-color-warning-soft); color: var(--ki-color-warning); }
+  .badge--event { background: rgba(47, 111, 159, 0.12); color: var(--ki-color-info); }
+
+  [data-theme='dark'] .badge--event { background: rgba(111, 179, 217, 0.16); }
+
+  /* 检索可见性：实心 / 半环 / 空心，形状差异不靠颜色单打 */
+  .vis {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-muted);
+    white-space: nowrap;
+  }
+
+  .vis__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 2px solid var(--ki-color-border-strong);
+    flex: none;
+  }
+
+  .vis--full .vis__dot { background: var(--ki-color-primary); border-color: var(--ki-color-primary); }
+  .vis--fts .vis__dot { background: linear-gradient(90deg, var(--ki-color-primary) 50%, transparent 50%); border-color: var(--ki-color-primary); }
+  .vis--hidden .vis__dot { background: transparent; border-color: var(--ki-color-border-strong); }
+  .vis--hidden { color: var(--ki-color-text-subtle); }
+
+  .seg {
+    display: inline-flex;
+    padding: 2px;
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-bg-muted);
+    gap: 2px;
+  }
+
+  .seg button {
+    height: 26px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    font: inherit;
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .seg button:hover { color: var(--ki-color-text); }
+
+  .seg button[aria-pressed='true'] {
+    background: var(--ki-color-surface);
+    color: var(--ki-color-text);
+    font-weight: 600;
+    box-shadow: var(--ki-shadow-1);
+  }
+
+  .seg--vis { gap: 1px; }
+
+  .seg--vis button { height: 24px; padding: 0 8px; font-size: var(--ki-font-size-xs); }
+
+  /* 弹窗内与可见性选择器的选中态：白底不够，补主色文字 + 淡主色底 */
+  .seg--vis button[aria-pressed='true'],
+  .modal .seg button[aria-pressed='true'] {
+    background: var(--ki-color-primary-soft);
+    color: var(--ki-color-primary);
+    box-shadow: none;
+  }
+
+  .input {
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-surface);
+    font: inherit;
+    font-size: 13px;
+    color: var(--ki-color-text);
+    min-width: 0;
+  }
+
+  .input::placeholder { color: var(--ki-color-text-subtle); }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    flex-wrap: wrap;
+  }
+
+  .toolbar__spacer { margin-left: auto; }
+
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ki-space-2);
+    padding: 9px 12px;
+    border-radius: var(--ki-radius-sm);
+    font-size: var(--ki-font-size-sm);
+    line-height: 1.5;
+    background: var(--ki-color-warning-soft);
+    color: var(--ki-color-warning);
+  }
+
+  .notice--info {
+    background: rgba(47, 111, 159, 0.09);
+    color: var(--ki-color-info);
+  }
+
+  .notice__icon { flex: none; font-weight: 700; }
+
+  /* ── 表格 ───────────────────────────────────────────── */
+
+  .card {
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-lg);
+    background: var(--ki-color-surface);
+    overflow: hidden;
+  }
+
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .tbl th {
+    text-align: left;
+    font-size: var(--ki-font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--ki-color-text-subtle);
+    padding: 9px var(--ki-space-3);
+    border-bottom: 1px solid var(--ki-color-border);
+    background: var(--ki-color-bg-secondary);
+    white-space: nowrap;
+  }
+
+  .tbl td {
+    padding: 9px var(--ki-space-3);
+    border-bottom: 1px solid var(--ki-color-border);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+
+  .tbl tbody tr:last-child td { border-bottom: 0; }
+  .tbl tbody tr:hover { background: var(--ki-color-hover); }
+  .tbl tbody tr[data-checked] { background: var(--ki-color-primary-soft); }
+
+  .col-check { width: 40px; }
+  .col-group { width: 200px; }
+  .col-cat { width: 86px; }
+  .col-term { width: 168px; }
+  .col-seen { width: 92px; }
+  .col-act { width: 76px; text-align: right; }
+
+  .cell-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .cell-name__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cell-muted {
+    color: var(--ki-color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cell-term { display: flex; align-items: center; gap: 6px; }
+
+  .num { font-variant-numeric: tabular-nums; }
+
+  input[type='checkbox'] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--ki-color-primary);
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .selbar {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    padding: 9px 12px;
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-primary-soft);
+    color: var(--ki-color-primary);
+    font-size: 13px;
+  }
+
+  .selbar strong { font-variant-numeric: tabular-nums; }
+  .selbar__spacer { margin-left: auto; }
+
+  /* 空态：筛选无结果时的出路，不留白屏 */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--ki-space-8) var(--ki-space-4);
+    text-align: center;
+  }
+
+  .empty__title { margin: 0; font-size: var(--ki-font-size-md); font-weight: 600; }
+  .empty__hint { margin: 0; font-size: var(--ki-font-size-sm); color: var(--ki-color-text-subtle); }
+
+  /* ── P1 分类：剩余天数语气 ──────────────────────────── */
+
+  .days { font-variant-numeric: tabular-nums; font-size: var(--ki-font-size-sm); }
+  .days--hot { color: var(--ki-color-danger-ink); font-weight: 600; }
+  .days--warm { color: var(--ki-color-warning); font-weight: 600; }
+  .days--calm { color: var(--ki-color-text-subtle); }
+  .days--none { color: var(--ki-color-text-subtle); }
+
+  /* ── P2 事件：主从布局 ─────────────────────────────── */
+
+  .split {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: var(--ki-space-4);
+    align-items: start;
+  }
+
+  .ev-list { display: flex; flex-direction: column; gap: 2px; padding: var(--ki-space-2); }
+
+  .ev-item {
+    display: block;
+    width: 100%;
+    padding: var(--ki-space-2) var(--ki-space-3);
+    border: 0;
+    border-radius: var(--ki-radius-sm);
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    color: var(--ki-color-text);
+  }
+
+  .ev-item:hover { background: var(--ki-color-hover); }
+
+  .ev-item[aria-selected='true'] {
+    background: var(--ki-color-primary-soft);
+    box-shadow: inset 2px 0 0 var(--ki-color-primary);
+  }
+
+  .ev-item__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .ev-item__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--ki-font-size-xs);
+    color: var(--ki-color-text-subtle);
+    flex-wrap: wrap;
+  }
+
+  .ev-detail { padding: var(--ki-space-5); display: flex; flex-direction: column; gap: var(--ki-space-4); }
+
+  /* 内容包一层，方便整块切到空态（外层 gap 由这里承接） */
+  .ev-detail__body { display: flex; flex-direction: column; gap: var(--ki-space-4); }
+
+  .ev-detail__head {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--ki-space-2) var(--ki-space-3);
+  }
+
+  .ev-detail__title {
+    margin: 0 0 3px;
+    font-size: var(--ki-font-size-xl);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .ev-detail__meta { font-size: var(--ki-font-size-sm); color: var(--ki-color-text-subtle); }
+
+  /* 阶段流水线 */
+  .stage-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: st;
+  }
+
+  .stage {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    padding-top: 24px;
+    text-align: center;
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-subtle);
+  }
+
+  .stage::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--ki-color-border);
+  }
+
+  .stage:last-child::before { display: none; }
+
+  .stage__dot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--ki-color-border-strong);
+    background: var(--ki-color-surface);
+    display: grid;
+    place-items: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: transparent;
+    z-index: 1;
+  }
+
+  .stage.is-done { color: var(--ki-color-text-muted); }
+  .stage.is-done::before { background: var(--ki-color-primary); }
+  .stage.is-done .stage__dot {
+    background: var(--ki-color-primary);
+    border-color: var(--ki-color-primary);
+    color: #fff;
+  }
+
+  .stage.is-current { color: var(--ki-color-primary); font-weight: 600; }
+  .stage.is-current::before { background: var(--ki-color-primary); }
+  .stage.is-current .stage__dot {
+    border-color: var(--ki-color-primary);
+    box-shadow: 0 0 0 3px var(--ki-color-primary-soft);
+  }
+
+  .stage__label { display: block; }
+
+  .stage__cap {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--ki-color-text-subtle);
+    letter-spacing: 0.02em;
+  }
+
+  .subhead {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    font-size: var(--ki-font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--ki-color-text-subtle);
+    text-transform: uppercase;
+  }
+
+  .subhead__note {
+    font-size: var(--ki-font-size-xs);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ki-color-text-subtle);
+    opacity: 0.9;
+  }
+
+  /* ── 参考文档：行内带删除，可见性取文档自身（不随事件阶段） ── */
+
+  /* 特异性提到 .docline.docline--ref：这段写在 .docline 之前，
+     否则会被 .docline 的两列定义盖掉，删除按钮被挤到下一行 */
+  .docline.docline--ref {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 104px 24px;
+    align-items: center;
+    gap: var(--ki-space-2);
+    border-bottom: 1px dashed var(--ki-color-border);
+  }
+
+  .docline.docline--ref:last-child { border-bottom: 0; }
+
+  .docline__main {
+    min-width: 0;
+    padding: 7px var(--ki-space-2);
+    border: 0;
+    border-radius: var(--ki-radius-sm);
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .docline__main:hover { background: var(--ki-color-hover); }
+
+  .docline__main:hover .docline__title > span:first-child { color: var(--ki-color-primary); }
+
+  .docline__del {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--ki-color-text-subtle);
+    cursor: pointer;
+  }
+
+  .docline__del:hover { background: var(--ki-color-danger-soft); color: var(--ki-color-danger-ink); }
+
+  .ref-empty {
+    padding: var(--ki-space-3) var(--ki-space-2);
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-subtle);
+  }
+
+  /* ── AI 候选列表 ────────────────────────────────────── */
+
+  .cand {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--ki-space-2);
+    padding: var(--ki-space-2) var(--ki-space-2) var(--ki-space-2) 0;
+    border-bottom: 1px dashed var(--ki-color-border);
+  }
+
+  .cand:last-child { border-bottom: 0; }
+
+  .cand__name { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+
+  .cand__meta {
+    font-size: var(--ki-font-size-xs);
+    color: var(--ki-color-text-subtle);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cand__why {
+    margin: 3px 0 0;
+    font-size: var(--ki-font-size-xs);
+    line-height: 1.6;
+    color: var(--ki-color-text-muted);
+  }
+
+  .cand__score {
+    font-size: var(--ki-font-size-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--ki-color-primary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .cand__score--weak { color: var(--ki-color-text-subtle); font-weight: 400; }
+
+  .cand-list {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  /* ── AI 检索过程（非对话形态） ─────────────────────
+     沿用 .ki-chat-tool 的卡片语汇（bg-secondary + border + radius-sm + 淡入），
+     但不用气泡、不用打字机 —— 这里是一段可折叠的执行日志，不是可回复的对话。 */
+  .ai-proc {
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-bg-secondary);
+    overflow: hidden;
+  }
+
+  .ai-proc__head {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    width: 100%;
+    padding: 8px var(--ki-space-3);
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ai-proc__title { font-weight: 500; }
+
+  .ai-proc__time {
+    margin-left: auto;
+    font-size: var(--ki-font-size-xs);
+    color: var(--ki-color-text-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ai-proc__chev {
+    font-size: 10px;
+    color: var(--ki-color-text-subtle);
+    transition: transform var(--ki-motion-fast);
+  }
+
+  .ai-proc__head[aria-expanded='false'] .ai-proc__chev { transform: rotate(-90deg); }
+
+  .ai-proc__spin {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--ki-color-primary);
+    border-top-color: transparent;
+    animation: ai-spin 700ms linear infinite;
+  }
+
+  .ai-proc__spin[data-done] {
+    animation: none;
+    border-color: var(--ki-color-primary);
+    background: var(--ki-color-primary);
+    box-shadow: inset 0 0 0 2.5px var(--ki-color-bg-secondary);
+  }
+
+  @keyframes ai-spin { to { transform: rotate(360deg); } }
+
+  .ai-proc__steps {
+    margin: 0;
+    padding: var(--ki-space-2) var(--ki-space-3) var(--ki-space-3);
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    border-top: 1px dashed var(--ki-color-border);
+  }
+
+  .ai-step {
+    display: grid;
+    grid-template-columns: 13px minmax(0, 1fr);
+    gap: 7px;
+    font-size: var(--ki-font-size-xs);
+    line-height: 1.65;
+    color: var(--ki-color-text-muted);
+    animation: ai-step-in 220ms ease both;
+  }
+
+  @keyframes ai-step-in {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .ai-step__mark {
+    display: grid;
+    place-items: center;
+    width: 13px;
+    height: 13px;
+    margin-top: 2px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ki-color-border-strong);
+    font-size: 8px;
+    line-height: 1;
+    color: transparent;
+  }
+
+  .ai-step.is-running .ai-step__mark {
+    border-color: var(--ki-color-primary);
+    border-top-color: transparent;
+    animation: ai-spin 700ms linear infinite;
+  }
+
+  .ai-step.is-done .ai-step__mark {
+    border-color: var(--ki-color-primary);
+    background: var(--ki-color-primary);
+    color: #fff;
+  }
+
+  .ai-step b { color: var(--ki-color-text); font-weight: 600; }
+
+  /* 每步可展开看细节（对齐「点击思考过程」的期望），箭头平时隐藏、hover 或展开时才出现 */
+  .ai-step__body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+  .ai-step__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ai-step__head:disabled { cursor: default; }
+
+  .ai-step__text { min-width: 0; }
+
+  .ai-step__head:hover .ai-step__text { color: var(--ki-color-text); }
+
+  .ai-step__chev {
+    flex: none;
+    margin-left: auto;
+    font-size: 9px;
+    line-height: 1.9;
+    color: var(--ki-color-text-subtle);
+    opacity: 0;
+    transition: opacity var(--ki-motion-fast), transform var(--ki-motion-fast);
+  }
+
+  .ai-step__head:hover .ai-step__chev,
+  .ai-step__head:focus-visible .ai-step__chev,
+  .ai-step__head[aria-expanded='true'] .ai-step__chev { opacity: 1; }
+
+  .ai-step__head[aria-expanded='true'] .ai-step__chev { transform: rotate(180deg); }
+
+  .ai-step__detail {
+    margin-top: 4px;
+    padding: 6px 8px;
+    border: 1px solid var(--ki-color-border);
+    border-radius: 4px;
+    background: var(--ki-color-surface);
+    font-size: 10px;
+    line-height: 1.75;
+    color: var(--ki-color-text-muted);
+  }
+
+  .ai-step__detail dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 10px;
+  }
+
+  .ai-step__detail dt { color: var(--ki-color-text-subtle); white-space: nowrap; }
+
+  .ai-step__detail dd {
+    margin: 0;
+    font-family: var(--ki-font-mono);
+    color: var(--ki-color-text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* 步骤下挂的 skill / 工具调用：skill 紫线，工具中性线（对齐 ki.css 的 --ki-color-purple 语义） */
+  .ai-calls {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+  }
+
+  .ai-call {
+    display: flex;
+    align-items: center;
+    align-self: flex-start;      /* 只占自身宽度，别把耗时推到弹窗最右 */
+    gap: 5px;
+    padding-left: 7px;
+    border-left: 2px solid var(--ki-color-border-strong);
+    font-family: var(--ki-font-mono);
+    font-size: 10px;
+    line-height: 1.7;
+    color: var(--ki-color-text-subtle);
+  }
+
+  .ai-call--skill { border-left-color: var(--ki-color-purple); }
+
+  .ai-call__kind {
+    flex: none;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: var(--ki-color-bg-muted);
+    font-family: var(--ki-font-family);
+    font-size: 9px;
+    letter-spacing: 0.02em;
+  }
+
+  .ai-call--skill .ai-call__kind {
+    background: color-mix(in srgb, var(--ki-color-purple) 13%, transparent);
+    color: var(--ki-color-purple);
+  }
+
+  .ai-call__name { color: var(--ki-color-text-muted); }
+
+  .ai-call__ms {
+    margin-left: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .docline {
+    display: grid;
+    grid-template-columns: 1fr 116px;
+    align-items: center;
+    gap: var(--ki-space-3);
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--ki-color-border);
+  }
+
+  .docline:last-child { border-bottom: 0; }
+
+  /* 可点击的关联文档：整行是按钮，hover 才显出「能点」 */
+  button.docline {
+    width: 100%;
+    padding: 7px var(--ki-space-2);
+    border: 0;
+    border-bottom: 1px dashed var(--ki-color-border);
+    border-radius: var(--ki-radius-sm);
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  button.docline:hover { background: var(--ki-color-hover); }
+
+  button.docline:hover .docline__title > span:first-child { color: var(--ki-color-primary); }
+
+  /* ── 文档抽屉（复用浏览页「点文档名 → 右侧阅读」的形态） ── */
+
+  .drawer { position: fixed; inset: 0; z-index: 80; }
+
+  .drawer__scrim { position: absolute; inset: 0; background: var(--ki-scrim); }
+
+  .drawer__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(560px, 92vw);
+    display: flex;
+    flex-direction: column;
+    background: var(--ki-color-surface);
+    border-left: 1px solid var(--ki-color-border);
+    box-shadow: var(--ki-shadow-2);
+    animation: drawer-in 190ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+
+  @keyframes drawer-in {
+    from { transform: translateX(28px); opacity: 0.5; }
+    to { transform: none; opacity: 1; }
+  }
+
+  .drawer__head {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ki-space-3);
+    padding: var(--ki-space-4) var(--ki-space-5);
+    border-bottom: 1px solid var(--ki-color-border);
+  }
+
+  .drawer__title {
+    margin: 0 0 3px;
+    font-size: var(--ki-font-size-lg);
+    font-weight: 600;
+  }
+
+  .drawer__meta { margin: 0; font-size: var(--ki-font-size-sm); color: var(--ki-color-text-subtle); }
+
+  .drawer__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--ki-space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ki-space-3);
+    font-size: 13px;
+    line-height: 1.75;
+  }
+
+  .drawer__body h4 {
+    margin: var(--ki-space-3) 0 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .drawer__body h4:first-child { margin-top: 0; }
+
+  .drawer__body p { margin: 0; color: var(--ki-color-text-muted); }
+
+  .drawer__body ul { margin: 0; padding-left: 18px; color: var(--ki-color-text-muted); }
+
+  .drawer__body code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--ki-color-bg-muted);
+    font-family: var(--ki-font-mono);
+    font-size: var(--ki-font-size-xs);
+  }
+
+  @media (max-width: 640px) {
+    .drawer__panel { width: 100%; }
+  }
+
+  /* 两行：第一行 文档名 + 徽标，第二行 Group 路径（弱化）。
+     与浏览页检索结果行（.ki-browse-fulltext__path）同构 —— 路径让位给文档名，
+     名字不因长路径被压窄。 */
+  .docline__name {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 13px;
+    min-width: 0;
+  }
+
+  .docline__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .docline__title > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .docline__path {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--ki-font-size-xs);
+    line-height: 1.5;
+    color: var(--ki-color-text-subtle);
+  }
+
+  .code {
+    margin: 0;
+    padding: var(--ki-space-3);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-bg-muted);
+    font-family: var(--ki-font-mono);
+    font-size: var(--ki-font-size-sm);
+    line-height: 1.65;
+    color: var(--ki-color-text-muted);
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .code b { color: var(--ki-color-text); font-weight: 600; }
+
+  /* ── P2 类型管理 ────────────────────────────────────── */
+
+  /* 事件详情被删后的空态：不留白屏，给下一步 */
+  .ev-detail__blank {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 320px;
+    text-align: center;
+    color: var(--ki-color-text-subtle);
+    font-size: var(--ki-font-size-sm);
+  }
+
+  .ev-detail__blank strong {
+    font-size: var(--ki-font-size-md);
+    color: var(--ki-color-text-muted);
+  }
+
+  .type-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ki-space-2);
+    padding: var(--ki-space-3) var(--ki-space-4);
+    border-bottom: 1px solid var(--ki-color-border);
+  }
+
+  .type-name {
+    font-size: var(--ki-font-size-lg);
+    font-weight: 600;
+  }
+
+  .stage-row td { vertical-align: middle; }
+
+  .stage-row__idx {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: var(--ki-color-bg-muted);
+    font-size: var(--ki-font-size-xs);
+    font-weight: 700;
+    color: var(--ki-color-text-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stage-row[data-current] .stage-row__idx {
+    background: var(--ki-color-primary);
+    color: #fff;
+  }
+
+  .hint {
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-subtle);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ── P3 回收站 ──────────────────────────────────────── */
+
+  .trash-name--strike { text-decoration: line-through; text-decoration-color: var(--ki-color-border-strong); }
+
+  .foot-note {
+    display: flex;
+    align-items: center;
+    gap: var(--ki-space-2);
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-subtle);
+  }
+
+  .foot-note.is-warn { color: var(--ki-color-warning); }
+  .foot-note.is-warn .notice__icon { font-weight: 700; }
+
+  .demo-note {
+    margin: 0;
+    padding: var(--ki-space-3) var(--ki-space-4);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-bg-secondary);
+    border: 1px dashed var(--ki-color-border-strong);
+    font-size: var(--ki-font-size-sm);
+    line-height: 1.7;
+    color: var(--ki-color-text-muted);
+  }
+
+  .demo-note b { color: var(--ki-color-text); }
+  .demo-note code {
+    font-family: var(--ki-font-mono);
+    font-size: var(--ki-font-size-xs);
+    background: var(--ki-color-bg-muted);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  /* ── 事件页左栏：搜索 + 限高滚动 ───────────────────── */
+
+  /* 事件列表页：左栏跟随可用高度。
+     原来写死 max-height: 560px，窗口一高就白白空出一大截（截图已反馈）。 */
+  .split[data-evview='list'] {
+    flex: 1;
+    min-height: 320px;
+    align-items: stretch;
+  }
+
+  .split[data-evview='list'] .ev-pane { max-height: none; min-height: 0; }
+
+  /* 右栏详情按自然高度，不跟着左栏拉长（否则代码块下方一片空白） */
+  .split[data-evview='list'] .ev-detail { align-self: start; }
+
+  .ev-pane {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 560px;
+  }
+
+  /* 底部渐隐提示「下面还有」——真实实现按 ki.css 的 local/scroll 差速技巧，
+     只在「未滚到底」时显示；demo 常显，不追求那个精度。 */
+  .ev-pane::after {
+    content: '';
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    height: 24px;
+    border-radius: 0 0 calc(var(--ki-radius-lg) - 1px) calc(var(--ki-radius-lg) - 1px);
+    background: linear-gradient(to bottom, transparent, var(--ki-color-surface));
+    pointer-events: none;
+    transition: opacity var(--ki-motion-fast);
+  }
+
+  /* 滚到底 / 内容不满一屏时收起渐隐，避免「最后一条被压暗」 */
+  .ev-pane.is-at-end::after,
+  .ev-pane.is-short::after { opacity: 0; }
+
+  .ev-search {
+    flex: none;
+    padding: var(--ki-space-3);
+    border-bottom: 1px solid var(--ki-color-border);
+    background: var(--ki-color-surface);
+  }
+
+  .ev-search .input { width: 100%; }
+
+  .ev-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ev-empty {
+    padding: var(--ki-space-6) var(--ki-space-3);
+    text-align: center;
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-subtle);
+  }
+
+  /* ── 弹窗（新建分类 / 新建类型 / 追加阶段 共用） ───── */
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: var(--ki-space-4);
+  }
+
+  .modal__scrim {
+    position: absolute;
+    inset: 0;
+    background: var(--ki-scrim);
+  }
+
+  .modal__card {
+    position: relative;
+    width: min(440px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow: hidden auto;
+    background: var(--ki-color-surface);
+    border-radius: var(--ki-radius-lg);
+    box-shadow: var(--ki-shadow-2);
+  }
+
+  .modal__head {
+    padding: var(--ki-space-4) var(--ki-space-5);
+    border-bottom: 1px solid var(--ki-color-border);
+  }
+
+  .modal__title { margin: 0; font-size: var(--ki-font-size-lg); font-weight: 600; }
+  .modal__sub { margin: 3px 0 0; font-size: var(--ki-font-size-sm); color: var(--ki-color-text-subtle); }
+
+  .modal__body {
+    padding: var(--ki-space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ki-space-4);
+  }
+
+  .modal__foot {
+    padding: var(--ki-space-3) var(--ki-space-5);
+    border-top: 1px solid var(--ki-color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ki-space-2);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field__label {
+    font-size: var(--ki-font-size-sm);
+    font-weight: 600;
+    color: var(--ki-color-text-muted);
+  }
+
+  .field__hint {
+    font-size: var(--ki-font-size-xs);
+    line-height: 1.6;
+    color: var(--ki-color-text-subtle);
+    margin: 0;
+  }
+
+  .field .input, .field select { width: 100%; height: 32px; }
+
+  .field select {
+    padding: 0 8px;
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-surface);
+    font: inherit;
+    font-size: 13px;
+    color: var(--ki-color-text);
+  }
+
+  .stage-preview {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: var(--ki-space-2) var(--ki-space-3);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-bg-muted);
+    font-size: var(--ki-font-size-sm);
+    color: var(--ki-color-text-muted);
+  }
+
+  /* 内联可编辑的阶段名：平时像文本，hover 才出边框（避免看成只读 chip） */
+  .input--inline {
+    width: auto;
+    min-width: 68px;
+    max-width: 132px;
+    height: 26px;
+    padding: 0 6px;
+    border-color: transparent;
+    background: var(--ki-color-surface);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .input--inline:hover { border-color: var(--ki-color-border-strong); }
+
+  .input--inline:focus {
+    border-color: var(--ki-color-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ki-color-primary-soft);
+  }
+
+  .stage-preview__idx {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ki-color-text-subtle);
+    flex: none;
+  }
+
+  /* ── 阶段构建器：回车逐个添加 + 拖动排序 ───────────── */
+
+  .stage-builder {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 6px;
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-bg-secondary);
+    /* 序号用 CSS counter：拖动只挪 DOM，序号自动跟着变，不用 JS 维护 */
+    counter-reset: stage;
+  }
+
+  .stage-builder__empty {
+    padding: 2px 4px;
+    font-size: var(--ki-font-size-xs);
+    color: var(--ki-color-text-subtle);
+  }
+
+  .stage-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 4px 2px 7px;
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-tag);
+    background: var(--ki-color-surface);
+    font-size: var(--ki-font-size-sm);
+    cursor: grab;
+    user-select: none;
+    counter-increment: stage;
+    /* 让位动画由 FLIP（Web Animations）负责，这里只管 hover/按下 */
+  }
+
+  .stage-chip:active { cursor: grabbing; }
+
+  /* 被拖的那枚留在原位当「占位」，只做弱化 + 虚线标识；跟随鼠标的是浏览器拖影 */
+  .stage-chip.is-dragging {
+    opacity: 0.55;
+    border-style: dashed;
+    border-color: var(--ki-color-primary);
+    background: var(--ki-color-primary-soft);
+  }
+
+  .stage-chip__idx {
+    font-size: var(--ki-font-size-xs);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ki-color-text-subtle);
+  }
+
+  .stage-chip__idx::before { content: counter(stage); }
+
+  .stage-chip__name { font-weight: 600; }
+
+  /* 终态标记跟着「最后一枚」自动走，拖动后无需 JS 维护 */
+  .stage-chip:last-child .stage-chip__name::after {
+    content: '终态';
+    margin-left: 5px;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: var(--ki-color-bg-muted);
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--ki-color-text-muted);
+    vertical-align: 1px;
+  }
+
+  .stage-chip__vis {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    border: 0;
+    border-radius: 3px;
+    background: none;
+    cursor: pointer;
+  }
+
+  .stage-chip__vis:hover { background: var(--ki-color-hover-strong); }
+
+  .stage-chip__del {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border: 0;
+    border-radius: 3px;
+    background: none;
+    color: var(--ki-color-text-subtle);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .stage-chip__del:hover {
+    background: var(--ki-color-danger-soft);
+    color: var(--ki-color-danger-ink);
+  }
+
+  .vis-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ki-space-4);
+    font-size: var(--ki-font-size-xs);
+  }
+
+  .ai-prereq {
+    margin: 0;
+    padding-left: 18px;
+    font-size: var(--ki-font-size-sm);
+    line-height: 1.95;
+    color: var(--ki-color-text-muted);
+  }
+
+  .ai-prereq li[data-ok] { color: var(--ki-color-primary); }
+
+  .modal__body code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--ki-color-bg-muted);
+    font-family: var(--ki-font-mono);
+    font-size: var(--ki-font-size-xs);
+  }
+
+  /* ── 筛选下拉（类型 / 未收口） ─────────────────────── */
+
+  .filter-wrap { position: relative; display: inline-flex; }
+
+  .popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    min-width: 168px;
+    padding: 4px;
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-md);
+    background: var(--ki-color-surface);
+    box-shadow: var(--ki-shadow-2);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .popover button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: var(--ki-radius-sm);
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ki-color-text);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .popover button:hover { background: var(--ki-color-hover); }
+
+  .popover button[aria-selected='true'] {
+    background: var(--ki-color-primary-soft);
+    color: var(--ki-color-primary);
+    font-weight: 600;
+  }
+
+  .popover__count {
+    margin-left: auto;
+    font-size: var(--ki-font-size-xs);
+    font-weight: 400;
+    color: var(--ki-color-text-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 流转弹窗的阶段选择 ─────────────────────────────── */
+
+  .stage-picker { display: flex; flex-direction: column; gap: 6px; }
+
+  .stage-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--ki-color-border);
+    border-radius: var(--ki-radius-sm);
+    background: var(--ki-color-surface);
+    font: inherit;
+    font-size: 13px;
+    color: var(--ki-color-text);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .stage-option:hover:not([disabled]) { border-color: var(--ki-color-border-strong); }
+
+  .stage-option[aria-pressed='true'] {
+    border-color: var(--ki-color-primary);
+    background: var(--ki-color-primary-soft);
+    color: var(--ki-color-primary);
+    font-weight: 600;
+  }
+
+  .stage-option[disabled] { opacity: 0.55; cursor: not-allowed; }
+
+  .stage-option__dot {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--ki-color-border-strong);
+    background: var(--ki-color-surface);
+  }
+
+  .stage-option[aria-pressed='true'] .stage-option__dot {
+    border-color: var(--ki-color-primary);
+    box-shadow: inset 0 0 0 3px var(--ki-color-primary);
+  }
+
+  .stage-option__tag {
+    margin-left: auto;
+    font-size: var(--ki-font-size-xs);
+    font-weight: 400;
+    color: var(--ki-color-text-subtle);
+  }
+
+  /* ── 响应式 ─────────────────────────────────────────── */
+
+  /* ≤900：侧栏转抽屉；表格先让掉「最后活跃」这类辅助列 */
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 20;
+      width: var(--ki-sidebar-width);
+      box-shadow: var(--ki-shadow-2);
+      transform: translateX(-100%);
+      transition: transform var(--ki-motion-fast);
+    }
+    .sidebar[data-open] { transform: translateX(0); }
+    .page-head { padding-left: var(--ki-space-4); padding-right: var(--ki-space-4); }
+    .page-body { padding: var(--ki-space-4) var(--ki-space-4) var(--ki-space-6); }
+    .split { grid-template-columns: 1fr; }
+
+    /* 窄屏上下堆叠时不再跟随高度，改回固定上限，避免把详情挤出去 */
+    .split[data-evview='list'] { flex: none; align-items: start; }
+    .split[data-evview='list'] .ev-pane { max-height: 420px; }
+
+    .sidebar-toggle { display: inline-flex; }
+
+    .card { overflow-x: auto; }
+    .tbl th.col-seen, .tbl td.col-seen { display: none; }
+    .col-group { width: 150px; }
+    .col-term { width: 140px; }
+    .col-cat { width: 74px; }
+  }
+
+  /* ≤640：表格从「列」改「行内两段」堆叠 ——
+     固定表格在 390px 下会把自适应列压成 0 宽（文档名消失），必须换结构而不是缩列宽。
+     tbody tr 变 grid：第一行 勾选 + 文档名 + 操作，第二行 分类/原因 + 期限/剩余。 */
+  @media (max-width: 640px) {
+    .page-head { flex-wrap: wrap; gap: var(--ki-space-2); padding-top: var(--ki-space-3); padding-bottom: var(--ki-space-3); }
+    .page-head__path { font-size: 13px; flex-wrap: wrap; row-gap: 4px; }
+    .page-head__hint { display: none; }
+    .page-head__actions { margin-left: 0; }
+    .toolbar .input { width: 100% !important; }
+    .selbar { flex-wrap: wrap; row-gap: 6px; }
+    .selbar__spacer { display: none; }
+
+    .card { overflow: visible; }
+
+    .tbl { table-layout: auto; }
+    .tbl thead { display: none; }
+    .tbl tbody tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px var(--ki-space-2);
+      padding: 10px var(--ki-space-3);
+      border-bottom: 1px solid var(--ki-color-border);
+    }
+    .tbl tbody tr:last-child { border-bottom: 0; }
+    .tbl tbody td { display: block; padding: 0; border: 0; }
+    .tbl tbody td:nth-child(1) { flex: none; }
+    .tbl tbody td:nth-child(2) { flex: 1 1 60%; min-width: 0; font-weight: 600; }
+    .tbl tbody td:last-child { flex: none; margin-left: auto; text-align: right; }
+    .tbl tbody td:nth-child(4) { flex: none; }
+    .tbl tbody td:nth-child(5) { flex: 1 1 auto; }
+    .tbl tbody td:nth-child(3),
+    .tbl tbody td.col-seen { display: none; }
+    .cell-term { flex-wrap: wrap; gap: 4px; }
+    .trash-name--strike { text-decoration-thickness: 1px; }
+
+    .ev-pane { max-height: 340px; }
+    .ev-detail { padding: var(--ki-space-4); }
+    .stage { font-size: var(--ki-font-size-xs); }
+    .stage__cap { display: none; }
+    .docline { grid-template-columns: 1fr 96px; }
+
+    .modal__body { padding: var(--ki-space-4); }
+    .modal__head, .modal__foot { padding-left: var(--ki-space-4); padding-right: var(--ki-space-4); }
+  }
+
+  @media (min-width: 901px) {
+    .sidebar-toggle { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══ 侧栏：新增「知识治理」分组（既有 10 项不动） ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand__mark">ki</span>
+      <span class="brand__name">知识库</span>
+    </div>
+
+    <nav class="nav" aria-label="主导航">
+      <div class="nav__group">工作空间</div>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">□</span>总览</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">▤</span>知识库浏览</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">⌕</span>语义搜索</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">✦</span>AI 对话</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">↑</span>上传导入</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">✎</span>知识写入</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">◫</span>数据源</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">◷</span>后台任务</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">▦</span>知识视图</button>
+      <button type="button" class="nav__item" data-goto="browse"><span class="nav__icon">◎</span>资源</button>
+
+      <div class="nav__group">知识治理</div>
+      <button type="button" class="nav__item" data-goto="classify" aria-current="page">
+        <span class="nav__icon">◧</span>文档分类<span class="nav__count">168</span>
+      </button>
+      <button type="button" class="nav__item" data-goto="events">
+        <span class="nav__icon">◈</span>事件<span class="nav__count" id="navEvCount">18</span>
+      </button>
+      <button type="button" class="nav__item" data-goto="trash">
+        <span class="nav__icon">⌫</span>回收站<span class="nav__count">7</span>
+      </button>
+    </nav>
+
+    <div class="sidebar__foot">
+      <button type="button" class="btn btn--ghost btn--sm" id="themeBtn">切换暗色</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ═══════════ P1 文档分类 ═══════════ -->
+    <section class="page" data-page="classify" data-active>
+      <header class="page-head">
+        <button type="button" class="btn btn--ghost btn--sm sidebar-toggle" data-toggle-sidebar>☰</button>
+        <p class="page-head__path">
+          <span class="badge badge--kb">kisearch-memory</span>
+          <span class="page-head__hint">文档分类</span>
+          <span class="page-head__sep">·</span>
+          <span class="page-head__group">全部 Group</span>
+        </p>
+        <div class="page-head__actions">
+          <button type="button" class="btn btn--sm" data-open-modal="newCategory">＋ 新建分类</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="按分类筛选" id="catFilter">
+            <button type="button" data-cat="all" aria-pressed="true">全部 168</button>
+            <button type="button" data-cat="event" aria-pressed="false">事件 31</button>
+            <button type="button" data-cat="temp" aria-pressed="false">临时 41</button>
+            <button type="button" data-cat="wiki" aria-pressed="false">wiki 96</button>
+          </div>
+          <input class="input" type="search" placeholder="搜索文档名 / 路径…" style="width: 220px" />
+          <button type="button" class="btn btn--sm">标签 ▾</button>
+          <span class="toolbar__spacer"></span>
+          <button type="button" class="btn btn--sm" id="catSortBtn">按剩余天数排序</button>
+        </div>
+
+        <div class="card">
+          <table class="tbl" id="catTable">
+            <colgroup>
+              <col class="col-check" /><col /><col class="col-group" /><col class="col-cat" /><col class="col-term" /><col class="col-seen" /><col class="col-act" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="checkAll" aria-label="全选" /></th>
+                <th>文档名</th>
+                <th class="col-group">Group</th>
+                <th>分类</th>
+                <th>期限 / 事件</th>
+                <th class="col-seen">最后活跃</th>
+                <th class="col-act">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-cat="temp">
+                <td><input type="checkbox" aria-label="选择 对话配置确认卡竖排修复" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">对话配置确认卡竖排修复</span></div></td>
+                <td class="col-group"><span class="cell-muted">错误库/Web前端界面</span></td>
+                <td><span class="badge badge--temp">临时</span></td>
+                <td><span class="cell-term"><span class="days days--hot">剩 3 天</span><span class="days days--calm">· 11-16 到期</span></span></td>
+                <td class="col-seen"><span class="days days--calm">2 天前</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="event">
+                <td><input type="checkbox" aria-label="选择 登录态失效根因" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">登录态失效根因</span></div></td>
+                <td class="col-group"><span class="cell-muted">错误库/Web前端界面</span></td>
+                <td><span class="badge badge--event">事件</span></td>
+                <td><span class="cell-term"><span class="badge badge--event">#3 登录页白屏</span><span class="days days--calm">· 排查中</span></span></td>
+                <td class="col-seen"><span class="days days--calm">今天</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="wiki">
+                <td><input type="checkbox" aria-label="选择 PlantUML 图表渲染" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">PlantUML 图表渲染与双面板</span></div></td>
+                <td class="col-group"><span class="cell-muted">决策记录/图表渲染</span></td>
+                <td><span class="badge badge--wiki">wiki</span></td>
+                <td><span class="days days--none">永久保留</span></td>
+                <td class="col-seen"><span class="days days--calm">昨天</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="temp">
+                <td><input type="checkbox" aria-label="选择 总览 scope 冷热列走查" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">总览 scope 冷热列走查记录</span></div></td>
+                <td class="col-group"><span class="cell-muted">错误库/Web前端界面</span></td>
+                <td><span class="badge badge--temp">临时</span></td>
+                <td><span class="cell-term"><span class="days days--warm">剩 12 天</span><span class="days days--calm">· 11-25 到期</span></span></td>
+                <td class="col-seen"><span class="days days--calm">9 天前</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="event">
+                <td><input type="checkbox" aria-label="选择 列表滚动掉帧分析" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">列表滚动掉帧分析</span></div></td>
+                <td class="col-group"><span class="cell-muted">专题记忆/检索与向量客户端专家</span></td>
+                <td><span class="badge badge--event">事件</span></td>
+                <td><span class="cell-term"><span class="badge badge--event">#4 列表卡顿</span><span class="days days--calm">· 优化中</span></span></td>
+                <td class="col-seen"><span class="days days--calm">3 天前</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="wiki">
+                <td><input type="checkbox" aria-label="选择 关系与索引管理专家骨架" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">关系与索引管理专家 · 模块骨架</span></div></td>
+                <td class="col-group"><span class="cell-muted">专题记忆/关系与索引管理专家</span></td>
+                <td><span class="badge badge--wiki">wiki</span></td>
+                <td><span class="days days--none">永久保留</span></td>
+                <td class="col-seen"><span class="days days--calm">今天</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="temp">
+                <td><input type="checkbox" aria-label="选择 导入超限走查" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">导入超限 627 篇走查记录</span></div></td>
+                <td class="col-group"><span class="cell-muted">项目踩坑点</span></td>
+                <td><span class="badge badge--temp">临时</span></td>
+                <td><span class="cell-term"><span class="days days--calm">剩 8 天</span><span class="days days--calm">· 11-21 到期</span></span></td>
+                <td class="col-seen"><span class="days days--calm">1 个月前</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="event">
+                <td><input type="checkbox" aria-label="选择 导出 OOM 复现" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">导出 OOM 复现与堆快照</span></div></td>
+                <td class="col-group"><span class="cell-muted">项目踩坑点</span></td>
+                <td><span class="badge badge--event">事件</span></td>
+                <td><span class="cell-term"><span class="badge badge--event">#5 导出 OOM</span><span class="days days--calm">· 已关闭</span></span></td>
+                <td class="col-seen"><span class="days days--calm">5 天前</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="wiki">
+                <td><input type="checkbox" aria-label="选择 FTS-only 残留需求" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">FTS-only 转向量化后旧全文索引残留</span></div></td>
+                <td class="col-group"><span class="cell-muted">决策记录</span></td>
+                <td><span class="badge badge--wiki">wiki</span></td>
+                <td><span class="days days--none">永久保留</span></td>
+                <td class="col-seen"><span class="days days--calm">今天</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+              <tr data-cat="temp">
+                <td><input type="checkbox" aria-label="选择 移动文档到根目录走查" /></td>
+                <td><div class="cell-name"><span class="cell-name__text">移动文档到根目录走查</span></div></td>
+                <td class="col-group"><span class="cell-muted">错误库/Web前端界面</span></td>
+                <td><span class="badge badge--temp">临时</span></td>
+                <td><span class="cell-term"><span class="days days--hot">剩 1 天</span><span class="days days--calm">· 11-14 到期</span></span></td>
+                <td class="col-seen"><span class="days days--calm">1 天前</span></td>
+                <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">改</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="empty" id="catEmpty" hidden>
+          <p class="empty__title">没有匹配「事件」分类的文档</p>
+          <p class="empty__hint">换个分类筛选，或清空搜索条件再试</p>
+        </div>
+
+        <div class="selbar" id="catSelbar" hidden>
+          <span>已选 <strong id="catSelCount">0</strong> 篇</span>
+          <span class="selbar__spacer"></span>
+          <button type="button" class="btn btn--sm">改为 wiki</button>
+          <button type="button" class="btn btn--sm">改为临时…</button>
+          <button type="button" class="btn btn--sm">绑定事件…</button>
+          <button type="button" class="btn btn--danger btn--sm">删除所选…</button>
+        </div>
+
+        <p class="demo-note">
+          <b>分类决定「什么时候消失」</b>：<span class="badge badge--wiki">wiki</span> 永不删 ·
+          <span class="badge badge--temp">临时</span> 到期 → 回收站（剩 ≤3 天转红）·
+          <span class="badge badge--event">事件</span> 由事件阶段决定去留。
+          <b>缺省是 wiki</b>——判错的两个方向代价不对称：临时标成 wiki 只是脏一点，wiki 标成临时会把有用知识删掉。
+          真实统计：本库 168 篇里 <code>useCount=0</code>（从未被读取）的有 50 篇，占 42%。
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════ P2 事件 ═══════════ -->
+    <section class="page" data-page="events">
+      <header class="page-head">
+        <button type="button" class="btn btn--ghost btn--sm sidebar-toggle" data-toggle-sidebar>☰</button>
+        <p class="page-head__path">
+          <span class="badge badge--kb">kisearch-memory</span>
+          <span class="page-head__hint">事件</span>
+          <span class="page-head__sep">·</span>
+          <span class="page-head__group" id="evOpenCount">未收口 18 · 已收口 21</span>
+        </p>
+        <div class="page-head__actions">
+          <button type="button" class="btn btn--sm" id="newEventBtn">＋ 新建事件</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="事件视图">
+            <button type="button" data-evtab="list" aria-pressed="true">事件列表</button>
+            <button type="button" data-evtab="types" aria-pressed="false">事件类型</button>
+          </div>
+          <span class="toolbar__spacer"></span>
+
+          <div class="filter-wrap">
+            <button type="button" class="btn btn--sm" id="evTypeBtn" aria-haspopup="listbox" aria-expanded="false">类型 ▾</button>
+            <div class="popover" id="evTypePop" role="listbox" hidden>
+              <button type="button" data-val="all" aria-selected="true">全部类型<span class="popover__count" data-count="all"></span></button>
+              <button type="button" data-val="bug 排查" aria-selected="false">bug 排查<span class="popover__count" data-count="bug 排查"></span></button>
+              <button type="button" data-val="性能优化" aria-selected="false">性能优化<span class="popover__count" data-count="性能优化"></span></button>
+              <button type="button" data-val="需求实现" aria-selected="false">需求实现<span class="popover__count" data-count="需求实现"></span></button>
+            </div>
+          </div>
+
+          <div class="filter-wrap">
+            <button type="button" class="btn btn--sm" id="evOpenBtn" aria-haspopup="listbox" aria-expanded="false">未收口 ▾</button>
+            <div class="popover" id="evOpenPop" role="listbox" hidden>
+              <button type="button" data-val="open" aria-selected="true">未收口<span class="popover__count" data-count="open"></span></button>
+              <button type="button" data-val="closed" aria-selected="false">已收口<span class="popover__count" data-count="closed"></span></button>
+              <button type="button" data-val="all" aria-selected="false">全部状态<span class="popover__count" data-count="all-state"></span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 列表视图 -->
+        <div class="split" data-evview="list">
+          <div class="card ev-pane">
+            <div class="ev-search">
+              <input class="input" type="search" id="evSearch" placeholder="搜索事件名或编号…" aria-label="搜索事件" />
+            </div>
+            <div class="ev-scroll">
+              <div class="ev-list" role="tablist" aria-label="事件" id="evList">
+                <button type="button" class="ev-item" role="tab" aria-selected="true" data-stage="1">
+                  <span class="ev-item__title">#3 登录页白屏 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>3 篇</span><span>·</span><span>2 小时前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>3 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false" data-stage="2">
+                  <span class="ev-item__title">#4 列表滚动卡顿 <span class="badge badge--event">性能</span></span>
+                  <span class="ev-item__meta"><span>5 篇</span><span>·</span><span>1 天前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>5 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false" data-stage="3">
+                  <span class="ev-item__title">#5 导出 OOM <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>1 篇</span><span>·</span><span>5 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>1 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#6 搜索页空结果误报 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>2 篇</span><span>·</span><span>2 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>2 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#7 大文件上传超时 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>4 篇</span><span>·</span><span>3 天前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>4 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#8 视图成员丢失 <span class="badge badge--event">需求</span></span>
+                  <span class="ev-item__meta"><span>6 篇</span><span>·</span><span>4 天前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>6 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#9 文档移动回滚失败 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>2 篇</span><span>·</span><span>6 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>2 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#10 对话流式中断 <span class="badge badge--event">需求</span></span>
+                  <span class="ev-item__meta"><span>3 篇</span><span>·</span><span>8 天前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>3 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false" data-closed="1">
+                  <span class="ev-item__title">#11 定时同步漏跑 <span class="badge badge--event">性能</span></span>
+                  <span class="ev-item__meta"><span>2 篇</span><span>·</span><span>12 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>2 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false" data-closed="1">
+                  <span class="ev-item__title">#12 MCP 工具超时无提示 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>1 篇</span><span>·</span><span>15 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>1 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#13 检索阈值文档漂移 <span class="badge badge--event">需求</span></span>
+                  <span class="ev-item__meta"><span>3 篇</span><span>·</span><span>16 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>3 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#14 Group 树加载慢 <span class="badge badge--event">性能</span></span>
+                  <span class="ev-item__meta"><span>4 篇</span><span>·</span><span>18 天前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>4 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#15 导入进度条卡住 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>2 篇</span><span>·</span><span>20 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>2 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#16 备份还原 id 失配 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>5 篇</span><span>·</span><span>23 天前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>5 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#17 视图分桶顺序错乱 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>2 篇</span><span>·</span><span>26 天前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>2 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#18 冷热统计口径不一致 <span class="badge badge--event">需求</span></span>
+                  <span class="ev-item__meta"><span>4 篇</span><span>·</span><span>1 个月前</span><span>·</span><span class="vis vis--fts"><span class="vis__dot"></span>4 篇仅全文</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false">
+                  <span class="ev-item__title">#19 Web 会话七天失效 <span class="badge badge--event">需求</span></span>
+                  <span class="ev-item__meta"><span>3 篇</span><span>·</span><span>1 个月前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>3 篇不可检索</span></span>
+                </button>
+                <button type="button" class="ev-item" role="tab" aria-selected="false" data-closed="1">
+                  <span class="ev-item__title">#20 大文档切分丢行 <span class="badge badge--event">bug</span></span>
+                  <span class="ev-item__meta"><span>6 篇</span><span>·</span><span>2 个月前</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>6 篇不可检索</span></span>
+                </button>
+              </div>
+              <p class="ev-empty" id="evEmpty" hidden>没有匹配的事件</p>
+            </div>
+          </div>
+
+          <div class="card ev-detail">
+            <div class="ev-detail__body" id="evDetailBody">
+            <div class="ev-detail__head">
+              <div>
+                <h2 class="ev-detail__title" id="evDetailTitle">#3 登录页白屏</h2>
+                <p class="ev-detail__meta" id="evDetailMeta">bug 排查 · 当前「已定位」· 创建 2 天 · 关联 3 篇文档</p>
+              </div>
+              <span class="toolbar__spacer"></span>
+              <button type="button" class="btn btn--ai btn--sm" id="aiAnalyzeBtn" title="基于事件与关联文档，在已配置的 Git 仓库里定位相关代码">
+                <svg class="btn--ai__icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M6.4 1.6c.28 2.4 1.72 3.84 4.12 4.12-2.4.28-3.84 1.72-4.12 4.12C6.12 7.44 4.68 6 2.28 5.72 4.68 5.44 6.12 4 6.4 1.6Z"/>
+                  <path d="M11.9 9.2c.17 1.45 1.05 2.33 2.5 2.5-1.45.17-2.33 1.05-2.5 2.5-.17-1.45-1.05-2.33-2.5-2.5 1.45-.17 2.33-1.05 2.5-2.5Z" opacity=".62"/>
+                </svg>
+                AI 分析
+              </button>
+              <button type="button" class="btn btn--danger-ghost btn--sm" id="deleteEventBtn" disabled>删除事件</button>
+              <button type="button" class="btn btn--primary btn--sm" id="advanceStage">流转</button>
+            </div>
+
+            <ol class="stage-line" id="stageLine">
+              <li class="stage is-done" data-name="排查中"><span class="stage__dot">✓</span><span class="stage__label">排查中</span><span class="stage__cap">不可检索</span></li>
+              <li class="stage is-current" data-name="已定位"><span class="stage__dot"></span><span class="stage__label">已定位</span><span class="stage__cap">仅全文</span></li>
+              <li class="stage" data-name="修复中"><span class="stage__dot"></span><span class="stage__label">修复中</span><span class="stage__cap">仅全文</span></li>
+              <li class="stage" data-name="已关闭"><span class="stage__dot"></span><span class="stage__label">已关闭</span><span class="stage__cap">保留 · 语义+全文</span></li>
+            </ol>
+
+            <div class="notice notice--info">
+              <span class="notice__icon">i</span>
+              <span>当前阶段 <b>已定位</b>：3 篇文档中 <b>3 篇可全文检索</b>、<b>0 篇可语义检索</b>。语义检索不会把排查中的假设当成结论召回。</span>
+            </div>
+
+            <div>
+              <div class="subhead">关联文档</div>
+              <button type="button" class="docline" data-doc="登录页白屏排查记录">
+                <span class="docline__name">
+                  <span class="docline__title"><span>登录页白屏排查记录</span><span class="badge badge--temp">过程</span></span>
+                  <span class="docline__path">错误库/Web前端界面</span>
+                </span>
+                <span class="vis vis--fts"><span class="vis__dot"></span>仅全文</span>
+              </button>
+              <button type="button" class="docline" data-doc="登录态失效根因">
+                <span class="docline__name">
+                  <span class="docline__title"><span>登录态失效根因</span></span>
+                  <span class="docline__path">错误库/Web前端界面</span>
+                </span>
+                <span class="vis vis--fts"><span class="vis__dot"></span>仅全文</span>
+              </button>
+              <button type="button" class="docline" data-doc="cookie 过期策略修复">
+                <span class="docline__name">
+                  <span class="docline__title"><span>cookie 过期策略修复</span></span>
+                  <span class="docline__path">决策记录/登录态</span>
+                </span>
+                <span class="vis vis--fts"><span class="vis__dot"></span>仅全文</span>
+              </button>
+            </div>
+
+            <div>
+              <div class="subhead">
+                <span>参考文档</span>
+                <span class="subhead__note">外部引用 · 不随事件阶段变化</span>
+                <span class="toolbar__spacer"></span>
+                <button type="button" class="btn btn--sm" id="aiFindBtn">AI 查找</button>
+                <button type="button" class="btn btn--ghost btn--sm" id="manualAddBtn">＋ 添加</button>
+              </div>
+              <div id="refList"></div>
+            </div>
+
+            <div>
+              <div class="subhead">AI 同源操作（MCP）</div>
+              <pre class="code">// AI 与页面走同一个状态机，页面上的按钮只是这行的壳
+<b>ki_event_set_stage</b>({ scope: "kisearch-memory", event: "#3", stage: "修复中" })
+// → { ok: true, stage: "修复中", visibility: { fts: 3, dense: 0 } }</pre>
+            </div>
+            </div>
+
+            <div class="ev-detail__blank" id="evDetailBlank" hidden>
+              <strong>未选择事件</strong>
+              <span>从左侧挑一个，或点右上角「＋ 新建事件」</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 类型管理视图 -->
+        <div data-evview="types" hidden>
+          <div class="card">
+            <div class="type-head">
+              <div class="seg" role="group" aria-label="事件类型">
+                <button type="button" aria-pressed="true">bug 排查</button>
+                <button type="button" aria-pressed="false">性能优化</button>
+                <button type="button" aria-pressed="false">需求实现</button>
+              </div>
+              <span class="toolbar__spacer"></span>
+              <span class="hint" id="typeHeadHint">阶段可配</span>
+              <button type="button" class="btn btn--sm" data-open-modal="newEventType">＋ 新建类型</button>
+              <button type="button" class="btn btn--danger-ghost btn--sm" id="deleteTypeBtn">删除类型</button>
+            </div>
+
+            <table class="tbl">
+              <colgroup><col style="width: 160px" /><col style="width: 290px" /><col /><col style="width: 90px" /></colgroup>
+              <thead>
+                <tr><th>阶段（有序）</th><th>检索可见性</th><th>进入时动作</th><th class="col-act">操作</th></tr>
+              </thead>
+              <tbody>
+                <tr class="stage-row">
+                  <td><span class="stage-row__idx">1</span>排查中</td>
+                  <td>
+                    <div class="seg seg--vis" role="group" aria-label="排查中 检索可见性">
+                      <button type="button" aria-pressed="false">语义+全文</button>
+                      <button type="button" aria-pressed="false">仅全文</button>
+                      <button type="button" aria-pressed="true">不可检索</button>
+                    </div>
+                  </td>
+                  <td class="cell-muted">保留</td>
+                  <td class="col-act"><button type="button" class="btn btn--ghost btn--sm" disabled>停用</button></td>
+                </tr>
+                <tr class="stage-row">
+                  <td><span class="stage-row__idx">2</span>已定位</td>
+                  <td>
+                    <div class="seg seg--vis" role="group" aria-label="已定位 检索可见性">
+                      <button type="button" aria-pressed="false">语义+全文</button>
+                      <button type="button" aria-pressed="true">仅全文</button>
+                      <button type="button" aria-pressed="false">不可检索</button>
+                    </div>
+                  </td>
+                  <td class="cell-muted">保留</td>
+                  <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">停用</button></td>
+                </tr>
+                <tr class="stage-row" data-current>
+                  <td><span class="stage-row__idx">3</span>修复中</td>
+                  <td>
+                    <div class="seg seg--vis" role="group" aria-label="修复中 检索可见性">
+                      <button type="button" aria-pressed="false">语义+全文</button>
+                      <button type="button" aria-pressed="true">仅全文</button>
+                      <button type="button" aria-pressed="false">不可检索</button>
+                    </div>
+                  </td>
+                  <td class="cell-muted">保留</td>
+                  <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">停用</button></td>
+                </tr>
+                <tr class="stage-row">
+                  <td><span class="stage-row__idx">4</span>已关闭</td>
+                  <td>
+                    <div class="seg seg--vis" role="group" aria-label="已关闭 检索可见性">
+                      <button type="button" aria-pressed="true">语义+全文</button>
+                      <button type="button" aria-pressed="false">仅全文</button>
+                      <button type="button" aria-pressed="false">不可检索</button>
+                    </div>
+                  </td>
+                  <td class="cell-muted">保留</td>
+                  <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">停用</button></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style="padding: 12px 16px; border-top: 1px solid var(--ki-color-border); display: grid; gap: 8px;">
+              <button type="button" class="btn btn--sm" style="justify-self: start" data-open-modal="stage">＋ 追加阶段</button>
+              <p class="hint">
+                <b>阶段只能追加、不能删除</b>：已有事件停在某阶段后，删掉定义会留下悬空状态。要废弃某个阶段请用「停用」——
+                新事件不再进入，老事件可停留，并提供「迁移到 X」的引导。
+              </p>
+            </div>
+          </div>
+
+          <p class="demo-note" style="margin-top: 12px">
+            <b>为什么是三档而不是开关</b>：<code>ki_search</code> 默认 <code>hybrid</code>（语义 + 全文）。
+            只关语义（dense），全文仍会命中并返回给 AI ——「不向量化 = 查不到」不成立。
+            三档对应：<b>语义+全文</b>（完整）/ <b>仅全文</b>（关键词能找回、不主动语义推送）/
+            <b>不可检索</b>（两者都摘，但浏览页仍可见）。第三档还需连
+            <code>ki-relation</code>、<code>ki-path</code> 两类辅助向量一起摘，漏一类就会被路径兜底召回。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ P3 回收站 ═══════════ -->
+    <section class="page" data-page="trash">
+      <header class="page-head">
+        <button type="button" class="btn btn--ghost btn--sm sidebar-toggle" data-toggle-sidebar>☰</button>
+        <p class="page-head__path">
+          <span class="badge badge--kb">kisearch-memory</span>
+          <span class="page-head__hint">回收站</span>
+          <span class="page-head__sep">·</span>
+          <span class="page-head__group" id="trashHeadText">保留 7 天，到期自动清除</span>
+        </p>
+        <div class="page-head__actions">
+          <button type="button" class="btn btn--sm" data-open-modal="trashSettings">回收站设置</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="按删除原因筛选" id="trashFilter">
+            <button type="button" data-reason="all" aria-pressed="true">全部 <span id="trashFilterAll">7</span></button>
+            <button type="button" data-reason="临时到期" aria-pressed="false">临时到期</button>
+            <button type="button" data-reason="事件关闭" aria-pressed="false">事件关闭</button>
+            <button type="button" data-reason="手动删除" aria-pressed="false">手动删除</button>
+          </div>
+          <span class="toolbar__spacer"></span>
+          <button type="button" class="btn btn--sm" id="trashRestoreSel">批量恢复</button>
+          <button type="button" class="btn btn--danger btn--sm" id="trashPurgeSel">彻底删除</button>
+        </div>
+
+        <div class="card">
+          <table class="tbl" id="trashTable">
+            <colgroup>
+              <col class="col-check" /><col /><col class="col-group" /><col style="width: 104px" /><col style="width: 96px" /><col style="width: 168px" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="trashCheckAll" aria-label="全选" /></th>
+                <th>文档名</th>
+                <th class="col-group">原 Group</th>
+                <th>删除原因</th>
+                <th>剩余</th>
+                <th style="text-align: right">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="checkbox" aria-label="选择 登录页白屏排查记录" /></td>
+                <td><div class="cell-name"><span class="cell-name__text trash-name--strike">登录页白屏排查记录</span></div></td>
+                <td class="col-group"><span class="cell-muted">错误库/Web前端界面</span></td>
+                <td><span class="badge badge--event">事件关闭</span></td>
+                <td><span class="days days--calm">剩 6 天</span></td>
+                <td style="text-align: right; white-space: nowrap">
+                  <button type="button" class="btn btn--sm">恢复</button>
+                  <button type="button" class="btn btn--ghost btn--sm">沉淀为 wiki</button>
+                </td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" aria-label="选择 cookie 过期策略" /></td>
+                <td><div class="cell-name"><span class="cell-name__text trash-name--strike">cookie 过期策略</span></div></td>
+                <td class="col-group"><span class="cell-muted">错误库/Web前端界面</span></td>
+                <td><span class="badge badge--temp">临时到期</span></td>
+                <td><span class="days days--hot">剩 2 天</span></td>
+                <td style="text-align: right; white-space: nowrap">
+                  <button type="button" class="btn btn--sm">恢复</button>
+                  <button type="button" class="btn btn--ghost btn--sm">沉淀为 wiki</button>
+                </td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" aria-label="选择 导入并发走查" /></td>
+                <td><div class="cell-name"><span class="cell-name__text trash-name--strike">导入并发走查记录</span></div></td>
+                <td class="col-group"><span class="cell-muted">项目踩坑点</span></td>
+                <td><span class="badge badge--temp">临时到期</span></td>
+                <td><span class="days days--calm">剩 5 天</span></td>
+                <td style="text-align: right; white-space: nowrap">
+                  <button type="button" class="btn btn--sm">恢复</button>
+                  <button type="button" class="btn btn--ghost btn--sm">沉淀为 wiki</button>
+                </td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" aria-label="选择 重复文档副本" /></td>
+                <td><div class="cell-name"><span class="cell-name__text trash-name--strike">接口信息-02（重复副本）</span></div></td>
+                <td class="col-group"><span class="cell-muted">接口信息/知识索引导入</span></td>
+                <td><span class="badge badge--muted">手动删除</span></td>
+                <td><span class="days days--calm">剩 7 天</span></td>
+                <td style="text-align: right; white-space: nowrap">
+                  <button type="button" class="btn btn--sm">恢复</button>
+                  <button type="button" class="btn btn--ghost btn--sm">沉淀为 wiki</button>
+                </td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" aria-label="选择 旧版热力图方案" /></td>
+                <td><div class="cell-name"><span class="cell-name__text trash-name--strike">旧版冷热徽标方案对比</span></div></td>
+                <td class="col-group"><span class="cell-muted">决策记录/浏览页头部</span></td>
+                <td><span class="badge badge--event">事件关闭</span></td>
+                <td><span class="days days--hot">剩 1 天</span></td>
+                <td style="text-align: right; white-space: nowrap">
+                  <button type="button" class="btn btn--sm">恢复</button>
+                  <button type="button" class="btn btn--ghost btn--sm">沉淀为 wiki</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="foot-note" id="trashFoot">
+          <span class="notice__icon">⚠</span>
+          <span>删除时索引已摘除（语义、全文、路径、关系四类），所以回收站里的文档<strong>不会污染检索</strong>；<strong>恢复会重建索引（数秒）</strong>，这是可恢复性必须付的代价。</span>
+        </div>
+
+        <p class="demo-note">
+          <b>「沉淀为 wiki」为什么放在这里、而不是删除前拦截</b>：删除时用户只想清干净，不想做知识整理；
+          放在回收站里由人主动触发，既不阻塞删除，也天然有 7 天窗口——真没用的直接到期清除，有价值的再提炼成 wiki。
+          AI 提炼结果先落草稿，需人工确认后才入库，避免用「低质摘要」换掉「过时报告」。
+        </p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ═══ 文档抽屉（复刻浏览页「点文档名 → 右侧阅读」） ═══ -->
+<div class="drawer" id="docDrawer" hidden>
+  <div class="drawer__scrim" data-close-drawer></div>
+  <aside class="drawer__panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <header class="drawer__head">
+      <div style="min-width: 0">
+        <h3 class="drawer__title" id="drawerTitle">登录页白屏排查记录</h3>
+        <p class="drawer__meta" id="drawerMeta">kisearch-memory · 错误库/Web前端界面</p>
+      </div>
+      <span class="toolbar__spacer"></span>
+      <button type="button" class="btn btn--ghost btn--sm" data-close-drawer aria-label="关闭">✕</button>
+    </header>
+    <div class="drawer__body" id="drawerBody"></div>
+  </aside>
+</div>
+
+<!-- ═══ 弹窗（多个入口共用一套壳，内容按 data-modal-panel 切换） ═══ -->
+<div class="modal" id="modal" hidden>
+  <div class="modal__scrim" data-close-modal></div>
+  <div class="modal__card" role="dialog" aria-modal="true" aria-label="新建" id="modalCard">
+
+    <!-- 追加阶段 -->
+    <div data-modal-panel="stage" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">追加阶段</h3>
+        <p class="modal__sub">类型「bug 排查」· 现有 4 个阶段，新阶段将排在末尾</p>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <label class="field__label" for="stageName">阶段名称</label>
+          <input class="input" id="stageName" placeholder="如「已验证」" />
+        </div>
+        <div class="field">
+          <span class="field__label">检索可见性</span>
+          <div class="seg seg--vis" role="group" aria-label="新阶段检索可见性">
+            <button type="button" aria-pressed="false">语义+全文</button>
+            <button type="button" aria-pressed="true">仅全文</button>
+            <button type="button" aria-pressed="false">不可检索</button>
+          </div>
+          <p class="field__hint">决定这个阶段下的关联文档能否被 <code>ki_search</code> 召回。</p>
+        </div>
+        <div class="field">
+          <span class="field__label">进入时动作</span>
+          <div class="seg" role="group" aria-label="进入时动作">
+            <button type="button" aria-pressed="true">保留在库</button>
+            <button type="button" aria-pressed="false">移入回收站</button>
+          </div>
+          <p class="field__hint">选「移入回收站」= 事件走到这一步时，关联文档自动进回收站（7 天内可恢复）。</p>
+        </div>
+        <p class="field__hint">阶段只能追加、不能删除：已有事件停在该阶段后，删定义会留下悬空状态。要废弃请用「停用」。</p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="stageConfirm">追加阶段</button>
+      </div>
+    </div>
+
+    <!-- 新建事件 -->
+    <div data-modal-panel="newEvent" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">新建事件</h3>
+        <p class="modal__sub">事件把一批文档绑在一条处理链上，阶段决定它们能不能被检索到</p>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <label class="field__label" for="eventTitle">事件标题</label>
+          <input class="input" id="eventTitle" placeholder="如「登录页白屏」" />
+        </div>
+        <div class="field">
+          <span class="field__label">事件类型</span>
+          <div class="seg" role="group" aria-label="事件类型" id="eventType">
+            <button type="button" data-type="bug" aria-pressed="true">bug 排查</button>
+            <button type="button" data-type="perf" aria-pressed="false">性能优化</button>
+            <button type="button" data-type="req" aria-pressed="false">需求实现</button>
+          </div>
+          <p class="field__hint">类型决定阶段列表与每阶段的检索可见性。</p>
+        </div>
+        <div class="field">
+          <span class="field__label">起始阶段</span>
+          <div class="stage-preview">
+            <span>① 排查中</span>
+            <span class="vis vis--hidden"><span class="vis__dot"></span>不可检索</span>
+            <span class="field__hint" style="margin-left: auto">新挂的文档默认不参与语义检索</span>
+          </div>
+        </div>
+        <p class="field__hint">创建后到详情里「关联文档」挂上要跟踪的文档；事件收口时按终态动作决定保留还是移入回收站。</p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="eventConfirm">创建事件</button>
+      </div>
+    </div>
+
+    <!-- AI 分析（占位说明） -->
+    <div data-modal-panel="aiAnalyze" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">AI 分析</h3>
+        <p class="modal__sub">基于事件描述与关联文档，在 Git 仓库里定位相关代码</p>
+      </div>
+      <div class="modal__body">
+        <p class="field__hint">
+          四步：提取事件线索 → 在仓库里 <code>grep</code> / <code>find</code> 定位 →
+          读关键片段 → 汇总成<b>待确认</b>的候选代码位置。
+        </p>
+        <div class="field">
+          <span class="field__label">前置条件</span>
+          <ul class="ai-prereq">
+            <li data-ok>Git 数据源（已支持）</li>
+            <li>事件实体（未落地）</li>
+            <li>4 个只读文件工具（待开发）</li>
+          </ul>
+        </div>
+        <div class="notice notice--info">
+          <span class="notice__icon">i</span>
+          <span>只会<b>读</b>代码（read / grep / find / ls），不会修改文件，也不会执行命令。</span>
+        </div>
+        <p class="field__hint">需求文档：REQ-20261113-003 · 状态 草案</p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>知道了</button>
+      </div>
+    </div>
+
+    <!-- AI 查找参考文档 -->
+    <div data-modal-panel="findRef" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">AI 查找相关文档</h3>
+        <p class="modal__sub" id="findRefSub">基于事件描述与关联文档检索知识库</p>
+      </div>
+      <div class="modal__body">
+        <div class="ai-proc">
+          <button type="button" class="ai-proc__head" id="aiProcToggle" aria-expanded="true">
+            <span class="ai-proc__spin" id="aiProcSpin"></span>
+            <span class="ai-proc__title" id="aiProcTitle">正在检索…</span>
+            <span class="ai-proc__time" id="aiProcTime"></span>
+            <span class="ai-proc__chev" aria-hidden="true">▾</span>
+          </button>
+          <ol class="ai-proc__steps" id="aiProcSteps"></ol>
+        </div>
+
+        <div id="aiResultWrap" hidden style="display: flex; flex-direction: column; gap: var(--ki-space-3)">
+          <div class="cand-list" id="candList"></div>
+          <p class="field__hint">
+            默认只勾选高相关项。加入后只建立<b>引用</b> —— 不会修改这些文档的分类、可见性，也不会删它们。
+          </p>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="findRefConfirm" disabled>检索中…</button>
+      </div>
+    </div>
+
+    <!-- 手动添加参考文档 -->
+    <div data-modal-panel="addRef" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">添加参考文档</h3>
+        <p class="modal__sub">按文档名或 Group 路径搜索知识库</p>
+      </div>
+      <div class="modal__body">
+        <input class="input" id="refSearch" type="search" placeholder="搜索文档名 / Group 路径…" autocomplete="off" />
+        <div class="cand-list" id="refSearchList"></div>
+        <p class="field__hint">只建立引用，不修改文档本身的分类与可见性。</p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="addRefConfirm">加入所选</button>
+      </div>
+    </div>
+
+    <!-- 流转事件 -->
+    <div data-modal-panel="transition" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">流转事件</h3>
+        <p class="modal__sub" id="transSub">#3 登录页白屏 · 当前「已定位」</p>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <span class="field__label">流转到</span>
+          <div class="stage-picker" id="stagePicker" role="group" aria-label="选择目标阶段"></div>
+        </div>
+        <p class="field__hint">
+          默认选中下一个阶段。选已走过的阶段等于<b>回退</b>，关联文档的检索可见性会一并回退。
+        </p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="transitionConfirm">确认流转</button>
+      </div>
+    </div>
+
+    <!-- 删除事件 -->
+    <div data-modal-panel="deleteEvent" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">删除事件</h3>
+        <p class="modal__sub" id="delEventSub">#3 登录页白屏</p>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <span class="field__label">关联的 <span id="delEventDocCount">3</span> 篇文档怎么处理</span>
+          <div class="seg" role="group" aria-label="关联文档处理" id="delEventDocMode">
+            <button type="button" data-mode="wiki" aria-pressed="true">改为 wiki 保留</button>
+            <button type="button" data-mode="trash" aria-pressed="false">移入回收站</button>
+          </div>
+          <p class="field__hint">
+            事件只是文档的分类宿主 —— <b>删事件不等于删文档</b>。选「改为 wiki」= 文档永久留在库里；
+            选「移入回收站」= 7 天内可恢复。
+          </p>
+        </div>
+        <div class="notice">
+          <span class="notice__icon">⚠</span>
+          <span>事件本身不可恢复，阶段流转记录一并消失。</span>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--danger" id="deleteEventConfirm">删除事件</button>
+      </div>
+    </div>
+
+    <!-- 删除类型 -->
+    <div data-modal-panel="deleteType" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">删除类型</h3>
+        <p class="modal__sub" id="delTypeSub">性能优化</p>
+      </div>
+      <div class="modal__body">
+        <div class="notice" id="delTypeBlocked" hidden>
+          <span class="notice__icon">⚠</span>
+          <span id="delTypeBlockedText"></span>
+        </div>
+        <p class="field__hint">删除类型只影响阶段模板，不会删除任何文档。已按该类型创建的事件需要先处理掉。</p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--danger" id="deleteTypeConfirm">删除类型</button>
+      </div>
+    </div>
+
+    <!-- 回收站设置 -->
+    <div data-modal-panel="trashSettings" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">回收站设置</h3>
+        <p class="modal__sub">作用于当前知识库</p>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <span class="field__label">保留天数</span>
+          <div class="seg" role="group" aria-label="保留天数" id="trashKeepDays">
+            <button type="button" data-days="3" aria-pressed="false">3 天</button>
+            <button type="button" data-days="7" aria-pressed="true">7 天</button>
+            <button type="button" data-days="14" aria-pressed="false">14 天</button>
+            <button type="button" data-days="30" aria-pressed="false">30 天</button>
+          </div>
+          <p class="field__hint">改小之后，超出新天数的条目会在下一次清理时被移除。</p>
+        </div>
+        <div class="field">
+          <span class="field__label">到期处理</span>
+          <div class="seg" role="group" aria-label="到期处理" id="trashExpireAction">
+            <button type="button" data-act="purge" aria-pressed="true">自动清除</button>
+            <button type="button" data-act="notify" aria-pressed="false">仅提醒，不自动删</button>
+          </div>
+          <p class="field__hint">选「仅提醒」时，到期条目会标红并一直留着，直到你手动彻底删除。</p>
+        </div>
+        <div class="notice notice--info">
+          <span class="notice__icon">i</span>
+          <span>删除时索引（语义 / 全文 / 路径 / 关系四类）已立即摘除，回收站里的文档不会污染检索；恢复要重建索引，需要数秒。这项不可关闭。</span>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="trashSettingsSave">保存</button>
+      </div>
+    </div>
+
+    <!-- 沉淀为 wiki -->
+    <div data-modal-panel="precipitate" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">沉淀为 wiki</h3>
+        <p class="modal__sub" id="precipSub">登录页白屏排查记录</p>
+      </div>
+      <div class="modal__body">
+        <p class="field__hint">
+          AI 先提炼这份文档里值得长期保留的结论，生成<b>草稿</b>；你确认后才写入 wiki。
+        </p>
+        <div class="field">
+          <label class="field__label" for="precipTarget">写入到</label>
+          <input class="input" id="precipTarget" value="错误库/Web前端界面" />
+        </div>
+        <div class="notice">
+          <span class="notice__icon">⚠</span>
+          <span>提炼会丢掉过程细节（排查步骤、试错记录），只留可复用结论；原文仍在回收站，保留期内可取回。</span>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="precipConfirm">生成草稿</button>
+      </div>
+    </div>
+
+    <!-- 新建分类 -->
+    <div data-modal-panel="newCategory" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">新建分类</h3>
+        <p class="modal__sub">把常用的「删除时机」存成预设，写入文档时直接选</p>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <label class="field__label" for="catName">分类名称</label>
+          <input class="input" id="catName" placeholder="如「周报临时」「性能报告」" />
+        </div>
+        <div class="field">
+          <span class="field__label">删除时机</span>
+          <div class="seg" role="group" aria-label="删除时机" id="catKind">
+            <button type="button" data-kind="wiki" aria-pressed="false">永久保留</button>
+            <button type="button" data-kind="temp" aria-pressed="true">到期删除</button>
+            <button type="button" data-kind="event" aria-pressed="false">跟随事件</button>
+          </div>
+        </div>
+        <div class="field" id="ttlField">
+          <label class="field__label" for="catTtl">有效期</label>
+          <select id="catTtl">
+            <option>7 天</option>
+            <option selected>30 天</option>
+            <option>90 天</option>
+            <option>自定义…</option>
+          </select>
+        </div>
+        <p class="field__hint">底层仍是 <b>wiki / 临时 / 事件</b> 三类，这里只是把它们连同期限一起存成预设；预设删除不会影响已按它分类的文档。</p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" data-close-modal>创建分类</button>
+      </div>
+    </div>
+
+    <!-- 新建事件类型 -->
+    <div data-modal-panel="newEventType" hidden>
+      <div class="modal__head">
+        <h3 class="modal__title">新建事件类型</h3>
+        <p class="modal__sub">先建两条骨架阶段，创建后可逐个追加</p>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <label class="field__label" for="typeName">类型名称</label>
+          <input class="input" id="typeName" placeholder="如「线上事故」「技术调研」" />
+        </div>
+        <div class="field">
+          <span class="field__label">阶段（按回车逐个添加，可拖动排序）</span>
+          <div class="stage-builder" id="stageBuilder" aria-label="阶段列表"></div>
+          <input class="input" id="stageInput" placeholder="输入阶段名后按回车，如「排查中」" autocomplete="off" />
+          <p class="field__hint">先输入的排最前，最后一枚自动为「终态」。点圆点按下面三档循环切换：</p>
+          <div class="vis-legend">
+            <span class="vis vis--full"><span class="vis__dot"></span>语义+全文</span>
+            <span class="vis vis--fts"><span class="vis__dot"></span>仅全文</span>
+            <span class="vis vis--hidden"><span class="vis__dot"></span>不可检索</span>
+          </div>
+          <p class="field__hint">决定这个阶段下的文档能否被 <code>ki_search</code> 召回。</p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="reuseType">复用已有类型的阶段</label>
+          <select id="reuseType">
+            <option value="">不复用，自己录入</option>
+          </select>
+          <p class="field__hint">
+            复用是<b>复制一份副本</b>，此后两边各改各的；源类型后续调整阶段，不会影响这个新类型。
+          </p>
+        </div>
+        <div class="field">
+          <span class="field__label">终态动作（最后一阶段）</span>
+          <div class="seg" role="group" aria-label="终态动作" id="endAction">
+            <button type="button" data-act="keep" aria-pressed="true">保留在库</button>
+            <button type="button" data-act="trash" aria-pressed="false">移入回收站</button>
+          </div>
+          <p class="field__hint">选「移入回收站」= 事件走到终态时，关联文档自动进回收站（7 天内可恢复）。</p>
+        </div>
+        <p class="field__hint">新建类型后，它会出现在事件列表的「类型」筛选里；事件可随时切换类型，已有关联文档不受影响。</p>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-close-modal>取消</button>
+        <button type="button" class="btn btn--primary" id="typeConfirm">创建类型</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  /* ── 分段控件：全局组内单选 ─────────────────────────
+     之前只给 .seg--vis 和弹窗内的 seg 绑了，导致「事件类型」「删除时机」这类
+     裸 .seg 点了不动（用户反馈「起始阶段改不了」就是这个症状的一类）。
+     这里统一兜底；#catFilter / [data-evtab] 在此基础上另有业务逻辑。 */
+  document.querySelectorAll('.seg').forEach((group) => {
+    const btns = [...group.querySelectorAll('button')];
+    btns.forEach((b) => {
+      b.addEventListener('click', () => {
+        btns.forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true');
+        // 新建分类：删除时机决定是否显示有效期
+        if (group.id === 'catKind') {
+          document.getElementById('ttlField').hidden = b.dataset.kind !== 'temp';
+        }
+      });
+    });
+  });
+
+  /* ── 页面切换 ───────────────────────────────────────── */
+  const pages = [...document.querySelectorAll('.page')];
+  const navItems = [...document.querySelectorAll('.nav__item[data-goto]')];
+  const sidebar = document.getElementById('sidebar');
+
+  function go(name) {
+    pages.forEach((p) => {
+      if (p.dataset.page === name) p.setAttribute('data-active', '');
+      else p.removeAttribute('data-active');
+    });
+    navItems.forEach((b) => {
+      if (b.dataset.goto === name) b.setAttribute('aria-current', 'page');
+      else b.removeAttribute('aria-current');
+    });
+    // 窄屏切换后收起抽屉
+    sidebar.removeAttribute('data-open');
+    // 事件页在 display:none 下量不到高度，切过来后重算一次滚动渐隐
+    if (name === 'events') requestAnimationFrame(syncEvFade);
+  }
+
+  navItems.forEach((b) => b.addEventListener('click', () => go(b.dataset.goto)));
+  document.querySelectorAll('[data-toggle-sidebar]').forEach((b) => {
+    b.addEventListener('click', () => {
+      if (sidebar.hasAttribute('data-open')) sidebar.removeAttribute('data-open');
+      else sidebar.setAttribute('data-open', '');
+    });
+  });
+
+  /* ── 主题切换 ───────────────────────────────────────── */
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+    themeBtn.textContent = dark ? '切换暗色' : '切换亮色';
+  });
+
+  /* ── P1 分类筛选 + 选择 ─────────────────────────────── */
+  const catRows = [...document.querySelectorAll('#catTable tbody tr')];
+  const catChecks = catRows.map((r) => r.querySelector('input[type="checkbox"]'));
+  const checkAll = document.getElementById('checkAll');
+  const selbar = document.getElementById('catSelbar');
+  const selCount = document.getElementById('catSelCount');
+
+  function visibleRows() {
+    return catRows.filter((r) => !r.hidden);
+  }
+
+  function syncSel() {
+    const names = [];
+    catRows.forEach((r, i) => {
+      const on = catChecks[i].checked;
+      if (on) r.setAttribute('data-checked', ''); else r.removeAttribute('data-checked');
+      if (on) names.push(i);
+    });
+    selCount.textContent = String(names.length);
+    selbar.hidden = names.length === 0;
+    const vis = visibleRows();
+    const visChecked = vis.filter((r) => r.querySelector('input[type="checkbox"]').checked).length;
+    checkAll.checked = vis.length > 0 && visChecked === vis.length;
+    checkAll.indeterminate = visChecked > 0 && visChecked < vis.length;
+  }
+
+  catChecks.forEach((c) => c.addEventListener('change', syncSel));
+
+  checkAll.addEventListener('change', () => {
+    const on = checkAll.checked;
+    visibleRows().forEach((r) => { r.querySelector('input[type="checkbox"]').checked = on; });
+    syncSel();
+  });
+
+  const catEmpty = document.getElementById('catEmpty');
+
+  function applyCatFilter(cat, label) {
+    catRows.forEach((r) => { r.hidden = cat !== 'all' && r.dataset.cat !== cat; });
+    const n = visibleRows().length;
+    catEmpty.hidden = n > 0;
+    if (n === 0) {
+      catEmpty.querySelector('.empty__title').textContent = `没有匹配「${label}」分类的文档`;
+    }
+    syncSel();
+  }
+
+  document.querySelectorAll('#catFilter button').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#catFilter button').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      applyCatFilter(b.dataset.cat, b.textContent.replace(/\s*\d+$/, '').trim());
+    });
+  });
+
+  syncSel();
+
+  /* 按剩余天数排序：无期限的 wiki 视作 Infinity，永远排在最后 */
+  let catSortAsc = true;
+  document.getElementById('catSortBtn').addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    const tbody = document.querySelector('#catTable tbody');
+    const rows = [...tbody.querySelectorAll('tr')];
+
+    const remainOf = (tr) => {
+      const m = (tr.querySelector('.cell-term')?.textContent || '').match(/剩\s*(\d+)\s*天/);
+      return m ? Number(m[1]) : Number.POSITIVE_INFINITY;
+    };
+
+    rows.sort((a, b) => {
+      const x = remainOf(a);
+      const y = remainOf(b);
+      if (x === y) return 0;
+      return catSortAsc ? x - y : y - x;
+    });
+    rows.forEach((tr) => tbody.appendChild(tr));
+
+    catSortAsc = !catSortAsc;
+    btn.textContent = catSortAsc ? '按剩余天数排序（远→近）' : '按剩余天数排序（近→远）';
+  });
+
+  /* ── P2 事件：tab 切换 + 阶段推进 ───────────────────── */
+  document.querySelectorAll('[data-evtab]').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-evtab]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      const tab = b.dataset.evtab;
+      document.querySelectorAll('[data-evview]').forEach((v) => {
+        v.hidden = v.dataset.evview !== tab;
+      });
+      if (tab === 'list') requestAnimationFrame(syncEvFade);
+    });
+  });
+
+  const stageLine = document.getElementById('stageLine');
+  const advanceBtn = document.getElementById('advanceStage');
+  const deleteEventBtn = document.getElementById('deleteEventBtn');
+
+  // 阶段线与可见性的对应（与页面上写死的那条 bug 排查链一致）
+  const STAGE_VIS = ['不可检索', '仅全文', '仅全文', '语义+全文'];
+  const STAGE_VIS_CLS = ['vis--hidden', 'vis--fts', 'vis--fts', 'vis--full'];
+
+  const stageNodes = () => [...stageLine.querySelectorAll('.stage')];
+  const stageNames = () => stageNodes().map((s) => s.dataset.name);
+
+  function paintStageLine(idx) {
+    stageNodes().forEach((s, i) => {
+      s.classList.toggle('is-done', i < idx);
+      s.classList.toggle('is-current', i === idx);
+      const dot = s.querySelector('.stage__dot');
+      if (dot) dot.textContent = i < idx ? '✓' : '';
+    });
+  }
+
+  /* 选中事件后同步：阶段线 / meta / 删除可用性
+     ★ 未到终态一律禁止删除 —— 事件没走完就删，关联文档会失去宿主 */
+  function syncEventState(btn) {
+    const total = stageNodes().length;
+    const idx = Number(btn?.dataset.stage ?? 0);
+    paintStageLine(idx);
+
+    const isClosed = idx >= total - 1;
+    document.getElementById('evDetailMeta').textContent =
+      `${btn?.dataset.type || 'bug 排查'} · 当前「${stageNames()[idx] || '—'}」`
+      + ` · 关联 ${document.querySelectorAll('#evDetailBody button.docline:not(.docline--ref)').length} 篇`
+      + ` · 参考 ${refDocs.length} 篇`;
+
+    deleteEventBtn.disabled = !isClosed;
+    deleteEventBtn.title = isClosed ? '删除后事件不可恢复' : '事件未关闭，先流转到终态才能删除';
+
+    // 关联文档行的可见性也归阶段管（否则详情里会出现两套说法）
+    document.querySelectorAll('#evDetailBody button.docline').forEach((row) => {
+      const visEl = row.querySelector('.vis');
+      if (!visEl) return;
+      visEl.className = `vis ${STAGE_VIS_CLS[idx]}`;
+      visEl.innerHTML = `<span class="vis__dot"></span>${STAGE_VIS[idx]}`;
+    });
+
+    const docs = btn?.querySelector('.ev-item__meta')?.textContent.match(/(\d+)\s*篇/)?.[1] || '3';
+    const info = document.querySelector('#evDetailBody .notice--info');
+    if (info) {
+      info.innerHTML = `<span class="notice__icon">i</span><span>当前阶段 <b>${stageNames()[idx]}</b>：
+        ${docs} 篇文档的检索可见性为 <b>${STAGE_VIS[idx]}</b>。</span>`;
+    }
+  }
+
+  /* ── 流转：二次确认，默认下一阶段，也可手选（含回退） ── */
+  let transTarget = null;
+  let transFrom = null;
+
+  function syncTransConfirm() {
+    const btn = document.getElementById('transitionConfirm');
+    const same = transTarget === transFrom;
+    btn.disabled = same;
+    btn.textContent = same ? '已在当前阶段' : '确认流转';
+  }
+
+  function openTransition() {
+    const sel = document.querySelector('#evList .ev-item[aria-selected="true"]');
+    const names = stageNames();
+    const cur = Number(sel?.dataset.stage ?? 0);
+
+    document.getElementById('transSub').textContent =
+      `${sel ? sel.querySelector('.ev-item__title').textContent.replace(/\s+/g, ' ').trim() : '事件'} · 当前「${names[cur]}」`;
+
+    transFrom = cur;
+    transTarget = cur + 1 < names.length ? cur + 1 : cur;
+
+    const picker = document.getElementById('stagePicker');
+    picker.innerHTML = '';
+    names.forEach((n, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'stage-option';
+      b.dataset.idx = String(i);
+      b.setAttribute('aria-pressed', String(i === transTarget));
+      b.disabled = i === cur;
+      const tag = i === cur ? '当前' : i === cur + 1 ? '下一步' : i < cur ? '回退' : '';
+      b.innerHTML = `<span class="stage-option__dot"></span><span>${n}</span>
+        <span class="stage-option__tag">${tag}</span>`;
+      b.addEventListener('click', () => {
+        transTarget = i;
+        picker.querySelectorAll('.stage-option').forEach((x) =>
+          x.setAttribute('aria-pressed', String(Number(x.dataset.idx) === i)));
+        syncTransConfirm();
+      });
+      picker.appendChild(b);
+    });
+
+    syncTransConfirm();
+    openModal('transition');
+  }
+
+  advanceBtn.addEventListener('click', openTransition);
+
+  document.getElementById('transitionConfirm').addEventListener('click', () => {
+    const sel = document.querySelector('#evList .ev-item[aria-selected="true"]');
+    if (!sel || transTarget === null) return;
+
+    sel.dataset.stage = String(transTarget);
+
+    // 列表项上的可见性提示跟着阶段走
+    const visEl = sel.querySelector('.ev-item__meta .vis');
+    if (visEl) {
+      const docs = sel.querySelector('.ev-item__meta').textContent.match(/(\d+)\s*篇/)?.[1] || '0';
+      visEl.className = `vis ${STAGE_VIS_CLS[transTarget]}`;
+      visEl.innerHTML = `<span class="vis__dot"></span>${docs} 篇${STAGE_VIS[transTarget]}`;
+    }
+
+    syncEventState(sel);
+    closeModal();
+  });
+
+  /* ── P2 类型管理：可见性三档单选 ────────────────────── */
+  document.querySelectorAll('.seg--vis').forEach((group) => {
+    const btns = [...group.querySelectorAll('button')];
+    btns.forEach((b) => {
+      b.addEventListener('click', () => {
+        btns.forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true');
+      });
+    });
+  });
+
+  /* ── P3 回收站选择 ──────────────────────────────────── */
+  const trashRows = [...document.querySelectorAll('#trashTable tbody tr')];
+  const trashChecks = trashRows.map((r) => r.querySelector('input[type="checkbox"]'));
+  const trashAll = document.getElementById('trashCheckAll');
+
+  function syncTrash() {
+    const n = trashChecks.filter((c) => c.checked).length;
+    trashAll.checked = n === trashChecks.length;
+    trashAll.indeterminate = n > 0 && n < trashChecks.length;
+    trashRows.forEach((r, i) => {
+      if (trashChecks[i].checked) r.setAttribute('data-checked', ''); else r.removeAttribute('data-checked');
+    });
+  }
+
+  trashChecks.forEach((c) => c.addEventListener('change', syncTrash));
+  trashAll.addEventListener('change', () => {
+    trashChecks.forEach((c) => { c.checked = trashAll.checked; });
+    syncTrash();
+  });
+  syncTrash();
+
+  /* ── 回收站：底部回执 + 设置 + 行内/批量操作 ────────── */
+  const trashFoot = document.getElementById('trashFoot');
+  const trashFootHtml = trashFoot.innerHTML;
+  let trashFlashTimer = null;
+
+  function trashFlash(text, kind = 'ok') {
+    trashFoot.classList.toggle('is-warn', kind === 'warn');
+    trashFoot.innerHTML = `<span class="notice__icon">${kind === 'warn' ? '!' : '✓'}</span><span>${text}</span>`;
+    if (trashFlashTimer) clearTimeout(trashFlashTimer);
+    trashFlashTimer = setTimeout(() => {
+      trashFoot.classList.remove('is-warn');
+      trashFoot.innerHTML = trashFootHtml;
+    }, 3200);
+  }
+
+  const trashDocName = (tr) => tr.querySelector('.cell-name__text').textContent.trim();
+  const selectedTrashRows = () => [...document.querySelectorAll('#trashTable tbody tr')]
+    .filter((tr) => tr.querySelector('input[type="checkbox"]').checked);
+
+  function dropTrashRows(rows) {
+    rows.forEach((tr) => tr.remove());
+    // 行变了，全选框/计数要重算
+    const rest = [...document.querySelectorAll('#trashTable tbody tr')];
+    const left = rest.filter((tr) => tr.querySelector('input[type="checkbox"]').checked);
+    trashAll.checked = rest.length > 0 && left.length === rest.length;
+    trashAll.indeterminate = left.length > 0 && left.length < rest.length;
+    document.querySelectorAll('.nav__item[data-goto="trash"] .nav__count')
+      .forEach((el) => { el.textContent = String(rest.length); });
+  }
+
+  // 行内：恢复 / 沉淀为 wiki
+  document.querySelectorAll('#trashTable tbody tr').forEach((tr) => {
+    const btns = tr.querySelectorAll('td:last-child button');
+    btns[0]?.addEventListener('click', () => {
+      const name = trashDocName(tr);
+      dropTrashRows([tr]);
+      trashFlash(`已恢复「${name}」并开始重建索引（数秒）`);
+    });
+    btns[1]?.addEventListener('click', () => {
+      document.getElementById('precipSub').textContent = trashDocName(tr);
+      openModal('precipitate');
+    });
+  });
+
+  // 批量：恢复 / 彻底删除
+  document.getElementById('trashRestoreSel').addEventListener('click', () => {
+    const rows = selectedTrashRows();
+    if (rows.length === 0) { trashFlash('先勾选要恢复的文档', 'warn'); return; }
+    dropTrashRows(rows);
+    trashFlash(`已恢复 ${rows.length} 篇，正在重建索引（数秒）`);
+  });
+
+  document.getElementById('trashPurgeSel').addEventListener('click', () => {
+    const rows = selectedTrashRows();
+    if (rows.length === 0) { trashFlash('先勾选要彻底删除的文档', 'warn'); return; }
+    dropTrashRows(rows);
+    trashFlash(`已彻底删除 ${rows.length} 篇（不可恢复）`);
+  });
+
+  /* 回收站筛选：单靠全局 .seg 只会切高亮不筛列表 —— 那是「假响应」，比没反应更糟 */
+  document.querySelectorAll('#trashFilter button').forEach((b) => {
+    b.addEventListener('click', () => {
+      const reason = b.dataset.reason || 'all';
+      document.querySelectorAll('#trashTable tbody tr').forEach((tr) => {
+        const badge = tr.querySelector('td:nth-child(4) .badge')?.textContent.trim() || '';
+        tr.hidden = reason !== 'all' && badge !== reason;
+      });
+    });
+  });
+
+  // 设置保存
+  document.getElementById('trashSettingsSave').addEventListener('click', () => {
+    const days = document.querySelector('#trashKeepDays button[aria-pressed="true"]')?.dataset.days || '7';
+    const act = document.querySelector('#trashExpireAction button[aria-pressed="true"]')?.dataset.act || 'purge';
+    document.getElementById('trashHeadText').textContent =
+      act === 'purge' ? `保留 ${days} 天，到期自动清除` : `保留 ${days} 天，到期仅提醒`;
+    closeModal();
+    trashFlash(`设置已保存：保留 ${days} 天 · ${act === 'purge' ? '到期自动清除' : '到期仅提醒'}`);
+  });
+
+  // 沉淀确认
+  document.getElementById('precipConfirm').addEventListener('click', () => {
+    const target = document.getElementById('precipTarget').value.trim() || '未指定';
+    closeModal();
+    trashFlash(`已生成 wiki 草稿（写入 ${target}），去「知识写入」确认后入库`);
+  });
+
+  /* ── P2 事件搜索（列表可滚动，搜索只管过滤） ────────── */
+  const evSearch = document.getElementById('evSearch');
+  const evEmpty = document.getElementById('evEmpty');
+  const evListEl = document.getElementById('evList');
+  // 新建事件会往列表插节点，所以每次过滤都重新取，不用初始化时的静态数组
+  const allEvItems = () => [...evListEl.querySelectorAll('.ev-item')];
+
+  const evScroll = document.querySelector('.ev-scroll');
+  const evPane = document.querySelector('.ev-pane');
+
+  function syncEvFade() {
+    const noScroll = evScroll.scrollHeight <= evScroll.clientHeight + 2;
+    const atEnd = evScroll.scrollTop + evScroll.clientHeight >= evScroll.scrollHeight - 2;
+    evPane.classList.toggle('is-short', noScroll);
+    evPane.classList.toggle('is-at-end', atEnd);
+  }
+
+  evScroll.addEventListener('scroll', syncEvFade);
+
+  /* 三个筛选维度（搜索 / 类型 / 收口状态）统一在一处求值，
+     任何一处变化都走 applyEvFilter —— 分散写容易漏叠加条件。 */
+  const evFilter = { type: 'all', open: 'open' };
+  let evQuery = '';
+
+  function applyEvFilter() {
+    let visible = 0;
+    allEvItems().forEach((it) => {
+      const typeOk = evFilter.type === 'all' || it.dataset.type === evFilter.type;
+      const closed = it.dataset.closed === '1';
+      const stateOk = evFilter.open === 'all' || (evFilter.open === 'open' ? !closed : closed);
+      const qOk = !evQuery || it.textContent.toLowerCase().includes(evQuery);
+      const ok = typeOk && stateOk && qOk;
+      it.hidden = !ok;
+      if (ok) visible += 1;
+    });
+
+    evEmpty.hidden = visible > 0;
+    evEmpty.textContent = evQuery ? '没有匹配的事件' : '当前筛选下没有事件';
+    syncEvFade();
+  }
+
+  evSearch.addEventListener('input', () => {
+    evQuery = evSearch.value.trim().toLowerCase();
+    evScroll.scrollTop = 0;
+    applyEvFilter();
+  });
+
+  /* ── 类型 / 收口状态 两个下拉 ──────────────────────── */
+  const evTypeBtn = document.getElementById('evTypeBtn');
+  const evTypePop = document.getElementById('evTypePop');
+  const evOpenBtn = document.getElementById('evOpenBtn');
+  const evOpenPop = document.getElementById('evOpenPop');
+
+  function closePops() {
+    [evTypePop, evOpenPop].forEach((p) => { p.hidden = true; });
+    [evTypeBtn, evOpenBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  }
+
+  function togglePop(btn, pop) {
+    const willOpen = pop.hidden;
+    closePops();
+    if (willOpen) {
+      pop.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  evTypeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePop(evTypeBtn, evTypePop);
+  });
+
+  evOpenBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePop(evOpenBtn, evOpenPop);
+  });
+
+  evTypePop.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-val]');
+    if (!b) return;
+    evFilter.type = b.dataset.val;
+    evTypePop.querySelectorAll('button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+    evTypeBtn.textContent = `${b.dataset.val === 'all' ? '类型' : b.dataset.val} ▾`;
+    closePops();
+    applyEvFilter();
+  });
+
+  evOpenPop.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-val]');
+    if (!b) return;
+    evFilter.open = b.dataset.val;
+    evOpenPop.querySelectorAll('button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+    const label = b.dataset.val === 'open' ? '未收口' : b.dataset.val === 'closed' ? '已收口' : '全部状态';
+    evOpenBtn.textContent = `${label} ▾`;
+    closePops();
+    applyEvFilter();
+  });
+
+  document.addEventListener('click', closePops);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePops(); });
+
+  syncEvFade();
+
+  /* ── 弹窗：打开 / 关闭 / 组内单选 ───────────────────── */
+  const modal = document.getElementById('modal');
+  const modalCard = document.getElementById('modalCard');
+  let lastFocus = null;
+
+  function openModal(name) {
+    modalCard.querySelectorAll('[data-modal-panel]').forEach((p) => {
+      p.hidden = p.dataset.modalPanel !== name;
+    });
+    // 「追加阶段」的副标题要跟着当前选中的事件类型走
+    if (name === 'stage') {
+      const sub = modalCard.querySelector('[data-modal-panel="stage"] .modal__sub');
+      const n = (TYPE_STAGES[currentType] || []).length;
+      sub.textContent = `类型「${currentType}」· 现有 ${n} 个阶段，新阶段将排在末尾`;
+    }
+    // 新建事件的类型选项每次都重建，保证新类型能选到
+    if (name === 'newEvent') renderEventTypeOptions();
+    lastFocus = document.activeElement;
+    modal.hidden = false;
+    const first = modalCard.querySelector('[data-modal-panel]:not([hidden]) input');
+    if (first) first.focus();
+  }
+
+  function closeModal() {
+    // 关窗即中断可能还在跑的检索，避免回到页面后继续推进
+    stopAiProcess();
+    modal.hidden = true;
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+  }
+
+  document.querySelectorAll('[data-open-modal]').forEach((b) => {
+    b.addEventListener('click', () => openModal(b.dataset.openModal));
+  });
+
+  modal.querySelectorAll('[data-close-modal]').forEach((b) => {
+    b.addEventListener('click', closeModal);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+
+  // 弹窗内的分段控件：组内单选（.seg--vis 由上面的通用逻辑处理，这里只管动作/时机）
+  function bindSeg(group) {
+    const btns = [...group.querySelectorAll('button')];
+    btns.forEach((b) => {
+      b.addEventListener('click', () => {
+        btns.forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true');
+        if (group.id === 'catKind') {
+          document.getElementById('ttlField').hidden = b.dataset.kind !== 'temp';
+        }
+      });
+    });
+  }
+
+  /* ── 事件类型：阶段配置数据驱动 ─────────────────────
+     切类型 / 追加阶段 / 新建类型三种操作都改同一份数据后重绘，
+     避免「类型切了但表格还是上一套阶段」这种一眼假的状态。 */
+  const TYPE_STAGES = {
+    'bug 排查': [
+      { name: '排查中', vis: '不可检索', action: '保留' },
+      { name: '已定位', vis: '仅全文', action: '保留' },
+      { name: '修复中', vis: '仅全文', action: '保留' },
+      { name: '已关闭', vis: '语义+全文', action: '保留' },
+    ],
+    '性能优化': [
+      { name: '分析中', vis: '不可检索', action: '保留' },
+      { name: '优化中', vis: '仅全文', action: '保留' },
+      { name: '已验证', vis: '仅全文', action: '保留' },
+      { name: '已完成', vis: '语义+全文', action: '移入回收站' },
+    ],
+    '需求实现': [
+      { name: '实施中', vis: '不可检索', action: '保留' },
+      { name: '联调中', vis: '仅全文', action: '保留' },
+      { name: '已上线', vis: '语义+全文', action: '保留' },
+    ],
+  };
+
+  let currentType = 'bug 排查';
+
+  function renderTypeStages(type) {
+    const tbody = document.querySelector('[data-evview="types"] tbody');
+    tbody.innerHTML = '';
+    (TYPE_STAGES[type] || []).forEach((st, i) => {
+      const tr = document.createElement('tr');
+      tr.className = 'stage-row';
+      tr.innerHTML = `
+        <td><span class="stage-row__idx">${i + 1}</span>${st.name}</td>
+        <td>
+          <div class="seg seg--vis" role="group" aria-label="${st.name} 检索可见性">
+            <button type="button" aria-pressed="${st.vis === '语义+全文'}">语义+全文</button>
+            <button type="button" aria-pressed="${st.vis === '仅全文'}">仅全文</button>
+            <button type="button" aria-pressed="${st.vis === '不可检索'}">不可检索</button>
+          </div>
+        </td>
+        <td class="cell-muted">${st.action}</td>
+        <td class="col-act"><button type="button" class="btn btn--ghost btn--sm">停用</button></td>`;
+      bindSeg(tr.querySelector('.seg--vis'));
+      tbody.appendChild(tr);
+    });
+  }
+
+  function bindTypeButton(btn) {
+    btn.addEventListener('click', () => {
+      currentType = btn.textContent.trim();
+      renderTypeStages(currentType);
+      syncDeleteTypeState();
+    });
+  }
+
+  document.querySelectorAll('.type-head .seg button').forEach(bindTypeButton);
+
+  /* ── 追加阶段：写回数据 + 重绘 ── */
+  document.getElementById('stageConfirm').addEventListener('click', () => {
+    const panel = document.querySelector('[data-modal-panel="stage"]');
+    const nameEl = document.getElementById('stageName');
+    const list = TYPE_STAGES[currentType] || (TYPE_STAGES[currentType] = []);
+    const name = nameEl.value.trim() || `阶段 ${list.length + 1}`;
+
+    const vis = [...panel.querySelectorAll('.seg--vis button')]
+      .find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent.trim() || '仅全文';
+    const action = [...panel.querySelectorAll('.seg:not(.seg--vis) button')]
+      .find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent.trim() || '保留在库';
+
+    list.push({ name, vis, action: action === '移入回收站' ? '移入回收站' : '保留' });
+    renderTypeStages(currentType);
+    nameEl.value = '';
+    closeModal();
+
+    const rows = document.querySelectorAll('[data-evview="types"] tbody tr');
+    rows[rows.length - 1]?.scrollIntoView({ block: 'nearest' });
+  });
+
+  /* ── 新建事件类型：阶段构建器（回车添加 / 拖动排序 / 复用副本） ── */
+  const VIS_LIST = [
+    { key: 'full', label: '语义+全文', cls: 'vis--full' },
+    { key: 'fts', label: '仅全文', cls: 'vis--fts' },
+    { key: 'hidden', label: '不可检索', cls: 'vis--hidden' },
+  ];
+  const VIS_BY_LABEL = { '语义+全文': 'full', '仅全文': 'fts', '不可检索': 'hidden' };
+
+  // 草稿阶段：先输入的排最前，最后一枚是终态
+  let draftStages = [
+    { name: '进行中', vis: 'hidden' },
+    { name: '已关闭', vis: 'fts' },
+  ];
+  let dragChip = null;
+
+  const stageBuilder = document.getElementById('stageBuilder');
+  const stageInput = document.getElementById('stageInput');
+  const reuseSelect = document.getElementById('reuseType');
+  const typeConfirmBtn = document.getElementById('typeConfirm');
+
+  const visMeta = (key) => VIS_LIST.find((v) => v.key === key) || VIS_LIST[2];
+
+  const chipMap = () => [...stageBuilder.querySelectorAll('.stage-chip')];
+
+  /* FLIP：先量旧位置 → 改 DOM → 用 Web Animations 从旧位置滑回新位置。
+     dragover 每进入一枚新 chip 就调一次，于是「被拖动的那枚换位、其它平滑让位」。 */
+  function flipAfter(mutate) {
+    const prev = new Map(chipMap().map((c) => [c, c.getBoundingClientRect()]));
+    mutate();
+    chipMap().forEach((c) => {
+      const before = prev.get(c);
+      if (!before) return;
+      const after = c.getBoundingClientRect();
+      const dx = before.left - after.left;
+      const dy = before.top - after.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      c.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
+        { duration: 170, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' },
+      );
+    });
+  }
+
+  function syncTypeCreateState() {
+    typeConfirmBtn.disabled = draftStages.length < 2;
+    typeConfirmBtn.title = draftStages.length < 2 ? '至少需要 2 个阶段' : '';
+  }
+
+  function renderStageBuilder() {
+    stageBuilder.innerHTML = '';
+
+    if (draftStages.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'stage-builder__empty';
+      p.textContent = '还没有阶段，在下方输入后按回车添加';
+      stageBuilder.appendChild(p);
+      syncTypeCreateState();
+      return;
+    }
+
+    draftStages.forEach((st, i) => {
+      const vm = visMeta(st.vis);
+
+      const chip = document.createElement('span');
+      chip.className = 'stage-chip';
+      chip.draggable = true;
+      chip.dataset.vis = st.vis;
+      // 序号与「终态」都由 CSS（counter / :last-child）生成，DOM 挪动后自动跟随
+      chip.innerHTML = `
+        <span class="stage-chip__idx"></span>
+        <span class="stage-chip__name">${st.name}</span>
+        <button type="button" class="stage-chip__vis vis ${vm.cls}" title="${vm.label}（点击切换）" aria-label="切换 ${st.name} 的检索可见性">
+          <span class="vis__dot"></span>
+        </button>
+        <button type="button" class="stage-chip__del" title="移除" aria-label="移除 ${st.name}">×</button>`;
+
+      // 点圆点：三档循环切换
+      chip.querySelector('.stage-chip__vis').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur = VIS_LIST.findIndex((v) => v.key === draftStages[i].vis);
+        draftStages[i].vis = VIS_LIST[(cur + 1) % VIS_LIST.length].key;
+        renderStageBuilder();
+      });
+
+      chip.querySelector('.stage-chip__del').addEventListener('click', (e) => {
+        e.stopPropagation();
+        draftStages.splice(i, 1);
+        renderStageBuilder();
+      });
+
+      // 拖动：让位由容器级 dragover 统一处理（见下方 flipAfter），这里只管起止
+      chip.addEventListener('dragstart', (e) => {
+        dragChip = chip;
+        chip.classList.add('is-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', st.name); } catch { /* Firefox 需要 setData */ }
+      });
+
+      chip.addEventListener('dragend', () => {
+        if (dragRaf !== null) { cancelAnimationFrame(dragRaf); dragRaf = null; }
+        if (dragChip) dragChip.classList.remove('is-dragging');
+        dragChip = null;
+        // DOM 顺序即最终顺序，同步回数据（不重绘，否则刚停下的那一帧会再跳一次）
+        draftStages = chipMap().map((c) => ({
+          name: c.querySelector('.stage-chip__name').textContent,
+          vis: c.dataset.vis || 'fts',
+        }));
+      });
+
+      stageBuilder.appendChild(chip);
+    });
+
+    syncTypeCreateState();
+  }
+
+  // 回车添加；重名不重复加（阶段名是定位键）
+  stageInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const name = stageInput.value.trim();
+    if (!name) return;
+    if (draftStages.some((s) => s.name === name)) {
+      stageInput.select();
+      return;
+    }
+    // 新阶段默认「仅全文」：能按关键词找回，但不主动当结论推送
+    draftStages.push({ name, vis: 'fts' });
+    stageInput.value = '';
+    renderStageBuilder();
+  });
+
+  function renderReuseOptions() {
+    const prev = reuseSelect.value;
+    reuseSelect.innerHTML = '<option value="">不复用，自己录入</option>';
+    Object.keys(TYPE_STAGES).forEach((name) => {
+      const o = document.createElement('option');
+      o.value = name;
+      o.textContent = `${name}（${TYPE_STAGES[name].length} 个阶段）`;
+      reuseSelect.appendChild(o);
+    });
+    reuseSelect.value = Object.prototype.hasOwnProperty.call(TYPE_STAGES, prev) ? prev : '';
+  }
+
+  // 复用 = 复制副本（不是引用），源类型后续改动不影响本类型
+  reuseSelect.addEventListener('change', () => {
+    const src = TYPE_STAGES[reuseSelect.value];
+    if (!src) return;
+    draftStages = src.map((s) => ({ name: s.name, vis: VIS_BY_LABEL[s.vis] || 'fts' }));
+    renderStageBuilder();
+  });
+
+  /* 容器级 dragover：即时让位。
+     ★ 关键不是「落在谁身上就挪到它后面」—— 那样会闪：
+        A 挪到 C 后面后恰好占住 C 原来的位置，下一帧又会判定「该挪回 C 前面」，
+        鼠标不动也会来回横跳。改为按「目标左半边 / 右半边」定插入点，
+        再对「已经在该插入点」做短路，判定与结果自洽后就不再抖。 */
+  let dragRaf = null;
+
+  function applyDragMove(x, y) {
+    if (!dragChip) return;
+
+    const target = chipMap().find((c) => {
+      if (c === dragChip) return false;
+      const r = c.getBoundingClientRect();
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    });
+    if (!target) return;
+
+    const r = target.getBoundingClientRect();
+    const insertAfter = x > r.left + r.width / 2;
+
+    // 幂等短路：已经在目标位置就完全不碰 DOM（止闪的核心）
+    if (insertAfter && dragChip.previousElementSibling === target) return;
+    if (!insertAfter && dragChip.nextElementSibling === target) return;
+
+    flipAfter(() => {
+      if (insertAfter) target.after(dragChip);
+      else target.before(dragChip);
+    });
+  }
+
+  stageBuilder.addEventListener('dragover', (e) => {
+    if (!dragChip) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    // dragover 触发频率远高于帧率，合并到一帧只算一次
+    if (dragRaf !== null) return;
+    const { clientX, clientY } = e;
+    dragRaf = requestAnimationFrame(() => {
+      dragRaf = null;
+      applyDragMove(clientX, clientY);
+    });
+  });
+
+  stageBuilder.addEventListener('drop', (e) => e.preventDefault());
+
+  renderReuseOptions();
+  renderStageBuilder();
+
+  document.getElementById('typeConfirm').addEventListener('click', () => {
+    const nameEl = document.getElementById('typeName');
+    const name = nameEl.value.trim() || '新类型';
+    if (TYPE_STAGES[name]) { nameEl.focus(); nameEl.select(); return; }
+    if (draftStages.length < 2) { stageInput.focus(); return; }
+
+    const endTrash = [...document.querySelectorAll('#endAction button')]
+      .find((b) => b.getAttribute('aria-pressed') === 'true')?.dataset.act === 'trash';
+
+    TYPE_STAGES[name] = draftStages.map((s, i) => ({
+      name: s.name,
+      vis: visMeta(s.vis).label,
+      action: i === draftStages.length - 1 && endTrash ? '移入回收站' : '保留',
+    }));
+
+    const seg = document.querySelector('.type-head .seg');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = name;
+    btn.setAttribute('aria-pressed', 'true');
+    seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+    bindTypeButton(btn);
+    seg.appendChild(btn);
+
+    currentType = name;
+    TYPE_BADGE[name] = name.slice(0, 2);
+    renderTypeStages(name);
+    renderEventTypeOptions();
+    syncDeleteTypeState();
+
+    // 重置弹窗草稿
+    nameEl.value = '';
+    reuseSelect.value = '';
+    document.querySelectorAll('#endAction button').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.dataset.act === 'keep')));
+    draftStages = [
+      { name: '进行中', vis: 'hidden' },
+      { name: '已关闭', vis: 'fts' },
+    ];
+    renderReuseOptions();
+    renderStageBuilder();
+    closeModal();
+    document.querySelector('[data-evview="types"]').scrollIntoView({ block: 'nearest' });
+  });
+
+  /* ── 事件列表：点击切换选中态（详情正文是演示数据，标题跟随所选事件） ── */
+  const TYPE_BY_BADGE = { bug: 'bug 排查', '性能': '性能优化', '需求': '需求实现' };
+  const BUILTIN_TYPES = ['bug 排查', '性能优化', '需求实现'];
+
+  // 参考文档先声明（syncEventState 会读长度，而初始化序列跑在参考文档块之前）
+  let refDocs = [];
+  let aiTimer = null;
+  // 事件卡上的类型徽标文案（内置 3 个手写，自定义类型取名字前两字）
+  const TYPE_BADGE = { 'bug 排查': 'bug', '性能优化': '性能', '需求实现': '需求' };
+
+  /* 删除类型的可用性：内置不可删、有事件在用不可删。
+     直接禁用按钮 + 把原因写在旁边，而不是等用户点了才弹窗说「不让删」。 */
+  const deleteTypeBtn = document.getElementById('deleteTypeBtn');
+  const typeHeadHint = document.getElementById('typeHeadHint');
+
+  function syncDeleteTypeState() {
+    const inUse = allEvItems().filter((it) => it.dataset.type === currentType).length;
+    const builtin = BUILTIN_TYPES.includes(currentType);
+    const canDelete = !builtin && inUse === 0;
+
+    deleteTypeBtn.disabled = !canDelete;
+    deleteTypeBtn.title = builtin
+      ? '内置类型不可删除'
+      : inUse > 0
+        ? `还有 ${inUse} 个事件在用这个类型`
+        : '删除类型（不影响文档）';
+
+    if (typeHeadHint) {
+      typeHeadHint.textContent = builtin
+        ? '内置类型，不可删除'
+        : inUse > 0
+          ? `${inUse} 个事件在用，不可删除`
+          : '阶段可配，可删除';
+    }
+  }
+
+  // 新建事件的类型选项跟着 TYPE_STAGES 走（否则新建了类型却选不到）
+  function renderEventTypeOptions() {
+    const box = document.getElementById('eventType');
+    box.innerHTML = '';
+    Object.keys(TYPE_STAGES).forEach((name, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.type = name;
+      b.textContent = name;
+      b.setAttribute('aria-pressed', String(i === 0));
+      box.appendChild(b);
+    });
+    bindSeg(box);
+  }
+
+  // 事件项的分类靠徽标文案反推，省掉 18 处手写 data-type
+  function syncEventType() {
+    allEvItems().forEach((it) => {
+      const badge = it.querySelector('.badge--event')?.textContent.trim();
+      if (badge && TYPE_BY_BADGE[badge]) it.dataset.type = TYPE_BY_BADGE[badge];
+    });
+  }
+
+  function showEventDetail(btn) {
+    document.getElementById('evDetailBody').hidden = false;
+    document.getElementById('evDetailBlank').hidden = true;
+    if (btn) {
+      document.getElementById('evDetailTitle').textContent =
+        btn.querySelector('.ev-item__title').textContent.replace(/\s+/g, ' ').trim();
+    }
+  }
+
+  function showEventBlank() {
+    document.getElementById('evDetailBody').hidden = true;
+    document.getElementById('evDetailBlank').hidden = false;
+  }
+
+  function selectEvent(btn) {
+    allEvItems().forEach((it) => it.setAttribute('aria-selected', String(it === btn)));
+    showEventDetail(btn);
+    syncEventState(btn);
+  }
+
+  /* 计数从 DOM 重算（而不是 ±1），删/建事件都不会积累偏差 */
+  function updateCounts() {
+    const items = allEvItems();
+    const openCount = items.filter((it) => it.dataset.closed !== '1').length;
+    const closedListed = items.filter((it) => it.dataset.closed === '1').length;
+
+    document.getElementById('evOpenCount').textContent =
+      `未收口 ${openCount} · 已收口 ${21 + closedListed}`;
+    document.getElementById('navEvCount').textContent = String(openCount);
+
+    const counts = {
+      all: items.length,
+      'all-state': items.length,
+      open: openCount,
+      closed: closedListed,
+      'bug 排查': items.filter((it) => it.dataset.type === 'bug 排查').length,
+      '性能优化': items.filter((it) => it.dataset.type === '性能优化').length,
+      '需求实现': items.filter((it) => it.dataset.type === '需求实现').length,
+    };
+    document.querySelectorAll('.popover__count').forEach((el) => {
+      const v = counts[el.dataset.count];
+      el.textContent = v === undefined ? '' : String(v);
+    });
+  }
+
+  allEvItems().forEach((it) => it.addEventListener('click', () => selectEvent(it)));
+  syncEventType();
+  updateCounts();
+  // 默认筛选是「未收口」，已收口的几条会被隐藏
+  applyEvFilter();
+  // 首屏：把阶段线/删除可用性对齐到默认选中的那条事件
+  syncEventState(document.querySelector('#evList .ev-item[aria-selected="true"]'));
+  syncDeleteTypeState();
+
+  /* ── 新建事件：确认后插到列表顶部（最新在前）+ 计数跟着涨 ── */
+  document.getElementById('newEventBtn').addEventListener('click', () => openModal('newEvent'));
+
+  document.getElementById('eventConfirm').addEventListener('click', () => {
+    const titleEl = document.getElementById('eventTitle');
+    const typeName = [...document.querySelectorAll('#eventType button')]
+      .find((b) => b.getAttribute('aria-pressed') === 'true')?.dataset.type || 'bug 排查';
+    const badgeText = TYPE_BADGE[typeName] || typeName.slice(0, 2);
+    const title = titleEl.value.trim() || '未命名事件';
+
+    const maxId = allEvItems().reduce((m, it) => {
+      const hit = it.querySelector('.ev-item__title').textContent.match(/#(\d+)/);
+      return hit ? Math.max(m, Number(hit[1])) : m;
+    }, 0);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ev-item';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', 'false');
+    btn.dataset.type = typeName;
+    btn.innerHTML = `
+      <span class="ev-item__title">#${maxId + 1} ${title} <span class="badge badge--event">${badgeText}</span></span>
+      <span class="ev-item__meta"><span>0 篇</span><span>·</span><span>刚刚</span><span>·</span><span class="vis vis--hidden"><span class="vis__dot"></span>0 篇不可检索</span></span>`;
+    btn.addEventListener('click', () => selectEvent(btn));
+    evListEl.prepend(btn);
+
+    titleEl.value = '';
+    // 新条目大概率不匹配当前筛选词，清掉搜索免得「创建了却看不见」
+    evSearch.value = '';
+    evQuery = '';
+    evScroll.scrollTop = 0;
+    syncEventType();
+    updateCounts();
+    applyEvFilter();
+    // 新事件可能让某个类型变成「正在使用」
+    syncDeleteTypeState();
+    closeModal();
+    syncEvFade();
+  });
+
+  // AI 分析：占位入口，点开说明现状与前置条件（不做成死按钮）
+  document.getElementById('aiAnalyzeBtn').addEventListener('click', () => openModal('aiAnalyze'));
+
+  /* ── 关联文档 → 右侧抽屉（内容为演示数据，真实实现走 /api/doc/get） ── */
+  const DOC_VIEW = {
+    '登录页白屏排查记录': {
+      group: '错误库/Web前端界面',
+      html: `
+        <h4>现象</h4>
+        <p>刷新登录页后整页空白，控制台无报错；仅当本地存在过期 <code>ki_auth</code> 时复现。</p>
+        <h4>复现步骤</h4>
+        <ul>
+          <li>把 <code>ki_auth</code> 的过期时间改到过去</li>
+          <li>刷新 /login，白屏</li>
+          <li>清空 localStorage 后恢复正常</li>
+        </ul>
+        <h4>初步判断（未定稿）</h4>
+        <p>登录态校验抛错被最外层 catch 吞掉，路由守卫直接 return null，于是渲染不出任何节点。</p>
+        <h4>待办</h4>
+        <ul>
+          <li>确认守卫里是否有吞异常的分支</li>
+          <li>补一个过期态的兜底渲染</li>
+        </ul>`,
+    },
+    '登录态失效根因': {
+      group: '错误库/Web前端界面',
+      html: `
+        <h4>根因</h4>
+        <p><code>useAuthGuard</code> 在 token 过期时抛出的异常没有向上传递，被 <code>try/catch</code> 静默吞掉，随后返回 <code>null</code>，React 渲染空树。</p>
+        <h4>判定依据</h4>
+        <ul>
+          <li>断点确认 <code>catch</code> 分支被命中</li>
+          <li>移除 catch 后白屏消失，改为正常跳转登录</li>
+        </ul>
+        <h4>影响面</h4>
+        <p>只影响登录态过期的用户，未登录与已登录均正常。</p>`,
+    },
+    'cookie 过期策略修复': {
+      group: '决策记录/登录态',
+      html: `
+        <h4>改动</h4>
+        <ul>
+          <li>守卫不再吞异常，改为返回「需要重新登录」状态</li>
+          <li>路由层对该状态统一跳转 <code>/login?redirect=</code></li>
+          <li>补一条过期态的兜底渲染，避免任何异常导致空树</li>
+        </ul>
+        <h4>验证</h4>
+        <ul>
+          <li>手工把 token 置为过期 → 正常跳转，不再白屏</li>
+          <li>正常登录 / 刷新 / 登出三条路径回归通过</li>
+        </ul>`,
+    },
+  };
+
+  const docDrawer = document.getElementById('docDrawer');
+
+  /* 关联文档：可见性由事件阶段决定；参考文档：取文档自身 —— 传了 vis 就按自身 */
+  function openDocDrawer(name, group, vis) {
+    const sel = document.querySelector('#evList .ev-item[aria-selected="true"]');
+    const stageVis = STAGE_VIS[Number(sel?.dataset.stage ?? 0)] || '不可检索';
+    const isRef = Boolean(vis);
+    const finalVis = vis || stageVis;
+
+    const doc = DOC_VIEW[name];
+    const finalGroup = group || doc?.group || '未标注 Group';
+    const html = doc?.html
+      || `<h4>正文</h4><p>（演示数据：真实实现会在这里渲染「${name}」的 Markdown 原文。）</p>`;
+
+    document.getElementById('drawerTitle').textContent = name;
+    document.getElementById('drawerMeta').textContent =
+      `kisearch-memory · ${finalGroup} · 「${finalVis}」`;
+
+    document.getElementById('drawerBody').innerHTML = `
+      <div class="notice notice--info">
+        <span class="notice__icon">i</span>
+        <span>${isRef ? '参考文档：可见性取自文档自身' : '关联文档：可见性由事件阶段决定'}，当前为 <b>${finalVis}</b>${
+          finalVis === '不可检索' ? '，语义与全文都搜不到' : finalVis === '仅全文' ? '，语义检索不会主动召回，全文仍可命中' : '，语义与全文都可命中'
+        }。</span>
+      </div>
+      ${html}`;
+
+    docDrawer.hidden = false;
+    document.getElementById('drawerBody').scrollTop = 0;
+  }
+
+  document.querySelectorAll('[data-doc]').forEach((b) => {
+    b.addEventListener('click', () => openDocDrawer(b.dataset.doc));
+  });
+
+  document.querySelectorAll('[data-close-drawer]').forEach((b) => {
+    b.addEventListener('click', () => { docDrawer.hidden = true; });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !docDrawer.hidden) docDrawer.hidden = true;
+  });
+
+  /* ═══ 参考文档（AI 检索 + 手动添加） ═══
+     ★ 与「关联文档」的本质区别：关联文档是事件的产物，可见性由阶段控制；
+       参考文档是外部引用，可见性取文档自身，加入/移除都不碰文档本身。 */
+  const ASSOC_DOCS = ['登录页白屏排查记录', '登录态失效根因', 'cookie 过期策略修复'];
+
+  refDocs = [
+    { name: '历史同类问题：cookie 域不匹配', group: '错误库/Web前端界面', vis: '语义+全文' },
+    { name: '登录态刷新竞态（2026-09 复盘）', group: '决策记录/登录态', vis: '语义+全文' },
+  ];
+
+  // AI 检索候选池（含一条低相关干扰项，验证「用户能自己判断」）
+  const REF_CANDIDATES = [
+    {
+      name: 'cookie 作用域配置说明', group: '项目架构/配置', vis: '语义+全文', score: 0.88,
+      why: '涉及 cookie 域设置，与本次白屏的触发条件直接相关',
+    },
+    {
+      name: '接口鉴权失败排查 SOP', group: '项目踩坑点', vis: '仅全文', score: 0.76,
+      why: '同属鉴权失败类别，处置流程可复用',
+    },
+    {
+      name: '用户表设计', group: '项目架构', vis: '语义+全文', score: 0.42,
+      why: '仅字面命中「用户」，与本次白屏无直接关联',
+    },
+  ];
+
+  // 手动搜索池（含更多无关项，模拟全库）
+  const REF_SEARCH_POOL = [
+    ...REF_CANDIDATES,
+    { name: '登录页白屏排查记录', group: '错误库/Web前端界面', vis: '仅全文' },
+    { name: 'Nginx 反向代理配置', group: '部署运维', vis: '语义+全文' },
+    { name: 'MCP 工具超时处理', group: '接口信息/知识索引导入', vis: '语义+全文' },
+  ];
+
+  const visCls = (v) => (v === '语义+全文' ? 'vis--full' : v === '仅全文' ? 'vis--fts' : 'vis--hidden');
+
+  function renderRefList() {
+    const box = document.getElementById('refList');
+
+    if (refDocs.length === 0) {
+      box.innerHTML = '<p class="ref-empty">还没有参考文档。可以让 AI 按事件内容检索，也可以手动添加。</p>';
+    } else {
+      box.innerHTML = refDocs.map((d, i) => `
+        <div class="docline docline--ref">
+          <button type="button" class="docline__main" data-ref-idx="${i}">
+            <span class="docline__name">
+              <span class="docline__title"><span>${d.name}</span></span>
+              <span class="docline__path">${d.group}</span>
+            </span>
+          </button>
+          <span class="vis ${visCls(d.vis)}"><span class="vis__dot"></span>${d.vis}</span>
+          <button type="button" class="docline__del" data-ref-del="${i}" aria-label="移除 ${d.name}" title="解除引用（不删文档）">×</button>
+        </div>`).join('');
+    }
+
+    box.querySelectorAll('[data-ref-idx]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const d = refDocs[Number(b.dataset.refIdx)];
+        if (d) openDocDrawer(d.name, d.group, d.vis);
+      });
+    });
+
+    box.querySelectorAll('[data-ref-del]').forEach((b) => {
+      b.addEventListener('click', () => {
+        refDocs.splice(Number(b.dataset.refDel), 1);
+        renderRefList();
+        syncEventState(document.querySelector('#evList .ev-item[aria-selected="true"]'));
+      });
+    });
+
+    syncEventState(document.querySelector('#evList .ev-item[aria-selected="true"]'));
+  }
+
+  /* AI 查找：候选排除「已关联」与「已加入」，默认只勾高相关 */
+  let candPicked = new Set();
+
+  /* 检索过程：每步都带真实数字，否则就只是假动画。
+     文案里的 12 / 3 / 2 / 7 与候选池的真实数量对齐（见 REF_CANDIDATES 与排除逻辑）。 */
+  const AI_STEPS = [
+    {
+      html: '理解事件：<b>#3 登录页白屏</b> · bug 排查 · 当前「已定位」',
+      ms: 560,
+      calls: [{ kind: 'skill', name: 'event-context', ms: 180 }],
+      detail: `<dl>
+        <dt>事件</dt><dd>#3 登录页白屏</dd>
+        <dt>类型</dt><dd>bug 排查 · 4 个阶段</dd>
+        <dt>当前阶段</dt><dd>已定位 · 可见性「仅全文」</dd>
+        <dt>关联文档</dt><dd>3 篇</dd>
+      </dl>`,
+    },
+    {
+      html: '从 3 篇关联文档提取线索：<b>cookie · 登录态 · 白屏</b>',
+      ms: 660,
+      calls: [{ kind: 'tool', name: 'ki_get_module_info', ms: 210 }],
+      detail: `<dl>
+        <dt>关键词</dt><dd>cookie · 登录态 · 白屏 · 失效</dd>
+        <dt>来源</dt><dd>3 篇关联文档 + 事件标题</dd>
+        <dt>剔除</dt><dd>停用词、数字、行号</dd>
+      </dl>`,
+    },
+    {
+      html: '在 kisearch-memory 语义检索 168 篇… 命中 <b>12 篇</b>',
+      ms: 940,
+      calls: [{ kind: 'tool', name: 'ki_search', ms: 640 }],
+      detail: `<dl>
+        <dt>query</dt><dd>登录页白屏 cookie 登录态 失效</dd>
+        <dt>mode</dt><dd>hybrid（语义 + 全文）</dd>
+        <dt>scope</dt><dd>kisearch-memory · 168 篇</dd>
+        <dt>命中</dt><dd>12 篇（语义 8 / 全文 4）</dd>
+      </dl>`,
+    },
+    {
+      html: '排除 3 篇已关联、2 篇已加入 → 剩 <b>7 篇</b>',
+      ms: 420,
+      calls: [],
+      detail: `<dl>
+        <dt>已关联</dt><dd>登录页白屏排查记录 / 登录态失效根因 / cookie 过期策略修复</dd>
+        <dt>已加入</dt><dd>历史同类问题：cookie 域不匹配 / 登录态刷新竞态（2026-09 复盘）</dd>
+        <dt>剩余</dt><dd>7 篇</dd>
+      </dl>`,
+    },
+    {
+      html: '按相关度排序，取前 <b>3 篇</b>',
+      ms: 480,
+      calls: [{ kind: 'skill', name: 'relevance-rank', ms: 90 }],
+      detail: `<dl>
+        <dt>top1</dt><dd>cookie 作用域配置说明 · 0.88</dd>
+        <dt>top2</dt><dd>接口鉴权失败排查 SOP · 0.76</dd>
+        <dt>top3</dt><dd>用户表设计 · 0.42（低于阈值 0.6，默认不勾）</dd>
+      </dl>`,
+    },
+  ];
+
+  const CALL_LABEL = { skill: 'skill', tool: 'MCP' };
+
+  function callsHtml(calls) {
+    if (!calls || calls.length === 0) return '';
+    return `<span class="ai-calls">${calls.map((c) => `
+      <span class="ai-call ${c.kind === 'skill' ? 'ai-call--skill' : ''}">
+        <span class="ai-call__kind">${CALL_LABEL[c.kind] || c.kind}</span>
+        <span class="ai-call__name">${c.name}</span>
+        <span class="ai-call__ms">${c.ms}ms</span>
+      </span>`).join('')}</span>`;
+  }
+
+  function stopAiProcess() {
+    if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; }
+  }
+
+  function renderCandidates(list) {
+    const box = document.getElementById('candList');
+    candPicked = new Set();
+
+    if (list.length === 0) {
+      box.innerHTML = '<p class="ref-empty">没有新的相关文档了。相关条目都已加入参考文档。</p>';
+    } else {
+      box.innerHTML = list.map((c, i) => {
+        if (c.score >= 0.6) candPicked.add(i);
+        return `
+          <label class="cand">
+            <input type="checkbox" data-cand="${i}" ${c.score >= 0.6 ? 'checked' : ''} />
+            <span style="min-width: 0">
+              <span class="cand__name">${c.name}</span>
+              <span class="cand__meta">${c.group} · ${c.vis}</span>
+              <p class="cand__why">${c.why}</p>
+            </span>
+            <span class="cand__score ${c.score >= 0.6 ? '' : 'cand__score--weak'}">${c.score.toFixed(2)}</span>
+          </label>`;
+      }).join('');
+    }
+
+    box.querySelectorAll('[data-cand]').forEach((cb) => {
+      cb.addEventListener('change', () => {
+        const i = Number(cb.dataset.cand);
+        if (cb.checked) candPicked.add(i); else candPicked.delete(i);
+        syncFindRefConfirm();
+      });
+    });
+
+    box._source = list;
+    syncFindRefConfirm();
+  }
+
+  function openFindRef() {
+    const taken = new Set([...ASSOC_DOCS, ...refDocs.map((d) => d.name)]);
+    const list = REF_CANDIDATES.filter((c) => !taken.has(c.name));
+
+    document.getElementById('findRefSub').textContent =
+      `基于事件描述与 ${ASSOC_DOCS.length} 篇关联文档检索知识库`;
+
+    // —— 重置到「检索中」状态
+    stopAiProcess();
+    const stepsEl = document.getElementById('aiProcSteps');
+    const spin = document.getElementById('aiProcSpin');
+    const toggle = document.getElementById('aiProcToggle');
+    const confirmBtn = document.getElementById('findRefConfirm');
+
+    stepsEl.innerHTML = '';
+    stepsEl.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    spin.removeAttribute('data-done');
+    document.getElementById('aiProcTitle').textContent = '正在检索…';
+    document.getElementById('aiProcTime').textContent = '';
+    document.getElementById('aiResultWrap').hidden = true;
+    document.getElementById('candList').innerHTML = '';
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '检索中…';
+
+    openModal('findRef');
+
+    // —— 逐步推进；每步完成才把上一步打勾
+    const started = performance.now();
+    let i = 0;
+
+    const tick = () => {
+      if (i > 0) {
+        const prev = stepsEl.children[i - 1];
+        if (prev) {
+          prev.classList.remove('is-running');
+          prev.classList.add('is-done');
+          const mark = prev.querySelector('.ai-step__mark');
+          if (mark) mark.textContent = '✓';
+        }
+      }
+
+      if (i >= AI_STEPS.length) {
+        const secs = ((performance.now() - started) / 1000).toFixed(1);
+        spin.setAttribute('data-done', '');
+        document.getElementById('aiProcTitle').textContent = list.length
+          ? `检索完成 · 找到 ${list.length} 篇候选`
+          : '检索完成 · 没有新的相关文档';
+        const callCount = AI_STEPS.reduce((n, st) => n + (st.calls?.length || 0), 0);
+        document.getElementById('aiProcTime').textContent =
+          `${AI_STEPS.length} 步 · ${callCount} 次调用 · ${secs}s`;
+
+        // 结果优先：过程自动折叠，需要复核时再点开
+        toggle.setAttribute('aria-expanded', 'false');
+        stepsEl.hidden = true;
+
+        renderCandidates(list);
+        document.getElementById('aiResultWrap').hidden = false;
+        aiTimer = null;
+        return;
+      }
+
+      const step = AI_STEPS[i];
+      const li = document.createElement('li');
+      li.className = 'ai-step is-running';
+      li.innerHTML = `<span class="ai-step__mark"></span>
+        <div class="ai-step__body">
+          <button type="button" class="ai-step__head" aria-expanded="false">
+            <span class="ai-step__text">${step.html}</span>
+            ${step.detail ? '<span class="ai-step__chev" aria-hidden="true">▾</span>' : ''}
+          </button>
+          ${callsHtml(step.calls)}
+          ${step.detail ? `<div class="ai-step__detail" hidden>${step.detail}</div>` : ''}
+        </div>`;
+      stepsEl.appendChild(li);
+
+      // 每步可单独展开，看这一步到底用了什么参数、排掉了什么
+      const head = li.querySelector('.ai-step__head');
+      const detail = li.querySelector('.ai-step__detail');
+      if (detail) {
+        head.addEventListener('click', () => {
+          const open = head.getAttribute('aria-expanded') === 'true';
+          head.setAttribute('aria-expanded', String(!open));
+          detail.hidden = open;
+        });
+      } else {
+        head.disabled = true;
+      }
+
+      const ms = step.ms;
+      i += 1;
+      aiTimer = setTimeout(tick, ms);
+    };
+
+    tick();
+  }
+
+  // 折叠/展开过程
+  document.getElementById('aiProcToggle').addEventListener('click', () => {
+    const toggle = document.getElementById('aiProcToggle');
+    const stepsEl = document.getElementById('aiProcSteps');
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!expanded));
+    stepsEl.hidden = expanded;
+  });
+
+  function syncFindRefConfirm() {
+    const btn = document.getElementById('findRefConfirm');
+    const n = candPicked.size;
+    btn.disabled = n === 0;
+    btn.textContent = n === 0 ? '未选择' : `加入所选 ${n} 篇`;
+  }
+
+  document.getElementById('aiFindBtn').addEventListener('click', openFindRef);
+
+  document.getElementById('findRefConfirm').addEventListener('click', () => {
+    const box = document.getElementById('candList');
+    const list = box._source || [];
+    [...candPicked].sort((a, b) => a - b).forEach((i) => {
+      const c = list[i];
+      if (c) refDocs.push({ name: c.name, group: c.group, vis: c.vis });
+    });
+    renderRefList();
+    closeModal();
+  });
+
+  /* 手动添加：搜索全库，排除已关联/已加入 */
+  function renderRefSearch() {
+    const q = (document.getElementById('refSearch').value || '').trim().toLowerCase();
+    const taken = new Set([...ASSOC_DOCS, ...refDocs.map((d) => d.name)]);
+    const list = REF_SEARCH_POOL.filter((d) =>
+      !taken.has(d.name)
+      && (!q || `${d.name} ${d.group}`.toLowerCase().includes(q)));
+
+    const box = document.getElementById('refSearchList');
+    box.innerHTML = list.length === 0
+      ? '<p class="ref-empty">没有匹配的文档（已排除关联文档与已加入的参考文档）</p>'
+      : list.map((d, i) => `
+        <label class="cand">
+          <input type="checkbox" data-pick="${i}" />
+          <span style="min-width: 0">
+            <span class="cand__name">${d.name}</span>
+            <span class="cand__meta">${d.group} · ${d.vis}</span>
+          </span>
+          <span></span>
+        </label>`).join('');
+
+    box._source = list;
+    syncAddRefConfirm();
+  }
+
+  function pickedForAdd() {
+    const box = document.getElementById('refSearchList');
+    const idx = [...box.querySelectorAll('[data-pick]')]
+      .filter((cb) => cb.checked)
+      .map((cb) => Number(cb.dataset.pick));
+    return { box, idx };
+  }
+
+  function syncAddRefConfirm() {
+    const btn = document.getElementById('addRefConfirm');
+    const { box, idx } = pickedForAdd();
+    btn.disabled = idx.length === 0;
+    btn.textContent = idx.length === 0 ? '未选择' : `加入所选 ${idx.length} 篇`;
+    return { box, idx };
+  }
+
+  document.getElementById('manualAddBtn').addEventListener('click', () => {
+    document.getElementById('refSearch').value = '';
+    renderRefSearch();
+    openModal('addRef');
+  });
+
+  document.getElementById('refSearch').addEventListener('input', renderRefSearch);
+
+  document.getElementById('refSearchList').addEventListener('change', (e) => {
+    if (e.target.matches('[data-pick]')) syncAddRefConfirm();
+  });
+
+  document.getElementById('addRefConfirm').addEventListener('click', () => {
+    const { box, idx } = syncAddRefConfirm();
+    const list = box._source || [];
+    idx.forEach((i) => {
+      const d = list[i];
+      if (d) refDocs.push({ name: d.name, group: d.group, vis: d.vis });
+    });
+    renderRefList();
+    closeModal();
+  });
+
+  renderRefList();
+
+  /* ── 删除事件：必选「关联文档去向」，删事件 ≠ 删文档 ── */
+  document.getElementById('deleteEventBtn').addEventListener('click', () => {
+    const sel = document.querySelector('#evList .ev-item[aria-selected="true"]');
+    if (!sel) {
+      showEventBlank();
+      return;
+    }
+    const title = sel.querySelector('.ev-item__title').textContent.replace(/\s+/g, ' ').trim();
+    const docs = sel.querySelector('.ev-item__meta')?.textContent.match(/(\d+)\s*篇/)?.[1] || '0';
+    document.getElementById('delEventSub').textContent = title;
+    document.getElementById('delEventDocCount').textContent = docs;
+    document.querySelectorAll('#delEventDocMode button').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.dataset.mode === 'wiki')));
+    openModal('deleteEvent');
+  });
+
+  document.getElementById('deleteEventConfirm').addEventListener('click', () => {
+    const sel = document.querySelector('#evList .ev-item[aria-selected="true"]');
+    if (sel) sel.remove();
+    updateCounts();
+    applyEvFilter();
+    // 少了一个使用者，类型的可删状态可能变了
+    syncDeleteTypeState();
+    showEventBlank();
+    closeModal();
+  });
+
+  /* ── 删除类型：内置不可删 / 有事件在用不可删 ── */
+  document.getElementById('deleteTypeBtn').addEventListener('click', () => {
+    const inUse = allEvItems().filter((it) => it.dataset.type === currentType).length;
+    const builtin = BUILTIN_TYPES.includes(currentType);
+    const blocked = document.getElementById('delTypeBlocked');
+    const text = document.getElementById('delTypeBlockedText');
+    const confirmBtn = document.getElementById('deleteTypeConfirm');
+
+    document.getElementById('delTypeSub').textContent = currentType;
+
+    if (builtin) {
+      blocked.hidden = false;
+      text.innerHTML = `<b>${currentType}</b> 是内置类型，不能删除。可以在它上面调阶段与可见性，或另建自己的类型。`;
+      confirmBtn.disabled = true;
+    } else if (inUse > 0) {
+      blocked.hidden = false;
+      text.innerHTML = `还有 <b>${inUse}</b> 个事件在用这个类型。要么先删掉这些事件，要么把它们改成别的类型，再回来删。`;
+      confirmBtn.disabled = true;
+    } else {
+      blocked.hidden = true;
+      confirmBtn.disabled = false;
+    }
+
+    openModal('deleteType');
+  });
+
+  document.getElementById('deleteTypeConfirm').addEventListener('click', () => {
+    if (BUILTIN_TYPES.includes(currentType)) return;
+
+    const seg = document.querySelector('.type-head .seg');
+    [...seg.querySelectorAll('button')]
+      .filter((b) => b.textContent.trim() === currentType)
+      .forEach((b) => b.remove());
+    delete TYPE_STAGES[currentType];
+
+    const first = seg.querySelector('button');
+    if (first) {
+      first.setAttribute('aria-pressed', 'true');
+      currentType = first.textContent.trim();
+      renderTypeStages(currentType);
+    }
+
+    renderReuseOptions();
+    renderEventTypeOptions();
+    syncDeleteTypeState();
+    closeModal();
+  });
+</script>
+</body>
+</html>

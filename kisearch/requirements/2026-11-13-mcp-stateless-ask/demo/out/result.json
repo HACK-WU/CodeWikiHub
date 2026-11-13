@@ -1,0 +1,258 @@
+{
+  "scope": "kisearch-memory",
+  "ranAt": "2026-11-13T03:33:28.262Z",
+  "count": 2,
+  "totalMs": [
+    19070,
+    62360
+  ],
+  "avgTotalMs": 40715,
+  "maxTotalMs": 62360,
+  "toolRounds": [
+    12,
+    36
+  ],
+  "slowestToolMs": 694,
+  "results": [
+    {
+      "question": "ki 的 MCP 工具鉴权是怎么做的？只读 Token 有哪些限制？",
+      "convId": "c-mwef7qk9-iwrf",
+      "totalMs": 19070,
+      "metaMs": 117,
+      "firstTokenMs": 1112,
+      "toolMs": 1205,
+      "toolRounds": 12,
+      "tools": [
+        {
+          "hits": 15,
+          "durationMs": 694
+        },
+        {
+          "hits": 15,
+          "durationMs": 156
+        },
+        {
+          "hits": 2,
+          "durationMs": 13
+        },
+        {
+          "hits": 10,
+          "durationMs": 27
+        },
+        {
+          "hits": 1,
+          "durationMs": 10
+        },
+        {
+          "hits": 6,
+          "durationMs": 18
+        },
+        {
+          "hits": 0,
+          "durationMs": 2
+        },
+        {
+          "hits": 10,
+          "durationMs": 48
+        },
+        {
+          "hits": 0,
+          "durationMs": 148
+        },
+        {
+          "hits": 10,
+          "durationMs": 32
+        },
+        {
+          "hits": 1,
+          "durationMs": 20
+        },
+        {
+          "hits": 10,
+          "durationMs": 37
+        }
+      ],
+      "answerChars": 1180,
+      "reasoningChars": 3304,
+      "sourceCount": 26,
+      "usage": {
+        "type": "usage",
+        "promptTokens": 40221,
+        "completionTokens": 853,
+        "reasoningTokens": 253
+      },
+      "degraded": null,
+      "finishReason": "stop",
+      "warning": null,
+      "answer": "**结论**：文档中有记录的是「MCP HTTP 通道多 Token + scope 级 RBAC」；关于「只读 Token 及其限制」，本次检索未找到可核验片段。\n\n## MCP 工具鉴权（已记录内容）\n\n来源：`__root__/archive.md`，第 831–835 行（「[需求] ki mcp --http 多 Token + scope 授权 RBAC（2026-08-14）」）\n\n- 多 Token 存储在 `~/.ki/mcp-tokens.json`（0600，原子写）；**token → scope 集合**授权，`all` 为保留字；`--token`/`KI_MCP_TOKEN` 为**全权临时 token**。\n- scope 校验**下沉到 HTTP 层**：`handleMcpPost` 拦截 `arguments.scope`，缺省按 `default` 处理。\n- 多轮安全加固（同段）：batch 全项越权校验（`findScopeViolation`）；枚举工具（`ki_scope_list`/`ki_manage_index_list`）由工具层 `authScopes` 过滤输出；`listTokensStrict` 损坏保护（鉴权宽松 fail-closed，写操作 strict）；**403 响应脱敏**（scope 名只写服务端 stderr）。\n- 已知边界（同段）：token「读-改-写」并发丢更新未加锁（低频可接受）。\n\n补充两条相关约束：\n- 无 scope 参数的工具曾被子句校验误伤 403，修法是 `SCOPE_LESS_TOOLS` 白名单豁免，「**新增无 scope 参数的工具必须同步加白名单**」（`archive.md` 第 884 行）。\n- HTTP 只读接口（如 `/api/asset`、`/tags`、`/doc/list`）必须加入 `handleApiRequest` 的 query scope 越权校验列表，否则不受越权拦截，越权返回脱敏 403（`接口信息/知识索引导入/附件服务` 第 12 行）。\n\n## 只读 Token 的限制\n\n本次多次检索（含「鉴权」「只读 token」「authScopes」「readonly 只读权限」）均未命中「只读 Token」这一角色/类型，也未命中其限制清单。已检出的鉴权模型是按 **scope 范围**授予权限（含 `all` 全权、`--token` 全权临时 token），文档里**未见按读/写分级的 token 类别**。\n\n如果你要的是某个具体的只读 token 行为（例如是否禁写、能否调 `ki_sync_relation`），需要补充限定信息（配置键名或命令名），我再按精确字面补查。"
+    },
+    {
+      "question": "在 ki 里新增一个 MCP 工具需要改动哪些地方？",
+      "convId": "c-mwef85d9-u5t8",
+      "totalMs": 62360,
+      "metaMs": 121,
+      "firstTokenMs": 786,
+      "toolMs": 3512,
+      "toolRounds": 36,
+      "tools": [
+        {
+          "hits": 5,
+          "durationMs": 370
+        },
+        {
+          "hits": 10,
+          "durationMs": 31
+        },
+        {
+          "hits": 10,
+          "durationMs": 158
+        },
+        {
+          "hits": 10,
+          "durationMs": 82
+        },
+        {
+          "hits": 10,
+          "durationMs": 48
+        },
+        {
+          "hits": 0,
+          "durationMs": 162
+        },
+        {
+          "hits": 0,
+          "durationMs": 139
+        },
+        {
+          "hits": 15,
+          "durationMs": 38
+        },
+        {
+          "hits": 15,
+          "durationMs": 281
+        },
+        {
+          "hits": 0,
+          "durationMs": 2
+        },
+        {
+          "hits": 0,
+          "durationMs": 1
+        },
+        {
+          "hits": 0,
+          "durationMs": 1
+        },
+        {
+          "hits": 10,
+          "durationMs": 139
+        },
+        {
+          "hits": 3,
+          "durationMs": 21
+        },
+        {
+          "hits": 15,
+          "durationMs": 112
+        },
+        {
+          "hits": 10,
+          "durationMs": 21
+        },
+        {
+          "hits": 10,
+          "durationMs": 23
+        },
+        {
+          "hits": 0,
+          "durationMs": 143
+        },
+        {
+          "hits": 0,
+          "durationMs": 141
+        },
+        {
+          "hits": 10,
+          "durationMs": 306
+        },
+        {
+          "hits": 10,
+          "durationMs": 64
+        },
+        {
+          "hits": 0,
+          "durationMs": 144
+        },
+        {
+          "hits": 10,
+          "durationMs": 78
+        },
+        {
+          "hits": 1,
+          "durationMs": 4
+        },
+        {
+          "hits": 10,
+          "durationMs": 31
+        },
+        {
+          "hits": 0,
+          "durationMs": 1
+        },
+        {
+          "hits": 0,
+          "durationMs": 5
+        },
+        {
+          "hits": 10,
+          "durationMs": 284
+        },
+        {
+          "hits": 0,
+          "durationMs": 146
+        },
+        {
+          "hits": 10,
+          "durationMs": 35
+        },
+        {
+          "hits": 10,
+          "durationMs": 146
+        },
+        {
+          "hits": 10,
+          "durationMs": 33
+        },
+        {
+          "hits": 10,
+          "durationMs": 147
+        },
+        {
+          "hits": 0,
+          "durationMs": 143
+        },
+        {
+          "hits": 10,
+          "durationMs": 29
+        },
+        {
+          "hits": 0,
+          "durationMs": 3
+        }
+      ],
+      "answerChars": 2503,
+      "reasoningChars": 19131,
+      "sourceCount": 55,
+      "usage": {
+        "type": "usage",
+        "promptTokens": 102831,
+        "completionTokens": 4925,
+        "reasoningTokens": 3710
+      },
+      "degraded": null,
+      "finishReason": "stop",
+      "warning": null,
+      "answer": "新增一个 MCP 工具，至少涉及以下 6 类改动；其中 **HTTP scope 白名单** 和 **队列分道** 是最容易漏掉、漏了会直接出故障的两处。\n\n## 1. 工具本体与装配\n- 在 `src/lib/mcp-tools/<tool>.ts` 增加工具定义：工具名、描述、`inputSchema`。现有范例：`src/lib/mcp-tools/edit-relation.ts`、`src/lib/mcp-tools/get-module-info.ts`。\n- 业务实现放在对应的 `src/<domain>.ts`，暴露 `executeXxx()`。写操作按现有模式写成「**daemon client 优先，否则 `executeXxxLocal`**」，避免绕过 daemon 的单写者/队列；`ki_edit_relation` 就是 `executeEditRelation` 走这个模式。\n- 服务端构建入口是 `src/mcp-server.ts::buildKiMcpServer`，新工具要接入该构建链路。\n\n## 2. HTTP scope 授权（必改，易漏）\n- 无 `scope` 参数的工具，必须加入 **`SCOPE_LESS_TOOLS` 白名单**。否则 HTTP 模式下 `arguments.scope` 缺省按 `default` 校验，会被 scope 闸门误伤 403。\n- 枚举类工具（如 `ki_scope_list`、`ki_manage_index_list`）还要在工具层按 `authScopes` 过滤输出。\n\n## 3. 队列分道（必改，否则导入期间会被挡住）\n- 只读工具：在 `src/lib/operation-coordinator.ts` 的 **`READ_MCP_TOOLS`** 登记工具名；chat 通道的 `chat-mcp-<tool>` 由同一函数识别，不用另写一份。\n- 写工具：不登记，缺省落 `write`。注意一批请求里混入任一非白名单工具，整批回退 `write`。\n- 若新增的是读类 operation，还要在 **`READ_OPERATIONS`** 登记；否则缺省 `write`，又会被导入长任务挡住。\n\n## 4. 超时\n- 在 `src/lib/mcp-tools/util.ts::TOOL_TIMEOUT` 选预设：`READ 30s / WRITE 60s / BULK 300s`。\n- 涉及多次 embedding 重试的长写工具用独立常量，例如 `ki_sync_relation` / `ki_bulk_sync_relation` 设 240s。\n\n## 5. 对话侧（要让 AI 能调用时）\n- `src/lib/chat/mcp-tool-registry.ts`：同步工具定义/短描述、`defaultDescribe`、工具预算与返回体截断口径；改工具描述时，`mcp-tools/*.ts` 与这里两处都要同步（`ki_manage_index_create` 修复时就是同步这两处 + `docs/cli.md`）。\n- 若该工具要在对话配置面板出现开关，还要同步前端工具分组清单（`MCP_TOOL_GROUPS`；`GET /api/chat/prompt-config` 会下发 `toolGroups`）。\n- 若该工具被某个内置 skill 依赖：更新 `SKILL_REQUIRED_TOOLS`（后端 `prompt-config.ts` + 前端 `PromptConfigLayer.tsx` 手工同源，守卫 `web/test/skill-tool-dependency.test.mjs`）。\n\n## 6. 文档、测试与发布\n- 文档：`docs/cli.md`（若同时加 CLI 命令/参数）；`codekb-agent-guide` 的 MCP 工具步骤（如有）。知识库里两份工具清单也应同步：`接口信息/关系与索引管理/MCP工具清单`、`接口信息/检索与向量客户端/MCP工具清单与超时`。\n- 测试：\n  - `test/chat/mcp-tool-registry.test.ts`（工具描述、预算、limit 钳制）；\n  - `test/coordinator-read-lane.test.ts`（读工具登记、批量 kind）；\n  - `test/mcp-http*` / `test/integration.test.ts` 等回归。\n- **jiti alias 夹具**：`test/chat/fixtures/generation-search.ts` / `response-search.ts` 把 `../mcp-tool-registry.js` 整模块替换；真实模块新增导出时夹具不同步，会让 `tool-cancellation-integrity` 稳定失败。\n- 发布：后端改动需**重启 daemon** 才生效；前端刷新即生效。\n\n## 设计先例\n如果只是扩展现有能力，项目先例是「**扩展现有工具而非新增工具**」：`ki_get_module_info` 批量查询就是用户拍板的方案 A，用 `relations: string[]` 扩展，而不是新增工具。新增工具会把上面的清单、授权、文档、测试同步成本全部再走一遍。\n\n依据：`接口信息/关系与索引管理/MCP工具清单`、`接口信息/检索与向量客户端/MCP工具清单与超时`、`项目架构/读任务登记表与read契约（队列分层）`、`项目踩坑点/导入期间读被队列阻塞（MCP通道缺省write）`、`接口信息/关系与索引管理/Relation局部编辑（ki_edit_relation）`、`决策记录`/`archive` 中 `SCOPE_LESS_TOOLS` 与 `ki_get_module_info` 批量方案条目。"
+    }
+  ]
+}
