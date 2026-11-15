@@ -361,6 +361,7 @@ interface Relation {
   lifecycle?: 'wiki' | 'temp' | 'event';   // 缺省 wiki
   expiresAt?: number;                       // 仅 temp；毫秒时间戳
   eventId?: string;                         // 仅 event
+  ttlDays?: number;                         // 仅 temp；原始期限天数（1~365），进回收站时快照，供恢复续期
 }
 ```
 
@@ -456,8 +457,8 @@ interface EventRefDoc {
 
 | # | 需求 |
 |---|---|
-| R1 | `Relation` 增加 `lifecycle` / `expiresAt` / `eventId`，缺省 `wiki`；旧分片读时补缺省 |
-| R2 | 4 条写入入口增加可选参数（`ki_sync_relation` / `ki_bulk_sync_relation` / `/open/v1/import/upload` / `ki import`），不传 = wiki，第三方零影响 |
+| R1 | `Relation` 增加 `lifecycle` / `expiresAt` / `eventId` / `ttlDays`（仅 temp，原始期限天数——仅凭 `expiresAt` 无法反推期限），缺省 `wiki`；旧分片读时补缺省 |
+| R2 | **2 条主动写入链路**（`ki_sync_relation` / `ki_bulk_sync_relation`）增加可选参数 `lifecycle` / `ttl_days`（相对天数，非时间戳）/ `event`；**新建未传 = wiki，覆盖未传 = 保持原值**（覆盖重置会把 hidden 事件文档变成可检索 wiki 并丢 `eventId`）。`ki import` / `/open/v1/import/upload` / 数据源同步**不加参数**——导入即 `isImported`，按 R4 强制 wiki，且 `upsertRelation` 必须清空残留生命周期字段 |
 | R3 | `expiresAt` 只对 `temp` 生效；非法值（0 / 负数 / > 365）fail-loud 400，不静默纠正 |
 | R4 | 数据源文档（`sourcePath` 非空 / `isImported`）**强制 wiki**，改分类请求拒绝并说明原因 |
 | R5 | `list` / `get_module_info` 返回分类字段；前端列表展示徽标 + 剩余天数，并支持**按分类分段筛选**（全部 / 事件 / 临时 / wiki，按此顺序）与空态 |
@@ -504,11 +505,11 @@ interface EventRefDoc {
 | R31 | 手动添加：按名称/路径搜索全库，同样排除已关联 / 已加入 |
 | R32 | **关联文档与参考文档行均可点击**打开右侧抽屉（同源组件）；关联文档的可见性由事件阶段决定，参考文档取文档自身，抽屉内须显示这一区别 |
 
-### 10.5 通用（R33-R36）
+### 10.5 通用（R33-R44）
 
 | # | 需求 |
 |---|---|
-| R33 | MCP 工具族 `ki_event_*`（只改状态、默认开启）；**不可逆操作（物理删除）不通过事件工具暴露** |
+| R33 | MCP 事件能力 = **只读查询族**（`ki_lifecycle_list` / `ki_event_list` / `ki_event_type_list`）+ **唯一状态写工具** `ki_event_set_stage`；**不提供任何创建事件 / 分类 / 类型的工具**（只能在 Web 页面创建，AI 只能查询与绑定已有项）；不可逆操作（物理删除）不通过事件工具暴露 |
 | R34 | 事件 / 分类 / 回收站三页均按 `knowledge.write` 门禁写操作；只读可看不可改 |
 | R35 | 跨 scope 隔离：所有操作以 scope 为边界，`OperationCoordinator` 排队 |
 | R36 | 写入返回值必须回显「已写入 + 当前阶段 + 检索可见性」，避免 AI 写完自己搜不到 |
@@ -516,6 +517,10 @@ interface EventRefDoc {
 | R38 | **沉淀为 wiki**（回收站内、人工触发）：AI 提炼该文档中值得长期保留的结论 → 落**草稿** → 人工确认后才写入 wiki；提炼须明示「会丢弃过程细节」，原文在保留期内仍可取回 |
 | R39 | **未收口事件兜底**：事件类型可配 `fallbackDays`（默认 90，可关）；到期未收口 → 关联文档进回收站（`reason='event-expired'`）+ 事件标红，**不自动收口事件** |
 | R40 | **group 级默认分类**（H1 的 Plan B）：可给某 group 配默认 `lifecycle` + 期限，AI 未传分类时按 group 默认走；未配时仍落 wiki。用途：明确「这个 group 都是周报」时不必依赖 AI 自觉 |
+| R41 | `ki_lifecycle_list` 支持 `group` 入参并回显该组**有效默认分类**（未配则 wiki）；不传 `group` 时不枚举全部组（防无界返回），只返回三档 + 期限选项 + 预设 |
+| R42 | `ki_event_list` 支持 `limit`（默认 20 / 上限 100）+ `offset` + `status` / `type` / `q` 筛选，返回 `total` 与 `hasMore`；每个事件附带的关联文档名受 `docsPreviewLimit` 限制（默认 3 / 上限 10），**不只返回全量文档名** |
+| R43 | `ki_event_set_stage`（唯一状态写工具）：目标阶段非法 / 已停用 / 与当前相同 → 400 fail-loud（`STAGE_NOT_FOUND` / `STAGE_DISABLED` / `STAGE_UNCHANGED`）；到达终态按 `terminalAction` 处理关联文档；返回回显新旧阶段、受影响文档数、`visibility` 与索引 `pending` |
+| R44 | 分类预设（R37）**仅页面侧**：不提供 MCP 入参（AI 直接传 `ttl_days`）；`ki_lifecycle_list` 仍回显预设名称供 AI 向人解释 |
 
 ---
 
@@ -542,6 +547,11 @@ interface EventRefDoc {
 | A17 | 事件创建满 `fallbackDays` 未收口 → 关联文档进回收站（`event-expired`）+ 事件标红，事件本身仍为未收口 | 集成 |
 | A18 | `temp` 文档到期进回收站 → 恢复 → **`expiresAt` 被续期**（不是原值），刷新后不会立刻再进回收站 | 集成 |
 | A19 | 事件收口走 trash → 文档 `eventId` **已清空**、`lifecycle` 已改 `temp`；走 keep → `lifecycle` 改 `wiki`。两种都不留悬空 `eventId` | 单测 |
+| A20 | MCP 工具清单含 3 个只读（`ki_lifecycle_list` / `ki_event_list` / `ki_event_type_list`）+ 1 个写（`ki_event_set_stage`）；**不含** `ki_event_create` / `ki_lifecycle_create` / `ki_event_type_create` | 单测（断言工具名集合） |
+| A21 | `ki_event_list` 分页与限额：`limit=2` 返回 2 条且 `hasMore=true`；单事件 `docsPreview` 长度 ≤ `docsPreviewLimit`（默认 3） | 单测 |
+| A22 | `ki_sync_relation` 传不存在事件 → 400 `EVENT_NOT_FOUND` 且附可用列表；传已收口事件 → 400 `EVENT_CLOSED`；不自动创建事件 | 单测 |
+| A23 | 写入 hidden 阶段事件后 `ki_search`（hybrid 与 fulltext）均搜不到，但 `ki_get_module_info` 可按名读到；返回体 `visibility.mode='hidden'` | 集成 |
+| A24 | `ki_event_set_stage` 流转到 fts-only 阶段 → 返回 `visibility.dense=false`；语义搜不到、全文搜得到 | 集成 |
 
 ---
 
@@ -558,7 +568,7 @@ interface EventRefDoc {
 | 前端浏览页 | 展示 | 降级 | `BrowsePage.tsx` | 只加只读徽标（§8.2） |
 | 侧栏导航 | 展示 | 降级 | `AppShell.tsx:66-80` | 加分组 |
 | 新增三页 | 展示 | — | — | 新路由 + 侧栏入口 |
-| MCP 工具族 | **外部契约** | 新增 | `mcp-tool-registry.ts` | `ki_event_*` 默认开启 |
+| MCP 事件能力 | **外部契约** | 新增 3 只读 + 1 写 | `src/lib/mcp-tools/*` + `mcp-server-factory.ts` + `auth/tool-permissions.ts` + `mcp-tools/tool-access.ts` + `operation-coordinator.ts`（**不是** `mcp-tool-registry.ts`，那是 chat 专用） | 只读三件入 `READ_ONLY_TOOL_NAMES`；`ki_event_set_stage` 走写串行、超时口径单独设 |
 | 备份快照 | 数据 | 降级 | — | 回收站是否入备份需拍板（Q2） |
 | AI 侧规则 | 流程 | 降级 | `rules/ai-codekb-memory.md` | 需约定「报告类必须标临时 + 期限」 |
 

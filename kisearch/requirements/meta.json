@@ -2127,8 +2127,8 @@
       "id": "REQ-20261113-004",
       "feature": "知识治理（文档分类 / 事件 / 回收站）",
       "created": "2026-11-13 19:09:32",
-      "updated": "2026-11-13 19:15:06",
-      "status": "草案",
+      "updated": "2026-11-15 17:01:30",
+      "status": "设计中",
       "tags": [
         "需求",
         "知识治理",
@@ -2137,12 +2137,159 @@
         "回收站",
         "web"
       ],
-      "version": 3,
+      "version": 15,
       "depends_on": [],
       "changelog": [
         "初始创建",
         "2026-11-13 19:10:32 v2: 需求文档落盘（含 demo）：四模块（分类/事件/回收站/参考文档）+ 数据模型 + R1-R36 + A1-A16 + 负向 N1-N12 + 三期路线",
-        "2026-11-13 19:15:06 v3: 文档审查修订：静态检查修 12 处（Q 编号错位、R26/Q2 矛盾、action 漂移风险→terminalAction 提到类型级、补 R37 分类预设/R38 沉淀/R39 未收口兜底/R40 group 默认分类、补流转日志模型、补关联文档抽屉、去冗余字段）；challenger 二次质疑修 5 处（未收口事件无兜底、恢复后 expiresAt 死循环、收口后 eventId 悬空、Q5 与 R11 实现冲突→已定案并写清两条搜索通道、AI 不打分类无 Plan B）；R1-R40 / A1-A19 / N1-N14 全连续"
+        "2026-11-13 19:15:06 v3: 文档审查修订：静态检查修 12 处（Q 编号错位、R26/Q2 矛盾、action 漂移风险→terminalAction 提到类型级、补 R37 分类预设/R38 沉淀/R39 未收口兜底/R40 group 默认分类、补流转日志模型、补关联文档抽屉、去冗余字段）；challenger 二次质疑修 5 处（未收口事件无兜底、恢复后 expiresAt 死循环、收口后 eventId 悬空、Q5 与 R11 实现冲突→已定案并写清两条搜索通道、AI 不打分类无 Plan B）；R1-R40 / A1-A19 / N1-N14 全连续",
+        "2026-11-15 14:21:24 v4: 完成技术设计父文档（4 章）；补充 MCP 查询三件套 + ki_event_set_stage 契约，R2/R33 修正",
+        "2026-11-15 15:19:41 v5: S-01 落盘；R2 修正为 2 条 MCP 链路加参数（导入链路强制 wiki 不加参数）",
+        "2026-11-15 15:22:05 v6: S-02 落盘；新增第 6 处需求缺口：事件位置改用 stageKey（stageIndex 会随拖动漂移）",
+        "2026-11-15 15:29:15 v7: S-03~S-07 落盘，设计文档全集完成（父 + 7 子），待评审",
+        "2026-11-15 15:32:00 v8: 完成设计评审：3 阻断 + 2 疑似 + 11 警告已全部修复；需求 R1/§9.1 补 Relation.ttlDays",
+        "2026-11-15 15:35:24 v9: 实施计划落盘：8 批次 / 单窗口串行 / 开工前 1 条代码假设待核实",
+        "2026-11-15 16:28:39 v10: B2 回收站落地：trash-store + trash-service + 删除链路快照 + 惰性清理，13 例绿；摘索引原语随 B4",
+        "2026-11-15 16:44:34 v11: B3 事件与事件类型落地：类型阶段约束 + 流转/收口 + 两条终态去向 + 删除与重开，18 例绿",
+        "2026-11-15 16:47:37 v12: B4 部分完成：可见性唯一出口 + pending 队列 + sync 写入档位守卫（19 例）；rebuild/edit-publish 两处防线与 daemon 启动消费待补",
+        "2026-11-15 16:50:19 v13: B4 完成：三处档位防线（写入/发布/重建）+ daemon 启动恢复 pending 与回收站清理",
+        "2026-11-15 16:55:55 v14: B5 参考文档落地：引用独立存储 + 确定性候选 5 步 + 悬空标记，11 例绿（含 A13 字节级断言）",
+        "2026-11-15 17:01:30 v15: B6 契约层完成：30 条治理路由 + 4 个 MCP 工具（3 读 1 写）+ 五处登记一致性测试"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_分类字段与写入链路_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_事件与事件类型_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_索引可见性_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_回收站_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S05_参考文档_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S06_接口契约_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S07_前端三页_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-15-ki_ask 问题背景与提示词分层": {
+      "id": "REQ-20261115-001",
+      "feature": "ki_ask 问题背景与提示词分层",
+      "created": "2026-11-15 15:53:59",
+      "updated": "2026-11-15 16:15:28",
+      "status": "已完成",
+      "tags": [
+        "mcp",
+        "chat",
+        "提示词",
+        "需求分析"
+      ],
+      "version": 7,
+      "depends_on": [
+        "REQ-20261113-001"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-11-15 15:54:36 v2: 编写需求分析文档：背景入参 + 提示词分层",
+        "2026-11-15 15:58:47 v4: 需求方拍板：background 上限 8000→2000 字符；落盘/命名/提示词方案B/工具开关 4 项采纳建议",
+        "2026-11-15 16:11:42 v5: 实现完成：background 入参（≤2000、不落盘）+ MCP 适配块 + 审计；29 例测试全绿",
+        "2026-11-15 16:13:53 v6: auto-review 复审：修复 background 描述缺示例、提示词冲突缺优先级声明；补 ⑧⑮ 两例（31 例绿）",
+        "2026-11-15 16:15:28 v7: 复审第3项：ASK_CONTEXT_EXPIRED 文案说明背景不落盘、可用 background 重传（15 例绿）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "report.md",
+          "type": "report"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-15-测试子进程超时与收尾句柄治理": {
+      "id": "REQ-20261115-002",
+      "feature": "测试子进程超时与收尾句柄治理",
+      "created": "2026-11-15 16:01:36",
+      "updated": "2026-11-15 16:21:02",
+      "status": "已完成",
+      "tags": [
+        "test",
+        "infra",
+        "超时",
+        "挂起",
+        "测试基建"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-15 16:02:24 v2: 需求编写完成；一期已落地（sync-relation.test.ts 从永久挂起变 30.2s/30 pass），二期 24 文件待迁移",
+        "2026-11-15 16:14:13 v3: 二期：execCli/execCommand 封装 + CLI 形态 14 文件迁移完成（13 个测试文件全绿）；顺带修 3 个存量问题（K2 口径 4 处断言 + runJson 空 stdout）",
+        "2026-11-15 16:21:02 v4: 二期完成：42 处 execFileSync 全部收口为 execCli/execCommand（grep=0），13 文件 462 例通过；1 个环境相关失败（mcp-daemon 需真实 embedding 预检）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-15-多Agent协作平台": {
+      "id": "REQ-20261115-003",
+      "feature": "多Agent协作平台",
+      "created": "2026-11-15 00:00:00",
+      "updated": "2026-11-15 00:00:00",
+      "status": "待确认",
+      "tags": [
+        "feat",
+        "collab"
+      ],
+      "version": 1,
+      "depends_on": [],
+      "changelog": [
+        "初始创建：PM 需求报告（M1，含现状调研与影响面）"
       ],
       "commits": [],
       "branch": null,
@@ -2177,6 +2324,7 @@
     "REQ-20261104": 5,
     "REQ-20261105": 1,
     "REQ-20261112": 1,
-    "REQ-20261113": 4
+    "REQ-20261113": 4,
+    "REQ-20261115": 2
   }
 }
