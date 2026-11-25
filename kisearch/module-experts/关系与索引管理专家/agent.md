@@ -1,10 +1,13 @@
 # 关系与索引管理专家 Agent
 
+> **历史快照提示（2026-11-25 合并补全）**：本篇主体保留 2026-08 基线时的描述；文中出现的 `manage-index` / `query-group` 命令、`13 工具` / `14 文件` / `22 个文件` / 「web 内无单测」等均为**当时状态**，现已变更。当前口径以文末的「合并补全」增量章节与 `INDEX.md` 为准。
+
+
 ## 简介
 
 kisearch 的**关系（Relation）与索引管理**：关系回写（四层联动）、批量回写、评分冷热分区、Group 树 CRUD、目录级级联删除、Wiki 写回与历史补齐、模块信息查询与关系四层删除。
 
-**模块根**：`src/lib/{scoring,group-resolve,wiki-sync,path-search}.ts` + `src/{sync-relation,query-group,manage-index,get-module-info,delete-relation,wiki-backfill}.ts`
+**模块根**：`src/lib/{scoring,group-resolve,wiki-sync,path-search}.ts` + `src/{sync-relation,get-module-info,delete-relation,wiki-backfill,group,index-optimize}.ts`
 
 ## 能力清单
 
@@ -13,7 +16,7 @@ kisearch 的**关系（Relation）与索引管理**：关系回写（四层联�
 | 关系回写 | 四层写入（relations-cache + local KB + dense/FTS-only 索引 + Wiki）；支持自定义 tags、非向量化模式 | `sync-relation.ts` |
 | 批量关系回写 | vector=true 时一次 embedding + 一次 upsert；vector=false 时不调用 embedding，写按 scope 隔离的 FTS-only Collection | `executeBulkSyncRelation` |
 | 评分引擎 | 使用密度评分 + 5 分钟防刷 + 新兴识别 + 冷热分区 + 边界衰减 | `scoring.ts` |
-| Group 树 CRUD | create / delete（空节点 + `--force` 级联）/ list-scopes | `manage-index.ts` |
+| Group 树 CRUD | create / delete（预览 + 写锁 + 级联清理）/ list | `src/group.ts` + `lib/group-{create,delete,resolve,cache}.ts` |
 | Group 查询 | 词云已移除；hot/warm/cold/emerging 分区 + 树渲染（**纯文本输出**） | `query-group.ts` |
 | 模块信息查询 | 读 local KB 原文 + 记一次使用（有评分副作用）+ 语义兜底 | `get-module-info.ts` |
 | 关系删除 | 四层联动，wiki 文件移入回收站（非物理删除） | `delete-relation.ts` |
@@ -138,3 +141,13 @@ kisearch 的**关系（Relation）与索引管理**：关系回写（四层联�
 ---
 
 > **下一步建议**：补 `test/delete-relation.test.ts`（文档级删除 + `deleteBySearch` 中文边界）与 `test/scoring.test.ts`（`boundaryDecay` / 上限截断），补齐当前最大的两处覆盖缺口。
+
+---
+
+> **合并补全（2026-11-25，基线 0f1426b）**
+> - **旧根失效**：`src/manage-index.ts` 已删除；`bin/ki.mjs` 对 manage-index / query-group 是零兼容报错分支（`process.exit(1)`）并映射到 `ki group create/delete/list` 与 `ki scope list`。`src/query-group.ts` 仍在，但只作内部库被 `src/group.ts::executeQueryGroup` 调用，不再是独立 CLI。
+> - **Group CRUD 新落点**：`src/group.ts`（CLI 三子命令）、`src/index-optimize.ts`（optimizeVectorIndex 重试）、`src/lib/group-create.ts::executeGroupCreate`、`group-delete.ts::planGroupDelete / executeGroupDelete`、`group-resolve.ts::resolveGroupPath`、`group-cache.ts::writeGroupCache / loadGroupCache`。
+> - **回收站与关系编辑层（旧文档完全没写）**：`trash-service.ts`（moveToTrash / restoreFromTrash / purgeExpired）、`trash-store.ts`（writeTrashItem / listTrash）、`relation-edit-{draft,live,publish}.ts`（createDraft / readLiveRelation / finishRelationEditNow）、`relation-lifecycle.ts`（precheckLifecycle / applyLifecyclePlan）、`relation-map.ts`（getRelationMap / resolveAuxHit）。
+> - **口径推翻**：wiki 回写不再读 `group-index.json` 的 source 块，只认 scope 级 `config.wikiSync.sourceDir`（`src/lib/wiki-sync.ts` 文件头，2026-11-12 裁定）。
+> - **测试**：`test/*group*` 10 个、`*relation*` 11 个、`*trash*` 7 个、`*scoring*` 3 个；`npm run test:all` / `test:group-create` / `test:group-delete` / `test:query-group` / `test:sync-relation`。既有红：后端 tsc 9 个基线错，events 批量 2 红与 run-tests 批量 3 红为并发污染（单跑全绿）。
+
