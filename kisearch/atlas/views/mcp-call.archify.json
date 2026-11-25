@@ -1,0 +1,325 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "一次 MCP 工具调用：ki_search",
+    "locale": "zh-CN",
+    "output": ".atlas/build/mcp-call.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:HACK-WU/kisearch.git",
+      "link_mode": "local-only",
+      "revision": "071afab7fee7bd8be00db0d5865ddfd8aa77bb82"
+    }
+  },
+  "participants": [
+    {
+      "id": "ide",
+      "type": "external",
+      "label": "AI Agent / IDE",
+      "sublabel": "MCP 客户端"
+    },
+    {
+      "id": "http",
+      "type": "backend",
+      "label": "MCP HTTP 单例",
+      "sublabel": "createMcpHttpServer",
+      "sources": [
+        {
+          "path": "src/lib/mcp-http.ts",
+          "line": 814,
+          "end_line": 830,
+          "label": "鉴权闸门"
+        }
+      ]
+    },
+    {
+      "id": "access",
+      "type": "security",
+      "label": "鉴权与准入",
+      "sublabel": "mcp-token",
+      "sources": [
+        {
+          "path": "src/lib/mcp-tools/tool-access.ts",
+          "line": 39,
+          "end_line": 50,
+          "label": "只读工具白名单"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "type": "backend",
+      "label": "工具层",
+      "sublabel": "util.withTimeout",
+      "sources": [
+        {
+          "path": "src/lib/mcp-tools/util.ts",
+          "line": 24,
+          "end_line": 34,
+          "label": "超时包装"
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "type": "backend",
+      "label": "检索业务",
+      "sublabel": "executeSearch",
+      "sources": [
+        {
+          "path": "src/search.ts",
+          "line": 935,
+          "end_line": 950,
+          "label": "检索入口"
+        }
+      ]
+    },
+    {
+      "id": "vc",
+      "type": "backend",
+      "label": "Vector Adapter",
+      "sublabel": "vectorSearch",
+      "sources": [
+        {
+          "path": "src/lib/vector-client.ts",
+          "line": 1009,
+          "end_line": 1020,
+          "label": "向量检索"
+        }
+      ]
+    },
+    {
+      "id": "engine",
+      "type": "backend",
+      "label": "ZvecEngine",
+      "sublabel": "hybridSearch · RRF",
+      "sources": [
+        {
+          "path": "src/zvec-engine/engine.ts",
+          "line": 321,
+          "end_line": 330,
+          "label": "混合检索"
+        }
+      ]
+    },
+    {
+      "id": "zvec",
+      "type": "database",
+      "label": "zvec 集合",
+      "sublabel": "vector + FTS",
+      "sources": [
+        {
+          "path": "src/zvec-engine/worker.ts",
+          "line": 533,
+          "end_line": 540,
+          "label": "RRF 融合"
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 250,
+      "label": "入口与鉴权"
+    },
+    {
+      "from": 255,
+      "to": 368,
+      "label": "工具调用与预算"
+    },
+    {
+      "from": 372,
+      "to": 500,
+      "label": "检索链路"
+    },
+    {
+      "from": 505,
+      "to": 668,
+      "label": "结果回传"
+    }
+  ],
+  "messages": [
+    {
+      "id": "call",
+      "from": "ide",
+      "to": "http",
+      "y": 172,
+      "label": "POST /mcp · tools/call",
+      "variant": "emphasis"
+    },
+    {
+      "id": "token",
+      "from": "http",
+      "to": "access",
+      "y": 205,
+      "label": "校验 Token + scope",
+      "variant": "security"
+    },
+    {
+      "id": "denied",
+      "from": "access",
+      "to": "http",
+      "y": 235,
+      "label": "越权 403",
+      "variant": "return"
+    },
+    {
+      "id": "dispatch",
+      "from": "http",
+      "to": "tools",
+      "y": 300,
+      "label": "交给工具实现",
+      "variant": "emphasis"
+    },
+    {
+      "id": "wrap",
+      "from": "tools",
+      "to": "search",
+      "y": 335,
+      "label": "参数校验 + 超时包装",
+      "note": "READ 30s / WRITE 60s / BULK 300s"
+    },
+    {
+      "id": "vs",
+      "from": "search",
+      "to": "vc",
+      "y": 400,
+      "label": "vectorSearch"
+    },
+    {
+      "id": "hy",
+      "from": "vc",
+      "to": "engine",
+      "y": 432,
+      "label": "hybridSearch"
+    },
+    {
+      "id": "query",
+      "from": "engine",
+      "to": "zvec",
+      "y": 464,
+      "label": "ANN + FTS 查询",
+      "variant": "emphasis"
+    },
+    {
+      "id": "hits",
+      "from": "zvec",
+      "to": "engine",
+      "y": 496,
+      "label": "候选 docId + 排名",
+      "variant": "return"
+    },
+    {
+      "id": "rrf",
+      "from": "engine",
+      "to": "vc",
+      "y": 528,
+      "label": "RRF 融合得分",
+      "variant": "return"
+    },
+    {
+      "id": "ranked",
+      "from": "vc",
+      "to": "search",
+      "y": 560,
+      "label": "命中 + 分数",
+      "variant": "return"
+    },
+    {
+      "id": "original",
+      "from": "search",
+      "to": "tools",
+      "y": 592,
+      "label": "原文 + memoryId",
+      "variant": "return"
+    },
+    {
+      "id": "result",
+      "from": "tools",
+      "to": "http",
+      "y": 624,
+      "label": "工具结果",
+      "variant": "return"
+    },
+    {
+      "id": "reply",
+      "from": "http",
+      "to": "ide",
+      "y": 656,
+      "label": "MCP result",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "http",
+      "from": 168,
+      "to": 662,
+      "type": "backend"
+    },
+    {
+      "participant": "access",
+      "from": 200,
+      "to": 246,
+      "type": "security"
+    },
+    {
+      "participant": "tools",
+      "from": 296,
+      "to": 630,
+      "type": "backend"
+    },
+    {
+      "participant": "search",
+      "from": 330,
+      "to": 598,
+      "type": "backend"
+    },
+    {
+      "participant": "vc",
+      "from": 396,
+      "to": 566,
+      "type": "backend"
+    },
+    {
+      "participant": "engine",
+      "from": 428,
+      "to": 534,
+      "type": "backend"
+    },
+    {
+      "participant": "zvec",
+      "from": 460,
+      "to": 502,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "两处准入",
+      "items": [
+        "HTTP 层判 Token 与 scope，越权直接 403，业务层看不到这次调用",
+        "工具层再判只读白名单与模型可用性，避免只读会话触发写工具"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "超时预算",
+      "items": [
+        "READ 30s / WRITE 60s / BULK 300s 三档",
+        "超时不是静默返回空结果，而是抛出后转成 MCP 错误"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "工具层不改语义",
+      "items": [
+        "业务层返回什么，工具层就原样交出，只做包装",
+        "想改召回策略请改业务层，不要在工具层加特判"
+      ]
+    }
+  ]
+}

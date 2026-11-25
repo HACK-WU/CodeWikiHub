@@ -1,0 +1,35 @@
+{
+  "title": "一份知识的一生",
+  "type": "dataflow",
+  "svg": "views/lifecycle.svg",
+  "summary": "四个写入入口（import / ki_store / sync-relation / 数据源同步）汇到同一条加工链，落成三类存储：zvec 集合回答「像不像」，KB JSON 回答「在哪、原文是什么」。消费侧分检索、回想、直查、对话四种用法，维护侧再接评分冷热、回收站与备份。",
+  "points": [
+    ["一次写入写三处", "chunk 文本既进向量也进 FTS，同时整篇原文按文件级存档；三者口径刻意不同，原文不清洗。"],
+    ["存储各回答一个问题", "向量只管相似度与排名，KB JSON 管路径、关系与原文；跨层追问题要先分清是哪一层给的答案。"],
+    ["维护不是删除", "评分按使用计数衰减影响权重，删除先进回收站可恢复，备份还原后可能还要重建向量。"],
+    ["入口虽多，加工只有一条", "四种写法最终都要过清洗切分与建树，差别只在落点与是否走向量。" ]
+  ],
+  "docs": [
+    "docs/architecture.md",
+    "docs/group.md"
+  ],
+  "code": [
+    { "id": "import_cli", "file": "src/import.ts", "lines": [40, 70], "why": "批量入口：目录 / 单文件导入" },
+    { "id": "store_tool", "file": "src/store.ts", "lines": [55, 65], "why": "单条入口：直接写一条正文，不走目录扫描" },
+    { "id": "rel_tool", "file": "src/sync-relation.ts", "lines": [1668, 1680], "why": "结构化入口：关系正文与评分回写的起点" },
+    { "id": "ds_sync", "file": "src/lib/datasource-scheduled-run.ts", "lines": [89, 100], "why": "定时入口：数据源按计划拉取后走同一条加工链" },
+    { "id": "chunk", "file": "src/lib/chunker.ts", "lines": [183, 190], "why": "加工的第一站：切分决定后面三处落点的粒度" },
+    { "id": "embed", "file": "src/zvec-engine/embedding/siliconflow.ts", "lines": [34, 35], "why": "外部 embedding：默认端点与模型，缺 Key 时会在这里报错" },
+    { "id": "fts", "file": "src/lib/fts-client.ts", "lines": [139, 150], "why": "全文写入：不走 embedding 的那条支线" },
+    { "id": "groups", "file": "src/lib/import.ts", "lines": [2808, 2820], "why": "建树：把落点路径补进 Group 树" },
+    { "id": "zvec", "file": "src/lib/config.ts", "lines": [667, 668], "why": "向量存储位置：dense 与 FTS 集合" },
+    { "id": "kb", "file": "src/lib/scope.ts", "lines": [100, 108], "why": "结构化存储：树、关系缓存与原文" },
+    { "id": "search", "file": "src/search.ts", "lines": [935, 950], "why": "检索消费：两路召回 + 原文交付" },
+    { "id": "recall", "file": "src/lib/recall/run-recall.ts", "lines": [287, 300], "why": "回想消费：多轮 grounded，供 AI 分析使用" },
+    { "id": "module_info", "file": "src/get-module-info.ts", "lines": [498, 510], "why": "直查消费：已知路径时 100% 命中，不过向量" },
+    { "id": "chat", "file": "src/lib/chat/chat-routes.ts", "lines": [405, 415], "why": "对话消费：把召回片段交给模型" },
+    { "id": "scoring", "file": "src/lib/scoring.ts", "lines": [121, 130], "why": "维护：按使用计数算分，决定检索权重与冷热分区" },
+    { "id": "trash", "file": "src/lib/trash-store.ts", "lines": [108, 115], "why": "维护：删除先进回收站，可恢复" },
+    { "id": "backup", "file": "src/lib/backup.ts", "lines": [39, 50], "why": "维护：结构化快照，还原后可重建向量" }
+  ]
+}

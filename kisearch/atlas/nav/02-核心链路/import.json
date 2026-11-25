@@ -1,0 +1,27 @@
+{
+  "title": "一次知识导入",
+  "type": "workflow",
+  "svg": "views/import.svg",
+  "summary": "ki import 先把 scope 加锁，再扫描目录、清洗切分、批量向量化，然后建 Group 树、写关系缓存与原文，最后记录 source 元数据。增量不靠 diff：同一份内容重导即覆盖，重复执行同一条命令就是增量更新。",
+  "points": [
+    ["幂等追加取代增量 diff", "同 sourcePath 重导 = 覆盖更新，同名不同源 = 冲突跳过，新文件 = 新增；所以没有 --mode 参数，也不需要记录 commit。"],
+    ["覆盖导入是 scope 级清空", "dense 模式下只要 scope 已有向量，本次导入会先清空再重建；跨批次导入不同 group 时，前次文件不在本次源目录内就会丢向量。"],
+    ["中断不是死局", "被 SIGINT/SIGTERM 打断会写 import-interrupt.json 并清锁，下次打开向量库时被引导执行 ki restore --rebuild-vector。"],
+    ["HTTP 导入的 job 在内存", "服务重启后 /api/import/status 会 404，前端提示重新导入；这不是 bug，是设计上的取舍。"]
+  ],
+  "docs": [
+    "docs/import.md",
+    "docs/build-kb.md"
+  ],
+  "code": [
+    { "id": "entry", "file": "src/import.ts", "lines": [40, 70], "why": "CLI 命令定义：ki import 的参数与 action 都在这段" },
+    { "id": "lock", "file": "src/lib/interrupt.ts", "lines": [88, 96], "why": "导入锁路径：同 scope 并发导入靠这一个文件串行" },
+    { "id": "interrupt", "file": "src/lib/interrupt.ts", "lines": [29, 40], "why": "中断标记路径：被打断时写在这里，恢复时据此引导" },
+    { "id": "assets", "file": "src/lib/import.ts", "lines": [611, 620], "why": "图片附件收集：md 里引用的本地图片复制到 group 级 assets/" },
+    { "id": "scan", "file": "src/lib/import.ts", "lines": [502, 510], "why": "文件收集：按后缀白名单扫描源目录，未命中直接 fail-loud" },
+    { "id": "chunk", "file": "src/lib/chunker.ts", "lines": [183, 190], "why": "切分实现：chunkSize / chunkOverlap 决定向量化单元" },
+    { "id": "vectorize", "file": "src/lib/batch-vectorize.ts", "lines": [147, 155], "why": "批量向量化：内容向量的唯一入口，调用外部 embedding" },
+    { "id": "groups", "file": "src/lib/import.ts", "lines": [2808, 2820], "why": "Phase 3：按落点路径把 Group 树补全" },
+    { "id": "kb", "file": "src/lib/import.ts", "lines": [2823, 2835], "why": "Phase 4：写关系缓存与原文，经 WAL 原子落盘" }
+  ]
+}

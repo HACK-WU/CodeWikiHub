@@ -1,0 +1,873 @@
+{
+ "runtime": {
+  "web": {
+   "file": "web/src/App.tsx",
+   "line": 24,
+   "endLine": 33,
+   "commit": "0f1426b",
+   "why": "SPA 入口：路由表决定 18 个页面各自挂在哪个路径下",
+   "symbol": "App",
+   "snippet": "export function App(): JSX.Element {\n  return (\n    <QueryClientProvider client={queryClient}>\n      <ScopeProvider>\n        <BrowserRouter>\n          <AuthProvider>\n            <AppRoutes />\n          </AuthProvider>\n        </BrowserRouter>\n      </ScopeProvider>"
+  },
+  "cli": {
+   "file": "bin/ki.mjs",
+   "line": 31,
+   "endLine": 60,
+   "commit": "0f1426b",
+   "why": "命令表：ki 的所有子命令及其脚本映射都在这一处",
+   "symbol": "COMMANDS",
+   "snippet": "const COMMANDS = {\n  'import': 'src/import.ts',\n  'datasource': 'src/datasource.ts',\n  'group': 'src/group.ts',\n  'get-module-info': 'src/get-module-info.ts',\n  'sync-relation': 'src/sync-relation.ts',\n  'delete-relation': 'src/delete-relation.ts',\n  'mcp': 'src/mcp-server.ts',\n  'search': 'src/search.ts',\n  'store': 'src/store.ts',\n  'bulk-store': 'src/bulk-store.ts',\n  'scope': 'src/scope.ts',\n  'view': 'src/view.ts',\n  'doc': 'src/doc.ts',\n  'tag': 'src/tag.ts',\n  'user': 'src/user.ts',\n  'config': 'src/config.ts',\n  'doctor': 'src/doctor.ts',\n  'log': 'src/log.ts',\n  'backup': 'src/backup.ts',\n  'restore': 'src/restore.ts',\n  'export': 'src/export.ts',\n  'wiki-backfill': 'src/wiki-backfill.ts',\n  'migrate-relation-cache': 'src/migrate-relation-cache.ts',\n  'index-optimize': 'src/index-optimize.ts',\n  'event-types': 'src/event-types.ts',\n  // 图集（REQ-20261120-003）：一期唯一写入口；页面上传是二期\n  'atlas': 'src/atlas.ts',\n};\n"
+  },
+  "stdio": {
+   "file": "src/lib/daemon-bridge.ts",
+   "line": 10,
+   "endLine": 14,
+   "commit": "0f1426b",
+   "why": "stdio 不自己开库，原样桥接到本机 HTTP 的注释与入口",
+   "symbol": "startStdioDaemonBridge",
+   "snippet": "export async function startStdioDaemonBridge(): Promise<void> {\n  await ensureDaemon();\n  const lockDir = getStdioLockDir();\n  acquireStdioLock(lockDir);\n  let released = false;"
+  },
+  "http": {
+   "file": "src/lib/mcp-http.ts",
+   "line": 651,
+   "endLine": 660,
+   "commit": "0f1426b",
+   "why": "HTTP 分发总闸：/mcp、/api、/healthz 与静态托管都在此裁决",
+   "symbol": "createMcpHttpServer",
+   "snippet": "export function createMcpHttpServer(opts: HttpAppOptions): McpHttpApp {\n  const { authEnabled, token, allowedHosts, buildServer, advertiseAddr } = opts;\n  const localAdmin = opts.localAdmin !== false;\n  // 第三方通道的三个生效值：两个开关决定 `/open/v1/import/*`、`/open/v1/asset|doc` 是否 404，\n  // 上限供 ping 回显与后续路由限流（REQ-20261124-002 起读出口也有独立开关）\n  const uploadApi = opts.uploadApi !== false;\n  const downloadApi = opts.downloadApi !== false;\n  const uploadMaxBytes = opts.uploadMaxBytes ?? DEFAULT_UPLOAD_MAX_BYTES;\n  const maxSessions = opts.maxSessions ?? DEFAULT_MAX_SESSIONS;\n  const sessionIdleMs = opts.sessionIdleMs ?? DEFAULT_SESSION_IDLE_MS;"
+  },
+  "rpc": {
+   "file": "src/lib/daemon-rpc.ts",
+   "line": 189,
+   "endLine": 192,
+   "commit": "0f1426b",
+   "why": "CLI 命令经 net socket 进入 daemon 排队的服务入口",
+   "symbol": "startDaemonRpcServer",
+   "snippet": "export async function startDaemonRpcServer(opts: DaemonRpcOptions = {}): Promise<net.Server> {\n  const config = loadConfig();\n  ensureVectorLayout(config);\n  const socketPath = getDaemonSocketPath();"
+  },
+  "tools": {
+   "file": "src/lib/mcp-server-factory.ts",
+   "line": 48,
+   "endLine": 60,
+   "commit": "0f1426b",
+   "why": "25 个 ki_* 工具的唯一注册点：stdio 与 HTTP 共用同一个构建函数",
+   "symbol": "readOnly",
+   "snippet": "  const readOnly = auth?.readOnly === true;\n  const authScopes = auth ? auth.scopes : null;\n  const server = new McpServer(\n    {\n      name: SERVICE_NAME,\n      version: readKiVersion(),\n    },\n    readOnly ? { instructions: READ_ONLY_INSTRUCTIONS } : undefined,\n  );\n  // ── 读工具（6 个）：只读会话同样注册 ──\n  // ⚠️ 新增读工具时同步加入 mcp-tools/tool-access.ts::READ_ONLY_TOOL_NAMES，\n  //    否则只读 Token 看不见它（方向安全，但功能缺失）。\n  registerSearchTool(server);"
+  },
+  "apiroutes": {
+   "file": "src/lib/mcp-http-api.ts",
+   "line": 1024,
+   "endLine": 1035,
+   "commit": "0f1426b",
+   "why": "/api 大路由表：核心、chat、治理、视图、open-api 都从这里分流",
+   "symbol": "handleApiRequest",
+   "snippet": "export async function handleApiRequest(\n  req: http.IncomingMessage,\n  res: http.ServerResponse,\n  url: URL,\n  ctx: ApiRequestCtx,\n): Promise<void> {\n  // 直接调用测试/嵌入方也要在入口捕获快照；生产 HTTP 调用由 mcp-http 外层\n  // 再建立同一快照，避免队列出队后回到磁盘最新配置。\n  const requestConfig = loadConfig();\n  const p = url.pathname.replace(/^\\/api/, '').replace(/\\/+$/, '') || '/';\n  const clientAddr = ctx.clientAddr ?? req.socket.remoteAddress ?? '';\n  const authResult = resolveWebPrincipal(req, {"
+  },
+  "services": {
+   "file": "src/lib/import.ts",
+   "line": 747,
+   "endLine": 755,
+   "commit": "0f1426b",
+   "why": "业务层代表：导入编排入口，锁与幂等判定都在这个函数里",
+   "symbol": "handleDirectImport",
+   "snippet": "export async function handleDirectImport(\n  args: HandleDirectImportArgs\n): Promise<ImportResult> {\n  // 切分参数范围校验必须在**拿写锁 / 扫描 / 向量化之前**（fail-fast）：超界值会让每个\n  // chunk 都超出合理输入区间，等 embedding 阶段才失败既慢又难定位。\n  // 这里是 `ki import`、`/api/import/run`、数据源同步三条链路的共同入口，校验一次即全覆盖。\n  const chunkErr = validateChunkParams({ chunkSize: args.chunkSize, chunkOverlap: args.chunkOverlap });\n  if (chunkErr) {\n    throw Object.assign(new Error(chunkErr.message), {"
+  },
+  "kb": {
+   "file": "src/lib/wal.ts",
+   "line": 134,
+   "endLine": 140,
+   "commit": "0f1426b",
+   "why": "KB JSON 的原子写入：先写临时文件再替换，进程被杀也不会留半个文件",
+   "symbol": "walWrite",
+   "snippet": "export function walWrite(filePath: string, data: unknown): void {\n  const dir = path.dirname(filePath);\n  const basename = path.basename(filePath);\n  const tmpPath = path.join(dir, `${basename}.tmp`);\n\n  // 确保目录存在（锁文件也需要目录先存在）\n  fs.mkdirSync(dir, { recursive: true });"
+  },
+  "adapter": {
+   "file": "src/lib/vector-client.ts",
+   "line": 1009,
+   "endLine": 1018,
+   "commit": "0f1426b",
+   "why": "Vector Adapter：业务层唯一该调用的向量入口，dense 检索走这里",
+   "symbol": "vectorSearch",
+   "snippet": "export async function vectorSearch(params: {\n  scope?: string;\n  /** 多 scope：优先于 scope；数组成员逐个 resolve（strict 模式逐个校验） */\n  scopes?: string[];\n  query: string;\n  limit?: number;\n  tags?: string | string[]; // 数组：tag 值本身可能含逗号，join/split 往返会错拆；字符串：逗号分隔多 tag\n  threshold?: number;\n  /** 查询 embedding 超时（ms）；未传时使用 embedding.queryTimeoutMs。 */\n  timeoutMs?: number;"
+  },
+  "engine": {
+   "file": "src/zvec-engine/engine.ts",
+   "line": 321,
+   "endLine": 325,
+   "commit": "0f1426b",
+   "why": "引擎侧混合检索：语义结果与 FTS 结果在 worker 里做 RRF 融合",
+   "symbol": "",
+   "snippet": "  async hybridSearch(req: HybridSearchReq): Promise<Hit[]> {\n    return this.search({ ...req });\n  }\n\n  // ─── 索引 ───"
+  },
+  "embed": {
+   "file": "src/zvec-engine/embedding/siliconflow.ts",
+   "line": 34,
+   "endLine": 35,
+   "commit": "0f1426b",
+   "why": "外部 embedding 的默认端点与模型，缺 API Key 时的报错也在这里",
+   "symbol": "DEFAULT_BASE_URL",
+   "snippet": "const DEFAULT_BASE_URL = 'https://api.siliconflow.cn/v1';\nconst DEFAULT_MODEL = 'Qwen/Qwen3-Embedding-8B';"
+  },
+  "zvec": {
+   "file": "src/lib/config.ts",
+   "line": 667,
+   "endLine": 668,
+   "commit": "0f1426b",
+   "why": "向量目录的默认位置 ~/.ki/vector，FTS 集合也落在同目录体系下",
+   "symbol": "",
+   "snippet": "    : path.join(os.homedir(), '.ki', 'vector');\n"
+  }
+ },
+ "mcp-call": {
+  "http": {
+   "file": "src/lib/mcp-http.ts",
+   "line": 814,
+   "endLine": 830,
+   "commit": "0f1426b",
+   "why": "鉴权闸门：/mcp 与 /api 进来先校验 Token 与请求 scope，越权在这里被拒",
+   "symbol": "guardConfig",
+   "snippet": "    if (url.pathname.startsWith('/api/') || url.pathname === '/mcp') {\n      // 「取配置」与「判漂移」必须分开：loadConfig 会因 YAML 语法错、字段非法、\n      // --config 路径不存在而抛错；若无条件归为 DAEMON_IDENTITY_DRIFT，客户端会拿到\n      // 「请重启 daemon」的错误出路（重启后仍失败）—— 正是本轮要消灭的文案误导。\n      let guardConfig: KiConfig;\n      try {\n        guardConfig = loadConfig();\n        requestConfig = guardConfig;\n      } catch (err) {\n        sendJson(res, 503, {\n          ok: false,\n          error: `配置加载失败：${(err as Error).message}`,\n          code: 'CONFIG_LOAD_FAILED',\n          hint: '请执行 ki doctor 排查配置文件，或 ki config init 重新生成；修复后无需重启即生效。',\n        });\n        return;\n      }"
+  },
+  "access": {
+   "file": "src/lib/mcp-tools/tool-access.ts",
+   "line": 39,
+   "endLine": 50,
+   "commit": "0f1426b",
+   "why": "只读工具白名单：只读会话里这些工具仍可调用，新增无 scope 参数的工具要同步登记",
+   "symbol": "READ_ONLY_TOOL_NAMES",
+   "snippet": " *\n * ★ `ki_get_image` 已**移出**本清单（2026-11-25）：该工具不再在 `/mcp` 注册\n *   （取件改由 `ki-client asset get` 承担），本清单只描述对外 MCP 面，故不再列它。\n *   内部对话面仍保留同名工具，其准入走 `auth/tool-permissions.ts` 的 `knowledge.read`。\n */\nexport const READ_ONLY_TOOL_NAMES: readonly string[] = [\n  'ki_search',\n  'ki_recall',\n  'ki_get_module_info',\n  'ki_group_list',\n  'ki_scope_list',\n  'ki_view_list',"
+  },
+  "tools": {
+   "file": "src/lib/mcp-tools/util.ts",
+   "line": 24,
+   "endLine": 34,
+   "commit": "0f1426b",
+   "why": "超时包装：工具不自己计时，统一交给 withTimeout，超时抛 ToolTimeoutError",
+   "symbol": "withTimeout",
+   "snippet": "export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {\n  let timer: NodeJS.Timeout;\n  const timeout = new Promise<never>((_, reject) => {\n    timer = setTimeout(() => reject(new ToolTimeoutError(label, ms)), ms);\n    // 不阻止进程退出\n    if (typeof timer.unref === 'function') timer.unref();\n  });\n  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer)) as Promise<T>;\n}\n\n/** 工具超时预设（毫秒） */"
+  },
+  "search": {
+   "file": "src/search.ts",
+   "line": 935,
+   "endLine": 950,
+   "commit": "0f1426b",
+   "why": "检索业务入口：CLI 与 HTTP 共用同一个函数，改召回策略只需要改这里往下",
+   "symbol": "executeSearch",
+   "snippet": "export async function executeSearch(params: {\n  scope?: string;\n  query: string;\n  limit?: number;\n  threshold?: number;\n  tags?: string;\n  /** 查询 embedding 超时（ms）；未传时使用配置中的默认值。 */\n  timeoutMs?: number;\n  includeOriginal?: boolean;\n  mode?: 'hybrid' | 'fulltext';\n  /** 多库重排算法（默认 weighted；dynamic-ratio 仅用于算法对比，见 TEMP 注释） */\n  ranking?: MultiRankingAlgorithm;\n  /** 语义补充系数（仅 calibrated-semantic 生效）；未传时用 scoring.ts 的默认值 */\n  semanticBonus?: number;\n}): Promise<SearchResult> {\n  if (shouldUseDaemonClient()) {"
+  },
+  "vc": {
+   "file": "src/lib/vector-client.ts",
+   "line": 1009,
+   "endLine": 1020,
+   "commit": "0f1426b",
+   "why": "Vector Adapter：业务层唯一该调用的向量入口，负责引擎生命周期与结果整形",
+   "symbol": "vectorSearch",
+   "snippet": "export async function vectorSearch(params: {\n  scope?: string;\n  /** 多 scope：优先于 scope；数组成员逐个 resolve（strict 模式逐个校验） */\n  scopes?: string[];\n  query: string;\n  limit?: number;\n  tags?: string | string[]; // 数组：tag 值本身可能含逗号，join/split 往返会错拆；字符串：逗号分隔多 tag\n  threshold?: number;\n  /** 查询 embedding 超时（ms）；未传时使用 embedding.queryTimeoutMs。 */\n  timeoutMs?: number;\n  /**\n   * 库内评分算法（**仅多库 / 视图生效**）。"
+  },
+  "engine": {
+   "file": "src/zvec-engine/engine.ts",
+   "line": 321,
+   "endLine": 330,
+   "commit": "0f1426b",
+   "why": "混合检索：语义与 FTS 两路查询的汇合点",
+   "symbol": "",
+   "snippet": "  async hybridSearch(req: HybridSearchReq): Promise<Hit[]> {\n    return this.search({ ...req });\n  }\n\n  // ─── 索引 ───\n\n  async createIndex(field: string, indexParam: object): Promise<void> {\n    await this.proxy.send('createIndex', { field, indexParam });\n  }\n"
+  },
+  "zvec": {
+   "file": "src/zvec-engine/worker.ts",
+   "line": 533,
+   "endLine": 540,
+   "commit": "0f1426b",
+   "why": "RRF 融合：按 Σ1/(k+rank) 把多路排名合成单一分数",
+   "symbol": "rrf",
+   "snippet": "        const rrf = e.ranks.reduce((sum, r) => sum + (r ? 1 / (rankConstant + r) : 0), 0);\n        // rrf=0 只会出现在「两路都没名次」的防御场景：按单路 rank1 归入 d=2 档\n        const rrfSafe = rrf > 0 ? rrf : RRF_FLOOR;\n        const ftsScore = e.scores[1] ?? 0; // queries[1] = 字面路（router 固定顺序）\n        const vecScore = e.scores[0] ?? 0; // 已转成相似度（0.33~1）；未被向量路召回时为 0\n        const base = dynamicRatioScore(rrfSafe, ftsScore);\n        // 定标加权 + 语义补充：语义分为 0 表示未被语义路召回，该项即为 0，不做补偿\n        const bonus = payload.semanticBonus ?? SEMANTIC_BONUS;"
+  }
+ },
+ "import": {
+  "entry": {
+   "file": "src/import.ts",
+   "line": 40,
+   "endLine": 70,
+   "commit": "0f1426b",
+   "why": "CLI 命令定义：ki import 的参数与 action 都在这段",
+   "symbol": "program",
+   "snippet": "const program = new Command();\n\n// ─── S-04：统一导入命令（幂等追加）──────────────────────────\n// 扁平结构：选项直接挂在 program 上（对齐 export/search/store/restore 等扁平命令惯例）\n\nprogram\n  .name('import')\n  .showHelpAfterError()\n  .description('导入：--source 直导外部 Wiki（无 AI，自动切分；幂等追加到目标 group）')\n  .option('-s, --scope <scope>', '项目隔离标识（default 模式可省略，默认 default；strict 模式必填）')\n  // 非 requiredOption：`--retry-incomplete` 允许省略 --source（沿用上次导入记录的源目录），\n  // 缺省校验移到 action 内（见下方「必须提供 --source」），以便给出更准确的提示\n  .option('--source <sourceDir>', '外部 Markdown Wiki 根目录（原文直导，无 AI 依赖，自动切分）；--retry-incomplete 时可省略')\n  .option('--group <group>', '目标 Group 落点（不存在时自动新建，含父路径）。缺省时按相对目录建组，源目录根下的散文件落到「根」')\n  .option('--chunk-size <chunkSize>', '切分目标长度（字符，默认 1000）')\n  .option('--chunk-overlap <chunkOverlap>', '切分重叠字符数（默认 150）')\n  .option('--no-vector', 'FTS-only 模式：不调用 embedding，不写 dense 向量；清洗后的 chunk 写入独立全文 Collection，可被 fulltext 检索')\n  .option('--tags <tags>', '文档级自定义标签（逗号分隔多个）：向量模式写内容向量，FTS-only 模式写全文标签索引；均持久化到 relation.tags')\n  .option('--no-clean', '关闭全部数据清洗（含外部 hooks，等价 config clean.enabled:false）')\n  .option('--no-assets', '关闭本地图片附件收集（等价 config import.assets:false；关闭后前端对图片引用显示占位块）')\n  .option('--conflict-mode <mode>', '同名文档处理策略：incremental（内容未变则跳过重算，默认）/ overwrite / skip（已存在的一律不动，只导入新文件）/ suffix')\n  .option('--conflict-suffix <template>', '自动后缀模板，必须包含 {n}（默认 _{n}）')\n  .option('--clean-rules <rules>', '覆盖内置清洗规则开关，逗号分隔：bom,frontmatter,htmlComment,mermaid,codePath,codeBlock（不传用 config/默认）')\n  .option('--max-batch-files <n>', '整批最大文件数（S0-3 预算；默认 20000，≤0 显式关闭该项限制）')\n  .option('--max-batch-bytes <n>', '整批最大总字节数（S0-3 预算；默认 4GiB，≤0 显式关闭该项限制）')\n  .option('--max-batch-chunks <n>', '整批最大预计 chunk 数（S0-3 预算；默认 300000，≤0 显式关闭该项限制）')\n  .option('--retry-incomplete', 'R2：只重试上次未完成的文件（读 <scope>/.ki-import-incomplete.json；可省略 --source，沿用那次导入的源目录与参数）')\n  .action(async (opts) => {\n    const requestConfig = loadConfig();\n    return runWithConfigSnapshot(requestConfig, async () => {\n    try {"
+  },
+  "lock": {
+   "file": "src/lib/interrupt.ts",
+   "line": 88,
+   "endLine": 96,
+   "commit": "0f1426b",
+   "why": "导入锁路径：同 scope 并发导入靠这一个文件串行",
+   "symbol": "getImportLockPath",
+   "snippet": "export function getImportLockPath(scope: string): string {\n  return path.join(getKbDir(scope), '.import.lock');\n}\n\n/** 尝试获取导入锁：成功返回 true；已有活动锁返回 false */\nexport function acquireImportLock(scope: string): boolean {\n  const p = getImportLockPath(scope);\n  if (fs.existsSync(p)) {\n    // 检查 pid 是否存活：pid 不存在（SIGKILL/崩溃残留）→ 自动清理（N4）"
+  },
+  "interrupt": {
+   "file": "src/lib/interrupt.ts",
+   "line": 29,
+   "endLine": 40,
+   "commit": "0f1426b",
+   "why": "中断标记路径：被打断时写在这里，恢复时据此引导",
+   "symbol": "getInterruptMarkPath",
+   "snippet": "export function getInterruptMarkPath(scope: string): string {\n  return path.join(getKbDir(scope), 'import-interrupt.json');\n}\n\n/** 读取中断标记（不存在返回 null） */\nexport function readInterruptMark(scope: string): InterruptMark | null {\n  const p = getInterruptMarkPath(scope);\n  if (!fs.existsSync(p)) return null;\n  try {\n    return JSON.parse(fs.readFileSync(p, 'utf-8')) as InterruptMark;\n  } catch {\n    return null; // 损坏标记视为不存在（可重新导入覆盖）"
+  },
+  "assets": {
+   "file": "src/lib/import.ts",
+   "line": 611,
+   "endLine": 620,
+   "commit": "0f1426b",
+   "why": "图片附件收集：md 里引用的本地图片复制到 group 级 assets/",
+   "symbol": "collectAndCopyAssets",
+   "snippet": "export function collectAndCopyAssets(opts: {\n  sourceDir: string;\n  mdDir: string;\n  mdLabel: string;\n  assetsDir: string;\n  urls: string[];\n  maxAssetBytes: number;\n}): AssetCollectResult {\n  const copied: string[] = [];\n  const warnings: string[] = [];"
+  },
+  "scan": {
+   "file": "src/lib/import.ts",
+   "line": 502,
+   "endLine": 510,
+   "commit": "0f1426b",
+   "why": "文件收集：按后缀白名单扫描源目录，未命中直接 fail-loud",
+   "symbol": "collectMarkdownFiles",
+   "snippet": "export function collectMarkdownFiles(sourceDir: string, extensions: string[] = DEFAULT_EXTENSIONS): { files: string[]; skippedNonMd: string[] } {\n  const out: string[] = [];\n  const skippedNonMd: string[] = [];\n  const exts = extensions.length > 0 ? extensions.map((e) => e.toLowerCase()) : DEFAULT_EXTENSIONS;\n  const isAllowed = (name: string): boolean => exts.some((e) => name.toLowerCase().endsWith(e));\n\n  const walk = (dir: string) => {\n    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {\n      const abs = path.join(dir, entry.name);"
+  },
+  "chunk": {
+   "file": "src/lib/chunker.ts",
+   "line": 183,
+   "endLine": 190,
+   "commit": "0f1426b",
+   "why": "切分实现：chunkSize / chunkOverlap 决定向量化单元",
+   "symbol": "splitIntoChunks",
+   "snippet": "export function splitIntoChunks(text: string, options: ChunkOptions = {}): Chunk[] {\n  const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;\n  const overlap = options.overlap ?? DEFAULT_CHUNK_OVERLAP;\n\n  if (!text) return [];\n  // 只拦\"无法切分\"的非法值（<=0）。上下限（MIN/MAX_CHUNK_SIZE）**故意不在此拦**：\n  // `group-index.json.source.chunkSize` 可能存着历史超界值，重建 / 编辑发布会复用\n  // 它重新切分，硬抛会让老 scope 再也跑不起来。范围约束统一在各写入入口做。"
+  },
+  "vectorize": {
+   "file": "src/lib/batch-vectorize.ts",
+   "line": 147,
+   "endLine": 155,
+   "commit": "0f1426b",
+   "why": "批量向量化：内容向量的唯一入口，调用外部 embedding",
+   "symbol": "bulkVectorize",
+   "snippet": "export async function bulkVectorize(\n  entries: ScanResultEntry[],\n  scope: string,\n  options: BatchVectorizeOptions = {},\n  deps: BulkVectorizeDeps = {}\n): Promise<BatchVectorizeResult> {\n  const bulkStore = deps.bulkStore ?? vectorBulkStore;\n  const ok = new Map<string, string>();\n  const errors: { path: string; error: string }[] = [];"
+  },
+  "groups": {
+   "file": "src/lib/import.ts",
+   "line": 2808,
+   "endLine": 2820,
+   "commit": "0f1426b",
+   "why": "Phase 3：按落点路径把 Group 树补全",
+   "symbol": "phase3EnsureGroups",
+   "snippet": "function phase3EnsureGroups(\n  ctx: ImportContext,\n  groupIndex: GroupIndex\n): void {\n  for (const e of ctx.entries) {\n    ensureGroupPathInTree(groupIndex, e.groupPath);\n    // 将完整路径及所有父级都加入 groups（如 'wiki/部署运维' → 'wiki' + 'wiki/部署运维'）\n    const segments = e.groupPath.split('/').filter(Boolean);\n    for (let i = 1; i <= segments.length; i++) {\n      ctx.groups.add(segments.slice(0, i).join('/'));\n    }\n  }\n}"
+  },
+  "kb": {
+   "file": "src/lib/import.ts",
+   "line": 2823,
+   "endLine": 2835,
+   "commit": "0f1426b",
+   "why": "Phase 4：写关系缓存与原文，经 WAL 原子落盘",
+   "symbol": "phase4WriteRelations",
+   "snippet": "function phase4WriteRelations(\n  ctx: ImportContext,\n  cache: RelationsCache,\n  isDatasourceDocument: boolean,\n  /**\n   * 打标计划（REQ-20261120-001）：`group\\u0000relation` → 本次是新建还是内容变更。\n   * 缺项（如 rebuild 等不走扫描循环的入口）→ 沿用库里已有的时间字段，不做任何改写。\n   */\n  stamps?: Map<string, { isNew: boolean; contentChanged: boolean }>\n): void {\n  // 文件级 relation 聚合：同 group 下相同 relation 名（文件级，basename 去扩展名）→ 一条记录\n  const fileRelMap = new Map<string, { groupPath: string; relation: string; sourcePath: string }>();\n  for (const e of ctx.entries) {"
+  }
+ },
+ "search": {
+  "search": {
+   "file": "src/search.ts",
+   "line": 935,
+   "endLine": 950,
+   "commit": "0f1426b",
+   "why": "检索入口：参数归一化、两路召回编排都在这个函数",
+   "symbol": "executeSearch",
+   "snippet": "export async function executeSearch(params: {\n  scope?: string;\n  query: string;\n  limit?: number;\n  threshold?: number;\n  tags?: string;\n  /** 查询 embedding 超时（ms）；未传时使用配置中的默认值。 */\n  timeoutMs?: number;\n  includeOriginal?: boolean;\n  mode?: 'hybrid' | 'fulltext';\n  /** 多库重排算法（默认 weighted；dynamic-ratio 仅用于算法对比，见 TEMP 注释） */\n  ranking?: MultiRankingAlgorithm;\n  /** 语义补充系数（仅 calibrated-semantic 生效）；未传时用 scoring.ts 的默认值 */\n  semanticBonus?: number;\n}): Promise<SearchResult> {\n  if (shouldUseDaemonClient()) {"
+  },
+  "vc": {
+   "file": "src/lib/vector-client.ts",
+   "line": 1009,
+   "endLine": 1020,
+   "commit": "0f1426b",
+   "why": "Vector Adapter：业务层唯一该调的向量入口",
+   "symbol": "vectorSearch",
+   "snippet": "export async function vectorSearch(params: {\n  scope?: string;\n  /** 多 scope：优先于 scope；数组成员逐个 resolve（strict 模式逐个校验） */\n  scopes?: string[];\n  query: string;\n  limit?: number;\n  tags?: string | string[]; // 数组：tag 值本身可能含逗号，join/split 往返会错拆；字符串：逗号分隔多 tag\n  threshold?: number;\n  /** 查询 embedding 超时（ms）；未传时使用 embedding.queryTimeoutMs。 */\n  timeoutMs?: number;\n  /**\n   * 库内评分算法（**仅多库 / 视图生效**）。"
+  },
+  "engine": {
+   "file": "src/zvec-engine/engine.ts",
+   "line": 321,
+   "endLine": 330,
+   "commit": "0f1426b",
+   "why": "混合检索：语义与 FTS 两路查询在此汇合",
+   "symbol": "",
+   "snippet": "  async hybridSearch(req: HybridSearchReq): Promise<Hit[]> {\n    return this.search({ ...req });\n  }\n\n  // ─── 索引 ───\n\n  async createIndex(field: string, indexParam: object): Promise<void> {\n    await this.proxy.send('createIndex', { field, indexParam });\n  }\n"
+  },
+  "zvec": {
+   "file": "src/lib/config.ts",
+   "line": 667,
+   "endLine": 668,
+   "commit": "0f1426b",
+   "why": "向量目录默认位置：dense 与 FTS 集合都在这个目录体系下",
+   "symbol": "",
+   "snippet": "    : path.join(os.homedir(), '.ki', 'vector');\n"
+  },
+  "fts": {
+   "file": "src/lib/fts-client.ts",
+   "line": 179,
+   "endLine": 190,
+   "commit": "0f1426b",
+   "why": "全文检索：不需要 embedding 的 BM25 查询入口",
+   "symbol": "ftsSearch",
+   "snippet": "export async function ftsSearch(params: {\n  scope: string;\n  query: string;\n  limit?: number;\n  group?: string;\n  relation?: string;\n  tag?: string;\n}): Promise<FtsSearchResult[]> {\n  const scope = resolveScope(loadConfig(), params.scope);\n  if (!collectionExists(scope)) return [];\n  const hits = await withEngine(scope, (engine) => engine.ftsSearch({\n    match: params.query,"
+  },
+  "locator": {
+   "file": "src/lib/original-locator.ts",
+   "line": 319,
+   "endLine": 330,
+   "commit": "0f1426b",
+   "why": "原文定位：memoryId → KB 原文片段与行号",
+   "symbol": "createOriginalLocator",
+   "snippet": "export function createOriginalLocator(original: string): OriginalLocator {\n  const lines = original.split(/\\r?\\n/);\n  const lineStarts = buildLineStarts(original);\n  return {\n    totalLines: lines.length,\n    locate: (query, options = {}) => locateOriginalMatchesInLines(lines, query, options),\n    locateChunkRange: (chunkText) => locateChunkRange(original, chunkText, lineStarts),\n  };\n}\n\nexport function locateOriginalMatches(\n  original: string,"
+  }
+ },
+ "daemons": {
+  "cli": {
+   "file": "bin/ki.mjs",
+   "line": 233,
+   "endLine": 250,
+   "commit": "0f1426b",
+   "why": "daemon 判定与 detached 启动：--http + --daemon 才走常驻",
+   "symbol": "isDaemon",
+   "snippet": "  const isDaemon =\n    scriptArgs.includes('--http') && (scriptArgs.includes('--daemon') || scriptArgs.includes('-d'));\n\n  // 标记真正的后台 daemon（detached + stdio ignore），供 mcp-server 判定 SIGHUP 语义：\n  // 前台 `ki mcp --http` 仍在终端进程组内，注册 SIGHUP 监听器会抑制 Node 默认终止\n  // 行为，导致关闭终端后服务不退出、成为继续占用 HTTP 端口/RPC socket/zvec 锁的孤儿。\n  if (isDaemon) childEnv.KI_DAEMON_DETACHED = '1';\n\n  // 使用当前 Node 进程直接执行本地 jiti CLI，避免 Windows 下无法 spawn npx.cmd。\n  // spawn 异步 + 信号转发保持原有行为。\n  // cwd 设为用户当前目录，确保相对路径参数（如 --results）正确解析\n  const child = spawn(process.execPath, [jitiCliPath, scriptPath, ...scriptArgs], {\n    stdio: isDaemon ? 'ignore' : 'inherit',\n    detached: isDaemon,\n    cwd: process.cwd(),\n    env: childEnv,\n    // Windows：daemon 模式是 detached（DETACHED_PROCESS 会新建控制台窗口），必须用\n    // CREATE_NO_WINDOW 启动；非 daemon 前台进程本就继承当前终端、不会弹窗，而"
+  },
+  "daemon": {
+   "file": "src/lib/mcp-http.ts",
+   "line": 1355,
+   "endLine": 1370,
+   "commit": "0f1426b",
+   "why": "HTTP 单例启动：监听、落 lock、标记 web 能力",
+   "symbol": "startHttpMcpServer",
+   "snippet": "export async function startHttpMcpServer(opts: HttpServerOptions): Promise<void> {\n  const { host, port, buildServer, allowedHosts, onShutdown, localAdmin = true } = opts;\n  const authEnabled = !isLoopbackHost(host);\n  const token = opts.token;\n  const uploadApi = opts.uploadApi !== false;\n  const downloadApi = opts.downloadApi !== false;\n  const uploadMaxBytes = opts.uploadMaxBytes ?? DEFAULT_UPLOAD_MAX_BYTES;\n  // 固定本实例的 lock 路径；即使运行期间配置文件发生身份漂移，退出时也必须\n  // 清理启动时的 lock，而不能按新配置计算出另一条路径。\n  const lockPath = getHttpLockPath(loadConfig());\n\n  // ─── 幂等单例：先探活，命中健康实例则复用退出 ───\n  if (await probeHealthz(host, port)) {\n    process.stderr.write(\n      `已有健康的 kisearch 实例在 ${probeHost(host)}:${port}，复用该实例，本次不再启动。\\n`,\n    );"
+  },
+  "sched": {
+   "file": "src/lib/datasource-scheduler.ts",
+   "line": 321,
+   "endLine": 335,
+   "commit": "0f1426b",
+   "why": "调度器启动：由 daemon 启动序末尾拉起",
+   "symbol": "startDataSourceScheduler",
+   "snippet": "export function startDataSourceScheduler(): void {\n  getSingleton().start();\n}\n\nexport function stopDataSourceScheduler(): void {\n  singleton?.stop();\n}\n\n/** 配置/同步完成后重算；未启动时无操作 */\nexport function refreshDataSourceScheduler(): void {\n  singleton?.refresh();\n}\n\nexport function getDataSourceSchedulerState(): DataSourceSchedulerState {\n  return singleton?.getState() ?? {"
+  },
+  "govresume": {
+   "file": "src/lib/mcp-http.ts",
+   "line": 1588,
+   "endLine": 1600,
+   "commit": "0f1426b",
+   "why": "重启后接上未完成的事件分析任务",
+   "symbol": "resumeGovernanceTasks",
+   "snippet": "function resumeGovernanceTasks(config: ReturnType<typeof loadConfig>): void {\n  for (const scope of Object.keys(config.scopes ?? {})) {\n    try {\n      const purged = purgeExpired({ scope });\n      if (purged.purged.length > 0 || purged.notified.length > 0) {\n        console.log(`[governance] ${scope} 回收站清理：删除 ${purged.purged.length} 篇 / 待提醒 ${purged.notified.length} 篇`);\n      }\n    } catch (err) {\n      console.warn(`[governance] 回收站清理失败（${scope}）：${(err as Error).message}`);\n    }\n\n    if (pendingCount(scope) === 0) continue;\n    void resumePendingOnStartup(scope)"
+  },
+  "visq": {
+   "file": "src/lib/visibility-queue.ts",
+   "line": 238,
+   "endLine": 250,
+   "commit": "0f1426b",
+   "why": "可见性队列的启动恢复：消费上次没做完的摘补",
+   "symbol": "resumePendingOnStartup",
+   "snippet": "export async function resumePendingOnStartup(scope: string): Promise<ConsumeResult> {\n  return consumePending(scope);\n}\n\n/**\n * 写操作后按需触发消费（fire-and-forget），**同 scope 串行**。\n *\n * 为什么必须有：`resumePendingOnStartup` 只在 daemon 启动时跑（`mcp-http.ts` 的\n * `resumeGovernanceTasks`），运行期入队的补索引任务原本永远不会执行 ——\n * 界面写着\"索引补齐中，数秒后生效\"，实际要等下次重启。\n *\n * 为什么要串行：`consumePending` 读-改-写 `.visibility-pending.json` 无锁，两次并发\n * 会互相覆盖条目、写乱 `attempts`。这里用模块级 in-flight Map 复用同一个 Promise。"
+  },
+  "locks": {
+   "file": "src/lib/scope-write-lock.ts",
+   "line": 123,
+   "endLine": 135,
+   "commit": "0f1426b",
+   "why": "同 scope 写操作串行化，避免并发导入互相踩",
+   "symbol": "withScopeWriteLock",
+   "snippet": "export async function withScopeWriteLock<T>(scope: string, operation: string, run: () => Promise<T>): Promise<T> {\n  /**\n   * 只读门禁（REQ-20261029-001）——**取锁之前**判定：\n   * ① 放行集见 `EXEMPT_OPS`（import / 数据源 / 运维），拦 `BLOCKED_OPS`（逐条写入）；\n   * ② 放在此处而非锁内：只读库的写请求应立刻失败，否则会排在一个长导入后面十余秒才报错；\n   * ③ 复用同一份 config 取 dataDir，避免重复 `loadConfig()`（每次含一次 statSync）。\n   *\n   * ⚠️ `scope-readonly` op 不得走到这里（否则只读库永远解除不了）；\n   * `cloneLockScope(repoRoot)` 这类**合成锁键**不是业务 scope，名单精确匹配天然不命中。\n   */\n  const config = loadConfig();\n  assertOperationWritable(scope, operation, config);\n  /**"
+  },
+  "tasks": {
+   "file": "src/lib/task-registry.ts",
+   "line": 622,
+   "endLine": 635,
+   "commit": "0f1426b",
+   "why": "任务台账：谁在跑、跑到哪、上次是不是断了",
+   "symbol": "createTaskReporter",
+   "snippet": "export function createTaskReporter(\n  config: Pick<KiConfig, 'dataDir'>,\n  input: {\n    id?: string;\n    source: TaskSource;\n    operation: string;\n    scope: string;\n    /** 发起者快照；缺省 = legacy（旧调用方/旧任务） */\n    operator?: TaskOperator;\n    /** 重试血缘：本任务重试自哪个任务（缺省 = 非重试任务） */\n    retryOf?: string;\n  },\n): TaskReporter {\n  const now = Date.now();"
+  },
+  "zvec": {
+   "file": "src/lib/vector-client.ts",
+   "line": 369,
+   "endLine": 380,
+   "commit": "0f1426b",
+   "why": "向量库空闲释放锁：多实例并存靠它错开",
+   "symbol": "enableIdleClose",
+   "snippet": "export function enableIdleClose(idleMs: number): void {\n  _idleCloseMs = idleMs;\n  _lastUseAt = Date.now();\n  if (_idleTimer) clearInterval(_idleTimer);\n  _idleTimer = setInterval(() => {\n    if (_idleCloseMs <= 0) return;\n    // 在途保护（竞态修复）：有进行中的 engine 操作（含 embedding 网络阶段）时禁止空闲释放。\n    // 此前竞态：hybridSearch 主线程 embedding（网络 0.5s~数秒）超过 idle 窗口时，\n    // proxy.close() 的 drain 只等已 postMessage 的请求，embedding 阶段不可见 → drain\n    // 立即完成 → worker closed → embedding 返回后 proxy.send 报\n    // \"worker not open (state=closed)\"。\n    if (_enginePromises.size > 0 && _inFlightOps === 0 && Date.now() - _lastUseAt >= _idleCloseMs) {"
+  }
+ },
+ "layout": {
+  "ki_dir": {
+   "file": "src/lib/config.ts",
+   "line": 41,
+   "endLine": 42,
+   "commit": "0f1426b",
+   "why": "数据根目录的默认值：所有路径都从这里派生",
+   "symbol": "",
+   "snippet": "  return path.join(os.homedir(), '.ki');\n}"
+  },
+  "config": {
+   "file": "src/lib/config.ts",
+   "line": 398,
+   "endLine": 410,
+   "commit": "0f1426b",
+   "why": "配置加载顺序：--config → KI_CONFIG_PATH → ~/.ki/config.yaml",
+   "symbol": "loadConfig",
+   "snippet": "export function loadConfig(explicitPath?: string): KiConfig {\n  const snapshot = configSnapshotStorage.getStore();\n  if (snapshot && (explicitPath === undefined || path.resolve(explicitPath) === snapshot._configPath)) {\n    return snapshot;\n  }\n  const requestedPath = explicitPath ?? process.env.KI_CONFIG_PATH ?? undefined;\n  if (_cached && _cachedExplicitPath === explicitPath) {\n    if (_cachedFile === null) {\n      // 当前用的是默认值（启动时未找到配置文件）：配置文件可能在进程启动后\n      // 才被创建（ki config init），所以仍需重新查找一次。\n      if (!findConfigFile(requestedPath)) return _cached;\n    } else {\n      const st = statFingerprint(_cachedFile);"
+  },
+  "kb": {
+   "file": "src/lib/config.ts",
+   "line": 60,
+   "endLine": 75,
+   "commit": "0f1426b",
+   "why": "kb 与 backup 默认路径的推导",
+   "symbol": "resolveDefaultDataPaths",
+   "snippet": "export function resolveDefaultDataPaths(includeEnv = false): ResolvedDefaultPaths {\n  const home = os.homedir();\n\n  let dataDir = path.join(home, '.ki', 'kb');\n  if (includeEnv) {\n    const envDataDir = process.env.KI_DATA_DIR?.trim();\n    if (envDataDir) {\n      dataDir = path.resolve(envDataDir);\n    }\n  }\n\n  return { dataDir, backupDir: path.join(home, '.ki', 'backup') };\n}\n\n/**\n * 会话存储根目录的默认值（REQ-20260924-001 · S02 §3.1）。"
+  },
+  "group_index": {
+   "file": "src/lib/scope.ts",
+   "line": 100,
+   "endLine": 101,
+   "commit": "0f1426b",
+   "why": "Group 树文件：scope 结构的第一份真相",
+   "symbol": "",
+   "snippet": "  return path.join(getKbDir(scope), 'group-index.json');\n}"
+  },
+  "relations_cache": {
+   "file": "src/lib/scope.ts",
+   "line": 107,
+   "endLine": 108,
+   "commit": "0f1426b",
+   "why": "关系热缓存：评分与冷热分区的落点",
+   "symbol": "",
+   "snippet": "  return path.join(getKbDir(scope), 'relations-cache.json');\n}"
+  },
+  "local_kb": {
+   "file": "src/lib/scope.ts",
+   "line": 115,
+   "endLine": 120,
+   "commit": "0f1426b",
+   "why": "原文目录：文件级 Markdown，未清洗",
+   "symbol": "getLocalKbDir",
+   "snippet": "export function getLocalKbDir(scope: string, groupPath: string): string {\n  validateScope(scope);\n  return path.join(getKbDir(scope), groupPath, 'index.json');\n}\n\n/**"
+  },
+  "assets": {
+   "file": "src/lib/scope.ts",
+   "line": 128,
+   "endLine": 132,
+   "commit": "0f1426b",
+   "why": "附件目录：导入时复制进来的图片",
+   "symbol": "getAssetsDir",
+   "snippet": "export function getAssetsDir(scope: string, groupPath: string): string {\n  validateScope(scope);\n  return path.join(getKbDir(scope), groupPath, 'assets');\n}\n"
+  },
+  "governance": {
+   "file": "src/lib/governance-store.ts",
+   "line": 65,
+   "endLine": 66,
+   "commit": "0f1426b",
+   "why": "事件与阶段的落盘文件",
+   "symbol": "",
+   "snippet": "  return path.join(getKbDir(scope), 'governance.json');\n}"
+  },
+  "trash": {
+   "file": "src/lib/trash-store.ts",
+   "line": 108,
+   "endLine": 115,
+   "commit": "0f1426b",
+   "why": "回收站根目录：删文档先进这里，可恢复",
+   "symbol": "getTrashRoot",
+   "snippet": "export function getTrashRoot(scope: string): string {\n  validateScope(scope);\n  return path.join(getKbDir(scope), '.trash');\n}\n\nexport function getTrashSettingsPath(scope: string): string {\n  return path.join(getTrashRoot(scope), '_settings.json');\n}"
+  },
+  "atlas": {
+   "file": "src/lib/atlas/paths.ts",
+   "line": 21,
+   "endLine": 30,
+   "commit": "0f1426b",
+   "why": "知识地图包的存放位置与元信息",
+   "symbol": "atlasDir",
+   "snippet": "export function atlasDir(scope: string): string {\n  return path.join(getKbDir(scope), ATLAS_DIR_NAME);\n}\n\nexport function entryPath(scope: string): string {\n  return path.join(atlasDir(scope), 'atlas.html');\n}\n\nexport function packageZipPath(scope: string): string {\n  return path.join(atlasDir(scope), 'package.zip');"
+  },
+  "scope_locks": {
+   "file": "src/lib/interrupt.ts",
+   "line": 88,
+   "endLine": 96,
+   "commit": "0f1426b",
+   "why": "导入锁与中断标记：同 scope 并发导入被拒的依据",
+   "symbol": "getImportLockPath",
+   "snippet": "export function getImportLockPath(scope: string): string {\n  return path.join(getKbDir(scope), '.import.lock');\n}\n\n/** 尝试获取导入锁：成功返回 true；已有活动锁返回 false */\nexport function acquireImportLock(scope: string): boolean {\n  const p = getImportLockPath(scope);\n  if (fs.existsSync(p)) {\n    // 检查 pid 是否存活：pid 不存在（SIGKILL/崩溃残留）→ 自动清理（N4）"
+  },
+  "vector": {
+   "file": "src/lib/config.ts",
+   "line": 667,
+   "endLine": 668,
+   "commit": "0f1426b",
+   "why": "向量目录：zvec 集合（含 FTS）都在这里",
+   "symbol": "",
+   "snippet": "    : path.join(os.homedir(), '.ki', 'vector');\n"
+  },
+  "tokens": {
+   "file": "src/lib/mcp-token.ts",
+   "line": 29,
+   "endLine": 30,
+   "commit": "0f1426b",
+   "why": "多 Token 存储：0600，含每个 Token 的 scope 授权",
+   "symbol": "",
+   "snippet": "  return path.join(os.homedir(), '.ki', 'mcp-tokens.json');\n}"
+  },
+  "locks": {
+   "file": "src/lib/mcp-http.ts",
+   "line": 104,
+   "endLine": 112,
+   "commit": "0f1426b",
+   "why": "HTTP 实例锁：restart / status 靠它定位进程",
+   "symbol": "getHttpLockPath",
+   "snippet": "export function getHttpLockPath(config: KiConfig = loadConfig()): string {\n  return path.join(os.homedir(), '.ki', `mcp-http-${daemonIdentityFingerprint(config)}.lock`);\n}\n\n/** 供 stop 清理多配置实例；只返回受控命名格式的 lock。 */\nexport function listHttpLockPaths(): string[] {\n  const dir = path.join(os.homedir(), '.ki');\n  try {\n    const derived = fs.readdirSync(dir)"
+  },
+  "tasks": {
+   "file": "src/lib/task-log.ts",
+   "line": 68,
+   "endLine": 72,
+   "commit": "0f1426b",
+   "why": "任务日志目录：排查后台任务时先看这里",
+   "symbol": "taskLogPath",
+   "snippet": "  return path.join(config.dataDir, '.ki-tasks', 'logs');\n}\n\nexport function taskLogPath(config: Pick<KiConfig, 'dataDir'>, id: string): string {\n  if (!TASK_ID_RE.test(id)) {"
+  },
+  "uploads": {
+   "file": "src/lib/mcp-http-api.ts",
+   "line": 221,
+   "endLine": 225,
+   "commit": "0f1426b",
+   "why": "HTTP 导入的暂存目录：上传先落这里再进 job",
+   "symbol": "getUploadsRoot",
+   "snippet": "export function getUploadsRoot(): string {\n  return path.join(os.homedir(), '.ki', 'import-uploads');\n}\n\nconst UPLOAD_SCOPE_FILE = '.scope';"
+  },
+  "views": {
+   "file": "src/lib/scope-view.ts",
+   "line": 158,
+   "endLine": 165,
+   "commit": "0f1426b",
+   "why": "知识视图定义：多库聚合的成员与阈值",
+   "symbol": "getViewsPath",
+   "snippet": "export function getViewsPath(config: KiConfig): string {\n  const configPath = config._configPath;\n  if (configPath) return path.join(path.dirname(configPath), 'views.json');\n  return path.join(os.homedir(), '.ki', 'views.json');\n}\n\n// ─── 读 ──────────────────────────────────────────────────\n"
+  },
+  "chat": {
+   "file": "src/lib/config.ts",
+   "line": 88,
+   "endLine": 92,
+   "commit": "0f1426b",
+   "why": "对话与提示词配置目录",
+   "symbol": "resolveDefaultChatDir",
+   "snippet": "export function resolveDefaultChatDir(dataDir: string): string {\n  return path.join(path.dirname(dataDir), DEFAULT_CHAT_DIR_NAME);\n}\n\n// ─── 类型 ───"
+  },
+  "backup": {
+   "file": "src/lib/backup.ts",
+   "line": 39,
+   "endLine": 50,
+   "commit": "0f1426b",
+   "why": "备份执行入口：快照结构与落点",
+   "symbol": "executeBackup",
+   "snippet": "export function executeBackup(params: BackupOperationParams): BackupResult & { snapshotPath?: string } {\n  const config = loadConfig();\n  const { scope } = params;\n  const scopeDataDir = getScopeDataDir(config, scope);\n  if (!fs.existsSync(scopeDataDir)) throw new Error(`scope 数据目录不存在：${scopeDataDir}`);\n  // 批次 2 审查 P0-2 修复：原判定只看旧单文件 relations-cache.json，而惰性迁移会把它\n  // 改名 `.bak`（新布局 scope 只剩去 `.relations/manifest.json`）→ ki backup / daemon\n  // backup / Web 备份全部误报\"尚未初始化\"。改为两布局任一存在即算已初始化。\n  const rcPath = path.join(scopeDataDir, 'relations-cache.json');\n  const manifestPath = getRelationsManifestPath(scope);\n  if (!fs.existsSync(rcPath) && !fs.existsSync(manifestPath)) {\n    throw new Error(`scope \"${scope}\" 尚未初始化（缺少 relations-cache.json 与 ${path.basename(path.dirname(manifestPath))}/manifest.json），请先执行 import`);"
+  }
+ },
+ "lifecycle": {
+  "import_cli": {
+   "file": "src/import.ts",
+   "line": 40,
+   "endLine": 70,
+   "commit": "0f1426b",
+   "why": "批量入口：目录 / 单文件导入",
+   "symbol": "program",
+   "snippet": "const program = new Command();\n\n// ─── S-04：统一导入命令（幂等追加）──────────────────────────\n// 扁平结构：选项直接挂在 program 上（对齐 export/search/store/restore 等扁平命令惯例）\n\nprogram\n  .name('import')\n  .showHelpAfterError()\n  .description('导入：--source 直导外部 Wiki（无 AI，自动切分；幂等追加到目标 group）')\n  .option('-s, --scope <scope>', '项目隔离标识（default 模式可省略，默认 default；strict 模式必填）')\n  // 非 requiredOption：`--retry-incomplete` 允许省略 --source（沿用上次导入记录的源目录），\n  // 缺省校验移到 action 内（见下方「必须提供 --source」），以便给出更准确的提示\n  .option('--source <sourceDir>', '外部 Markdown Wiki 根目录（原文直导，无 AI 依赖，自动切分）；--retry-incomplete 时可省略')\n  .option('--group <group>', '目标 Group 落点（不存在时自动新建，含父路径）。缺省时按相对目录建组，源目录根下的散文件落到「根」')\n  .option('--chunk-size <chunkSize>', '切分目标长度（字符，默认 1000）')\n  .option('--chunk-overlap <chunkOverlap>', '切分重叠字符数（默认 150）')\n  .option('--no-vector', 'FTS-only 模式：不调用 embedding，不写 dense 向量；清洗后的 chunk 写入独立全文 Collection，可被 fulltext 检索')\n  .option('--tags <tags>', '文档级自定义标签（逗号分隔多个）：向量模式写内容向量，FTS-only 模式写全文标签索引；均持久化到 relation.tags')\n  .option('--no-clean', '关闭全部数据清洗（含外部 hooks，等价 config clean.enabled:false）')\n  .option('--no-assets', '关闭本地图片附件收集（等价 config import.assets:false；关闭后前端对图片引用显示占位块）')\n  .option('--conflict-mode <mode>', '同名文档处理策略：incremental（内容未变则跳过重算，默认）/ overwrite / skip（已存在的一律不动，只导入新文件）/ suffix')\n  .option('--conflict-suffix <template>', '自动后缀模板，必须包含 {n}（默认 _{n}）')\n  .option('--clean-rules <rules>', '覆盖内置清洗规则开关，逗号分隔：bom,frontmatter,htmlComment,mermaid,codePath,codeBlock（不传用 config/默认）')\n  .option('--max-batch-files <n>', '整批最大文件数（S0-3 预算；默认 20000，≤0 显式关闭该项限制）')\n  .option('--max-batch-bytes <n>', '整批最大总字节数（S0-3 预算；默认 4GiB，≤0 显式关闭该项限制）')\n  .option('--max-batch-chunks <n>', '整批最大预计 chunk 数（S0-3 预算；默认 300000，≤0 显式关闭该项限制）')\n  .option('--retry-incomplete', 'R2：只重试上次未完成的文件（读 <scope>/.ki-import-incomplete.json；可省略 --source，沿用那次导入的源目录与参数）')\n  .action(async (opts) => {\n    const requestConfig = loadConfig();\n    return runWithConfigSnapshot(requestConfig, async () => {\n    try {"
+  },
+  "store_tool": {
+   "file": "src/store.ts",
+   "line": 55,
+   "endLine": 65,
+   "commit": "0f1426b",
+   "why": "单条入口：直接写一条正文，不走目录扫描",
+   "symbol": "executeStore",
+   "snippet": "export async function executeStore(params: {\n  scope?: string;\n  text: string;\n  tags?: string;\n}): Promise<StoreResult> {\n  if (shouldUseDaemonClient()) return callDaemon<StoreResult>('store', params);\n  try {\n    return await withScopeWriteLock(resolveScope(loadConfig(), params.scope), 'store', () => executeStoreLocal(params));\n  } catch (error) { return { ok: false, error: (error as Error).message }; }\n}\n"
+  },
+  "rel_tool": {
+   "file": "src/sync-relation.ts",
+   "line": 1668,
+   "endLine": 1680,
+   "commit": "0f1426b",
+   "why": "结构化入口：关系正文与评分回写的起点",
+   "symbol": "executeSyncRelation",
+   "snippet": "export async function executeSyncRelation(params: SyncRelationParams): Promise<SyncRelationResult> {\n  if (shouldUseDaemonClient()) return callDaemon<SyncRelationResult>('sync-relation', params);\n  try {\n    return await withScopeWriteLock(resolveScope(loadConfig(), params.scope), 'sync-relation', () => executeSyncRelationLocal(params));\n  } catch (error) {\n    return { ok: false, error: (error as Error).message };\n  }\n}\n\n// ─── CLI ───\n\nconst program = new Command();\n"
+  },
+  "ds_sync": {
+   "file": "src/lib/datasource-scheduled-run.ts",
+   "line": 89,
+   "endLine": 100,
+   "commit": "0f1426b",
+   "why": "定时入口：数据源按计划拉取后走同一条加工链",
+   "symbol": "runScheduledSync",
+   "snippet": "export async function runScheduledSync(input: ScheduledRunInput): Promise<ScheduledRunResult> {\n  const startedAt = Date.now();\n  try {\n    return await withScopeWriteLock(input.scope, 'datasource-sync', async () => {\n      return await runWithConfigSnapshot(input.config, async (): Promise<ScheduledRunResult> => {\n        // 1) 锁内重读：配置可能已被删除/关闭\n        const read = readDataSource(input.scope);\n        if (!read.ok) return skipped('not-found', startedAt);\n        if (!read.record.schedule.enabled) return skipped('disabled', startedAt);\n\n        // 2) 可运行判定（台账 + coordinator 队列）\n        if (!canRunNow(input.scope, input.config)) {"
+  },
+  "chunk": {
+   "file": "src/lib/chunker.ts",
+   "line": 183,
+   "endLine": 190,
+   "commit": "0f1426b",
+   "why": "加工的第一站：切分决定后面三处落点的粒度",
+   "symbol": "splitIntoChunks",
+   "snippet": "export function splitIntoChunks(text: string, options: ChunkOptions = {}): Chunk[] {\n  const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;\n  const overlap = options.overlap ?? DEFAULT_CHUNK_OVERLAP;\n\n  if (!text) return [];\n  // 只拦\"无法切分\"的非法值（<=0）。上下限（MIN/MAX_CHUNK_SIZE）**故意不在此拦**：\n  // `group-index.json.source.chunkSize` 可能存着历史超界值，重建 / 编辑发布会复用\n  // 它重新切分，硬抛会让老 scope 再也跑不起来。范围约束统一在各写入入口做。"
+  },
+  "embed": {
+   "file": "src/zvec-engine/embedding/siliconflow.ts",
+   "line": 34,
+   "endLine": 35,
+   "commit": "0f1426b",
+   "why": "外部 embedding：默认端点与模型，缺 Key 时会在这里报错",
+   "symbol": "DEFAULT_BASE_URL",
+   "snippet": "const DEFAULT_BASE_URL = 'https://api.siliconflow.cn/v1';\nconst DEFAULT_MODEL = 'Qwen/Qwen3-Embedding-8B';"
+  },
+  "fts": {
+   "file": "src/lib/fts-client.ts",
+   "line": 139,
+   "endLine": 150,
+   "commit": "0f1426b",
+   "why": "全文写入：不走 embedding 的那条支线",
+   "symbol": "ftsBulkStore",
+   "snippet": "export async function ftsBulkStore(entries: FtsStoreEntry[]): Promise<{ ids: string[]; failed: number }> {\n  if (entries.length === 0) return { ids: [], failed: 0 };\n  const byScope = new Map<string, FtsStoreEntry[]>();\n  for (const entry of entries) {\n    const scope = resolveScope(loadConfig(), entry.scope);\n    const list = byScope.get(scope) ?? [];\n    list.push({ ...entry, scope });\n    byScope.set(scope, list);\n  }\n  const ids: string[] = [];\n  let failed = 0;\n  for (const [scope, scoped] of byScope) {"
+  },
+  "groups": {
+   "file": "src/lib/import.ts",
+   "line": 2808,
+   "endLine": 2820,
+   "commit": "0f1426b",
+   "why": "建树：把落点路径补进 Group 树",
+   "symbol": "phase3EnsureGroups",
+   "snippet": "function phase3EnsureGroups(\n  ctx: ImportContext,\n  groupIndex: GroupIndex\n): void {\n  for (const e of ctx.entries) {\n    ensureGroupPathInTree(groupIndex, e.groupPath);\n    // 将完整路径及所有父级都加入 groups（如 'wiki/部署运维' → 'wiki' + 'wiki/部署运维'）\n    const segments = e.groupPath.split('/').filter(Boolean);\n    for (let i = 1; i <= segments.length; i++) {\n      ctx.groups.add(segments.slice(0, i).join('/'));\n    }\n  }\n}"
+  },
+  "zvec": {
+   "file": "src/lib/config.ts",
+   "line": 667,
+   "endLine": 668,
+   "commit": "0f1426b",
+   "why": "向量存储位置：dense 与 FTS 集合",
+   "symbol": "",
+   "snippet": "    : path.join(os.homedir(), '.ki', 'vector');\n"
+  },
+  "kb": {
+   "file": "src/lib/scope.ts",
+   "line": 100,
+   "endLine": 108,
+   "commit": "0f1426b",
+   "why": "结构化存储：树、关系缓存与原文",
+   "symbol": "getRelationsCachePath",
+   "snippet": "  return path.join(getKbDir(scope), 'group-index.json');\n}\n\n/**\n * 获取 relations-cache.json 绝对路径\n */\nexport function getRelationsCachePath(scope: string): string {\n  return path.join(getKbDir(scope), 'relations-cache.json');\n}"
+  },
+  "search": {
+   "file": "src/search.ts",
+   "line": 935,
+   "endLine": 950,
+   "commit": "0f1426b",
+   "why": "检索消费：两路召回 + 原文交付",
+   "symbol": "executeSearch",
+   "snippet": "export async function executeSearch(params: {\n  scope?: string;\n  query: string;\n  limit?: number;\n  threshold?: number;\n  tags?: string;\n  /** 查询 embedding 超时（ms）；未传时使用配置中的默认值。 */\n  timeoutMs?: number;\n  includeOriginal?: boolean;\n  mode?: 'hybrid' | 'fulltext';\n  /** 多库重排算法（默认 weighted；dynamic-ratio 仅用于算法对比，见 TEMP 注释） */\n  ranking?: MultiRankingAlgorithm;\n  /** 语义补充系数（仅 calibrated-semantic 生效）；未传时用 scoring.ts 的默认值 */\n  semanticBonus?: number;\n}): Promise<SearchResult> {\n  if (shouldUseDaemonClient()) {"
+  },
+  "recall": {
+   "file": "src/lib/recall/run-recall.ts",
+   "line": 287,
+   "endLine": 300,
+   "commit": "0f1426b",
+   "why": "回想消费：多轮 grounded，供 AI 分析使用",
+   "symbol": "runGroundedRecall",
+   "snippet": "export async function runGroundedRecall(input: GroundedInput): Promise<GroundedResult> {\n  const now = input.now ?? Date.now;\n  const started = now();\n  const exclude = (input.exclude ?? []).map((e) => e.trim()).filter(Boolean);\n  const excludeKeys = new Set(exclude.flatMap((e) => [e, e.includes('::') ? e.split('::').slice(1).join('::') : e]));\n\n  /** 工具调用轨迹（顺序即发生顺序） */\n  const toolTrace: Array<{ name: string; args: Record<string, unknown>; ms: number; ok: boolean }> = [];\n  /**\n   * 模型 reasoning 流（跨轮累积）。\n   *\n   * 2026-11-20 补：此前 `reasoning` 分片在这里被直接丢弃 —— 契约写了\n   * `RefSearchStepDto.thinking`、前端也渲染思考块，但实现从不产出，\n   * 表现为「AI 查找的过程面板永远没有思考」。这一行就是那个缺口。"
+  },
+  "module_info": {
+   "file": "src/get-module-info.ts",
+   "line": 498,
+   "endLine": 510,
+   "commit": "0f1426b",
+   "why": "直查消费：已知路径时 100% 命中，不过向量",
+   "symbol": "executeGetModuleInfo",
+   "snippet": "export async function executeGetModuleInfo(params: GetModuleInfoParams): Promise<GetModuleInfoResult> {\n  if (shouldUseDaemonClient()) return callDaemon<GetModuleInfoResult>('get-module-info', params);\n  return executeGetModuleInfoLocal(params);\n}\n\n// ─── 批量查询（同 Group 下多个 Relation，CLI/MCP 共享纯函数） ───\n\n/** 单次批量查询上限：超限 fail-loud（防 AI 单次拖爆上下文），提示拆批 */\nexport const MAX_BATCH_RELATIONS = 10;\n\n/** 批量分段时，每条结果除正文外的结构开销估算（relation 名 + 提示 + 分页字段 + JSON 缩进） */\nconst BATCH_ITEM_OVERHEAD = 300;\n"
+  },
+  "chat": {
+   "file": "src/lib/chat/chat-routes.ts",
+   "line": 405,
+   "endLine": 415,
+   "commit": "0f1426b",
+   "why": "对话消费：把召回片段交给模型",
+   "symbol": "handleChatRoutes",
+   "snippet": "export async function handleChatRoutes(\n  req: IncomingMessage,\n  res: ServerResponse,\n  url: URL,\n  ctx: ChatRouteContext,\n): Promise<boolean> {\n  const p = url.pathname.replace(/^\\/api/, '').replace(/\\/+$/, '') || '/';\n  if (p !== '/chat' && !p.startsWith('/chat/')) return false;\n\n  // 路径分派（相对 /api/chat）\n  const sub = p.slice('/chat'.length).replace(/^\\/+/, '');   // '' | 'config' | 'conversations' | 'conversations/:id/...'"
+  },
+  "scoring": {
+   "file": "src/lib/scoring.ts",
+   "line": 121,
+   "endLine": 130,
+   "commit": "0f1426b",
+   "why": "维护：按使用计数算分，决定检索权重与冷热分区",
+   "symbol": "calculateScore",
+   "snippet": "export function calculateScore(\n  useCount: number,\n  lastUsedTime: number | null,\n  now: number,\n  halfLifeHours: number = 24\n): number {\n  const count = Number.isFinite(useCount) && useCount > 0 ? useCount : 0;\n  if (count === 0) return 0;\n\n  const hoursSinceLastUse ="
+  },
+  "trash": {
+   "file": "src/lib/trash-store.ts",
+   "line": 108,
+   "endLine": 115,
+   "commit": "0f1426b",
+   "why": "维护：删除先进回收站，可恢复",
+   "symbol": "getTrashRoot",
+   "snippet": "export function getTrashRoot(scope: string): string {\n  validateScope(scope);\n  return path.join(getKbDir(scope), '.trash');\n}\n\nexport function getTrashSettingsPath(scope: string): string {\n  return path.join(getTrashRoot(scope), '_settings.json');\n}"
+  },
+  "backup": {
+   "file": "src/lib/backup.ts",
+   "line": 39,
+   "endLine": 50,
+   "commit": "0f1426b",
+   "why": "维护：结构化快照，还原后可重建向量",
+   "symbol": "executeBackup",
+   "snippet": "export function executeBackup(params: BackupOperationParams): BackupResult & { snapshotPath?: string } {\n  const config = loadConfig();\n  const { scope } = params;\n  const scopeDataDir = getScopeDataDir(config, scope);\n  if (!fs.existsSync(scopeDataDir)) throw new Error(`scope 数据目录不存在：${scopeDataDir}`);\n  // 批次 2 审查 P0-2 修复：原判定只看旧单文件 relations-cache.json，而惰性迁移会把它\n  // 改名 `.bak`（新布局 scope 只剩去 `.relations/manifest.json`）→ ki backup / daemon\n  // backup / Web 备份全部误报\"尚未初始化\"。改为两布局任一存在即算已初始化。\n  const rcPath = path.join(scopeDataDir, 'relations-cache.json');\n  const manifestPath = getRelationsManifestPath(scope);\n  if (!fs.existsSync(rcPath) && !fs.existsSync(manifestPath)) {\n    throw new Error(`scope \"${scope}\" 尚未初始化（缺少 relations-cache.json 与 ${path.basename(path.dirname(manifestPath))}/manifest.json），请先执行 import`);"
+  }
+ },
+ "modules": {
+  "bin": {
+   "file": "bin/ki.mjs",
+   "line": 31,
+   "endLine": 60,
+   "commit": "0f1426b",
+   "why": "命令表：命令名 → 脚本的映射，加命令从这里开始",
+   "symbol": "COMMANDS",
+   "snippet": "const COMMANDS = {\n  'import': 'src/import.ts',\n  'datasource': 'src/datasource.ts',\n  'group': 'src/group.ts',\n  'get-module-info': 'src/get-module-info.ts',\n  'sync-relation': 'src/sync-relation.ts',\n  'delete-relation': 'src/delete-relation.ts',\n  'mcp': 'src/mcp-server.ts',\n  'search': 'src/search.ts',\n  'store': 'src/store.ts',\n  'bulk-store': 'src/bulk-store.ts',\n  'scope': 'src/scope.ts',\n  'view': 'src/view.ts',\n  'doc': 'src/doc.ts',\n  'tag': 'src/tag.ts',\n  'user': 'src/user.ts',\n  'config': 'src/config.ts',\n  'doctor': 'src/doctor.ts',\n  'log': 'src/log.ts',\n  'backup': 'src/backup.ts',\n  'restore': 'src/restore.ts',\n  'export': 'src/export.ts',\n  'wiki-backfill': 'src/wiki-backfill.ts',\n  'migrate-relation-cache': 'src/migrate-relation-cache.ts',\n  'index-optimize': 'src/index-optimize.ts',\n  'event-types': 'src/event-types.ts',\n  // 图集（REQ-20261120-003）：一期唯一写入口；页面上传是二期\n  'atlas': 'src/atlas.ts',\n};\n"
+  },
+  "src_cmd": {
+   "file": "src/import.ts",
+   "line": 40,
+   "endLine": 70,
+   "commit": "0f1426b",
+   "why": "命令层样例：只做参数解析与调用，不放业务",
+   "symbol": "program",
+   "snippet": "const program = new Command();\n\n// ─── S-04：统一导入命令（幂等追加）──────────────────────────\n// 扁平结构：选项直接挂在 program 上（对齐 export/search/store/restore 等扁平命令惯例）\n\nprogram\n  .name('import')\n  .showHelpAfterError()\n  .description('导入：--source 直导外部 Wiki（无 AI，自动切分；幂等追加到目标 group）')\n  .option('-s, --scope <scope>', '项目隔离标识（default 模式可省略，默认 default；strict 模式必填）')\n  // 非 requiredOption：`--retry-incomplete` 允许省略 --source（沿用上次导入记录的源目录），\n  // 缺省校验移到 action 内（见下方「必须提供 --source」），以便给出更准确的提示\n  .option('--source <sourceDir>', '外部 Markdown Wiki 根目录（原文直导，无 AI 依赖，自动切分）；--retry-incomplete 时可省略')\n  .option('--group <group>', '目标 Group 落点（不存在时自动新建，含父路径）。缺省时按相对目录建组，源目录根下的散文件落到「根」')\n  .option('--chunk-size <chunkSize>', '切分目标长度（字符，默认 1000）')\n  .option('--chunk-overlap <chunkOverlap>', '切分重叠字符数（默认 150）')\n  .option('--no-vector', 'FTS-only 模式：不调用 embedding，不写 dense 向量；清洗后的 chunk 写入独立全文 Collection，可被 fulltext 检索')\n  .option('--tags <tags>', '文档级自定义标签（逗号分隔多个）：向量模式写内容向量，FTS-only 模式写全文标签索引；均持久化到 relation.tags')\n  .option('--no-clean', '关闭全部数据清洗（含外部 hooks，等价 config clean.enabled:false）')\n  .option('--no-assets', '关闭本地图片附件收集（等价 config import.assets:false；关闭后前端对图片引用显示占位块）')\n  .option('--conflict-mode <mode>', '同名文档处理策略：incremental（内容未变则跳过重算，默认）/ overwrite / skip（已存在的一律不动，只导入新文件）/ suffix')\n  .option('--conflict-suffix <template>', '自动后缀模板，必须包含 {n}（默认 _{n}）')\n  .option('--clean-rules <rules>', '覆盖内置清洗规则开关，逗号分隔：bom,frontmatter,htmlComment,mermaid,codePath,codeBlock（不传用 config/默认）')\n  .option('--max-batch-files <n>', '整批最大文件数（S0-3 预算；默认 20000，≤0 显式关闭该项限制）')\n  .option('--max-batch-bytes <n>', '整批最大总字节数（S0-3 预算；默认 4GiB，≤0 显式关闭该项限制）')\n  .option('--max-batch-chunks <n>', '整批最大预计 chunk 数（S0-3 预算；默认 300000，≤0 显式关闭该项限制）')\n  .option('--retry-incomplete', 'R2：只重试上次未完成的文件（读 <scope>/.ki-import-incomplete.json；可省略 --source，沿用那次导入的源目录与参数）')\n  .action(async (opts) => {\n    const requestConfig = loadConfig();\n    return runWithConfigSnapshot(requestConfig, async () => {\n    try {"
+  },
+  "lib_mcp": {
+   "file": "src/lib/mcp-server-factory.ts",
+   "line": 48,
+   "endLine": 60,
+   "commit": "0f1426b",
+   "why": "工具注册的唯一构建点（MCP 服务专家覆盖）",
+   "symbol": "readOnly",
+   "snippet": "  const readOnly = auth?.readOnly === true;\n  const authScopes = auth ? auth.scopes : null;\n  const server = new McpServer(\n    {\n      name: SERVICE_NAME,\n      version: readKiVersion(),\n    },\n    readOnly ? { instructions: READ_ONLY_INSTRUCTIONS } : undefined,\n  );\n  // ── 读工具（6 个）：只读会话同样注册 ──\n  // ⚠️ 新增读工具时同步加入 mcp-tools/tool-access.ts::READ_ONLY_TOOL_NAMES，\n  //    否则只读 Token 看不见它（方向安全，但功能缺失）。\n  registerSearchTool(server);"
+  },
+  "lib_recall": {
+   "file": "src/lib/vector-client.ts",
+   "line": 1009,
+   "endLine": 1020,
+   "commit": "0f1426b",
+   "why": "向量入口（检索与向量客户端专家覆盖）",
+   "symbol": "vectorSearch",
+   "snippet": "export async function vectorSearch(params: {\n  scope?: string;\n  /** 多 scope：优先于 scope；数组成员逐个 resolve（strict 模式逐个校验） */\n  scopes?: string[];\n  query: string;\n  limit?: number;\n  tags?: string | string[]; // 数组：tag 值本身可能含逗号，join/split 往返会错拆；字符串：逗号分隔多 tag\n  threshold?: number;\n  /** 查询 embedding 超时（ms）；未传时使用 embedding.queryTimeoutMs。 */\n  timeoutMs?: number;\n  /**\n   * 库内评分算法（**仅多库 / 视图生效**）。"
+  },
+  "lib_import": {
+   "file": "src/lib/import.ts",
+   "line": 747,
+   "endLine": 760,
+   "commit": "0f1426b",
+   "why": "导入编排（知识索引导入专家覆盖）",
+   "symbol": "handleDirectImport",
+   "snippet": "export async function handleDirectImport(\n  args: HandleDirectImportArgs\n): Promise<ImportResult> {\n  // 切分参数范围校验必须在**拿写锁 / 扫描 / 向量化之前**（fail-fast）：超界值会让每个\n  // chunk 都超出合理输入区间，等 embedding 阶段才失败既慢又难定位。\n  // 这里是 `ki import`、`/api/import/run`、数据源同步三条链路的共同入口，校验一次即全覆盖。\n  const chunkErr = validateChunkParams({ chunkSize: args.chunkSize, chunkOverlap: args.chunkOverlap });\n  if (chunkErr) {\n    throw Object.assign(new Error(chunkErr.message), {\n      code: 'INVALID_CHUNK',\n      field: chunkErr.field,\n    });\n  }\n  const { withScopeWriteLock } = await import('./scope-write-lock.js');"
+  },
+  "lib_rel": {
+   "file": "src/lib/scoring.ts",
+   "line": 121,
+   "endLine": 130,
+   "commit": "0f1426b",
+   "why": "评分（关系与索引管理专家覆盖，但其模块根已过期）",
+   "symbol": "calculateScore",
+   "snippet": "export function calculateScore(\n  useCount: number,\n  lastUsedTime: number | null,\n  now: number,\n  halfLifeHours: number = 24\n): number {\n  const count = Number.isFinite(useCount) && useCount > 0 ? useCount : 0;\n  if (count === 0) return 0;\n\n  const hoursSinceLastUse ="
+  },
+  "lib_store": {
+   "file": "src/lib/config.ts",
+   "line": 398,
+   "endLine": 410,
+   "commit": "0f1426b",
+   "why": "配置加载（存储与配置基础专家覆盖）",
+   "symbol": "loadConfig",
+   "snippet": "export function loadConfig(explicitPath?: string): KiConfig {\n  const snapshot = configSnapshotStorage.getStore();\n  if (snapshot && (explicitPath === undefined || path.resolve(explicitPath) === snapshot._configPath)) {\n    return snapshot;\n  }\n  const requestedPath = explicitPath ?? process.env.KI_CONFIG_PATH ?? undefined;\n  if (_cached && _cachedExplicitPath === explicitPath) {\n    if (_cachedFile === null) {\n      // 当前用的是默认值（启动时未找到配置文件）：配置文件可能在进程启动后\n      // 才被创建（ki config init），所以仍需重新查找一次。\n      if (!findConfigFile(requestedPath)) return _cached;\n    } else {\n      const st = statFingerprint(_cachedFile);"
+  },
+  "lib_gov": {
+   "file": "src/lib/governance-http.ts",
+   "line": 589,
+   "endLine": 600,
+   "commit": "0f1426b",
+   "why": "治理路由：事件与阶段，无专家覆盖，需读码",
+   "symbol": "handleGovernanceRoutes",
+   "snippet": "export async function handleGovernanceRoutes(\n  req: IncomingMessage,\n  res: ServerResponse,\n  url: URL,\n  ctx: GovernanceRouteContext,\n): Promise<boolean> {\n  const path = url.pathname.replace(/^\\/api/, '').replace(/\\/+$/, '') || '/';\n  if (path !== '/governance' && !path.startsWith('/governance/')) return false;\n\n  const segs = path.slice('/governance'.length).replace(/^\\/+/, '').split('/').filter(Boolean);\n  const method = (req.method ?? 'GET').toUpperCase();\n  const q = url.searchParams;"
+  },
+  "lib_chat": {
+   "file": "src/lib/chat/chat-routes.ts",
+   "line": 405,
+   "endLine": 415,
+   "commit": "0f1426b",
+   "why": "对话路由：AI 对话与分析，无专家覆盖，需读码",
+   "symbol": "handleChatRoutes",
+   "snippet": "export async function handleChatRoutes(\n  req: IncomingMessage,\n  res: ServerResponse,\n  url: URL,\n  ctx: ChatRouteContext,\n): Promise<boolean> {\n  const p = url.pathname.replace(/^\\/api/, '').replace(/\\/+$/, '') || '/';\n  if (p !== '/chat' && !p.startsWith('/chat/')) return false;\n\n  // 路径分派（相对 /api/chat）\n  const sub = p.slice('/chat'.length).replace(/^\\/+/, '');   // '' | 'config' | 'conversations' | 'conversations/:id/...'"
+  },
+  "lib_ds": {
+   "file": "src/lib/datasource-scheduler.ts",
+   "line": 321,
+   "endLine": 335,
+   "commit": "0f1426b",
+   "why": "数据源调度：定时同步，无专家覆盖，需读码",
+   "symbol": "startDataSourceScheduler",
+   "snippet": "export function startDataSourceScheduler(): void {\n  getSingleton().start();\n}\n\nexport function stopDataSourceScheduler(): void {\n  singleton?.stop();\n}\n\n/** 配置/同步完成后重算；未启动时无操作 */\nexport function refreshDataSourceScheduler(): void {\n  singleton?.refresh();\n}\n\nexport function getDataSourceSchedulerState(): DataSourceSchedulerState {\n  return singleton?.getState() ?? {"
+  },
+  "lib_misc": {
+   "file": "src/lib/open-api/index.ts",
+   "line": 114,
+   "endLine": 125,
+   "commit": "0f1426b",
+   "why": "对外 API 路由：open-api / trash / views / auth / atlas 一组，无专家覆盖",
+   "symbol": "isAtlasWritePath",
+   "snippet": "function isAtlasWritePath(pathname: string): boolean {\n  return pathname === `${OPEN_API_ATLAS_PATH}/package`;\n}\n\n/** 是否属于「上传通道」路径（上传开关只拦这里） */\nexport function isUploadPath(pathname: string): boolean {\n  return pathname === OPEN_API_UPLOAD_PATH || pathname.startsWith(`${OPEN_API_UPLOAD_PATH}/`);\n}\n\n/**\n * 是否属于「只读取件」路径（读开关只拦这里，2026-11-24 · REQ-20261124-002）。\n *"
+  },
+  "zvec": {
+   "file": "src/zvec-engine/engine.ts",
+   "line": 321,
+   "endLine": 330,
+   "commit": "0f1426b",
+   "why": "向量引擎入口（向量引擎专家覆盖）",
+   "symbol": "",
+   "snippet": "  async hybridSearch(req: HybridSearchReq): Promise<Hit[]> {\n    return this.search({ ...req });\n  }\n\n  // ─── 索引 ───\n\n  async createIndex(field: string, indexParam: object): Promise<void> {\n    await this.proxy.send('createIndex', { field, indexParam });\n  }\n"
+  },
+  "web": {
+   "file": "web/src/App.tsx",
+   "line": 24,
+   "endLine": 33,
+   "commit": "0f1426b",
+   "why": "Web 路由入口（可视化前端专家覆盖，但基线只到 5 页）",
+   "symbol": "App",
+   "snippet": "export function App(): JSX.Element {\n  return (\n    <QueryClientProvider client={queryClient}>\n      <ScopeProvider>\n        <BrowserRouter>\n          <AuthProvider>\n            <AppRoutes />\n          </AuthProvider>\n        </BrowserRouter>\n      </ScopeProvider>"
+  },
+  "client": {
+   "file": "ki-client/src/cli.ts",
+   "line": 1,
+   "endLine": 20,
+   "commit": "0f1426b",
+   "why": "远端客户端 CLI：独立发布的子包，无专家覆盖",
+   "symbol": "",
+   "snippet": "#!/usr/bin/env node\n/**\n * ki-client 入口。\n *\n * 只做三件事：解析全局参数 → 选命令 → 统一错误出口（`code + message + hint`）。\n * 业务逻辑一律在 `commands/` 下，本文件不碰 HTTP、不碰配置细节。\n */\n\nimport fs from 'node:fs';\n\nimport { parseArgs } from './args.js';\nimport { readConfig, resolveConfigPath } from './config.js';\nimport { resolveRemote } from './remote.js';\nimport { ClientError, formatError } from './errors.js';\nimport { runPing } from './commands/ping.js';\nimport { runRemote } from './commands/remote.js';\nimport { runAsset } from './commands/asset.js';\nimport { runDoc } from './commands/doc.js';\nimport { runUpload } from './commands/upload.js';\nimport { runAtlas } from './commands/atlas.js';"
+  },
+  "tests": {
+   "file": "package.json",
+   "line": 1,
+   "endLine": 30,
+   "commit": "0f1426b",
+   "why": "测试脚本：跑法与已知失败登记见 test/known-failures.md",
+   "symbol": "",
+   "snippet": "{\n  \"name\": \"kisearch\",\n  \"version\": \"1.2.0-beta\",\n  \"description\": \"AI 知识索引整理工具 - 对外部知识进行结构化索引和导航\",\n  \"type\": \"module\",\n  \"bin\": {\n    \"ki\": \"./bin/ki.mjs\"\n  },\n  \"scripts\": {\n    \"import\": \"npx jiti src/import.ts\",\n    \"group\": \"npx jiti src/group.ts\",\n    \"get-module-info\": \"npx jiti src/get-module-info.ts\",\n    \"sync-relation\": \"npx jiti src/sync-relation.ts\",\n    \"build\": \"tsc -p tsconfig.src.json\",\n    \"test\": \"npx jiti test/group-create.test.ts\",\n    \"test:all\": \"node scripts/run-tests.mjs\",\n    \"test:serial\": \"node scripts/run-tests.mjs --serial\",\n    \"test:chat\": \"node scripts/run-tests.mjs test/chat\",\n    \"test:group-create\": \"npx jiti test/group-create.test.ts\",\n    \"test:group-delete\": \"npx jiti test/delete-group.test.ts\",\n    \"test:query-group\": \"npx jiti test/query-group.test.ts\",\n    \"test:get-module-info\": \"npx jiti test/get-module-info.test.ts\",\n    \"test:sync-relation\": \"npx jiti test/sync-relation.test.ts\",\n    \"test:lib\": \"npx jiti test/lib.test.ts\",\n    \"test:integration\": \"npx jiti test/integration.test.ts\",\n    \"test:error-handling\": \"npx jiti test/error-handling.test.ts\",\n    \"test:scope-isolation\": \"npx jiti test/scope-isolation.test.ts\",\n    \"test:config-doctor\": \"npx jiti test/config-doctor.test.ts\",\n    \"test:scope-doc\": \"npx jiti test/scope-doc.test.ts\",\n    \"test:zvec-engine\": \"node --test test/zvec-engine*.test.mjs\","
+  },
+  "lib_recall_kernel": {
+   "file": "src/lib/recall/run-recall.ts",
+   "line": 287,
+   "endLine": 300,
+   "commit": "0f1426b",
+   "why": "回想内核专家：ki_recall 的多轮带证据回想，独立成域",
+   "symbol": "runGroundedRecall",
+   "snippet": "export async function runGroundedRecall(input: GroundedInput): Promise<GroundedResult> {\n  const now = input.now ?? Date.now;\n  const started = now();\n  const exclude = (input.exclude ?? []).map((e) => e.trim()).filter(Boolean);\n  const excludeKeys = new Set(exclude.flatMap((e) => [e, e.includes('::') ? e.split('::').slice(1).join('::') : e]));\n\n  /** 工具调用轨迹（顺序即发生顺序） */\n  const toolTrace: Array<{ name: string; args: Record<string, unknown>; ms: number; ok: boolean }> = [];\n  /**\n   * 模型 reasoning 流（跨轮累积）。\n   *\n   * 2026-11-20 补：此前 `reasoning` 分片在这里被直接丢弃 —— 契约写了\n   * `RefSearchStepDto.thinking`、前端也渲染思考块，但实现从不产出，\n   * 表现为「AI 查找的过程面板永远没有思考」。这一行就是那个缺口。"
+  }
+ }
+}

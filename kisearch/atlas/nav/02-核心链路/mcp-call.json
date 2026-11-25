@@ -1,0 +1,61 @@
+{
+  "title": "一次 MCP 工具调用",
+  "type": "sequence",
+  "svg": "views/mcp-call.svg",
+  "summary": "以 ki_search 为例：IDE 发出 tools/call 后先过 HTTP 层的 Token 与 scope 校验，再进工具层做参数校验与超时包装，然后才落到检索业务，经 Vector Adapter 到 ZvecEngine，在 worker 里做 ANN + FTS 的 RRF 融合，命中结果沿原路返回。全程两处准入、三档超时预算。",
+  "points": [
+    ["越权在 HTTP 层就被挡下", "scope 不在 Token 授权集合内直接 403，业务层看不到这次调用；排查「为什么调不通」先看这一层，不要从检索逻辑找。"],
+    ["工具层只做包装", "参数校验、超时、错误转译在 mcp-tools 里完成，工具实现不自己计时；READ 30s / WRITE 60s / BULK 300s 三档是硬预算。"],
+    ["融合发生在 worker 里", "semantic 与 FTS 两路候选在 zvec-engine 的 worker 线程按 Σ1/(k+rank) 合成一个分数，业务层拿到的是已排序结果。"],
+    ["原文靠 memoryId 回来", "向量层只给 docId 与排名，原文与结构化定位靠 memoryId 反查，这是「搜到的内容与原文偶尔不一致」类问题的根源位置。"]
+  ],
+  "docs": [
+    "docs/mcp-tools.md",
+    "docs/agent-integration.md"
+  ],
+  "code": [
+    { "id": "ide", "concept": true },
+    {
+      "id": "http",
+      "file": "src/lib/mcp-http.ts",
+      "lines": [814, 830],
+      "why": "鉴权闸门：/mcp 与 /api 进来先校验 Token 与请求 scope，越权在这里被拒"
+    },
+    {
+      "id": "access",
+      "file": "src/lib/mcp-tools/tool-access.ts",
+      "lines": [39, 50],
+      "why": "只读工具白名单：只读会话里这些工具仍可调用，新增无 scope 参数的工具要同步登记"
+    },
+    {
+      "id": "tools",
+      "file": "src/lib/mcp-tools/util.ts",
+      "lines": [24, 34],
+      "why": "超时包装：工具不自己计时，统一交给 withTimeout，超时抛 ToolTimeoutError"
+    },
+    {
+      "id": "search",
+      "file": "src/search.ts",
+      "lines": [935, 950],
+      "why": "检索业务入口：CLI 与 HTTP 共用同一个函数，改召回策略只需要改这里往下"
+    },
+    {
+      "id": "vc",
+      "file": "src/lib/vector-client.ts",
+      "lines": [1009, 1020],
+      "why": "Vector Adapter：业务层唯一该调用的向量入口，负责引擎生命周期与结果整形"
+    },
+    {
+      "id": "engine",
+      "file": "src/zvec-engine/engine.ts",
+      "lines": [321, 330],
+      "why": "混合检索：语义与 FTS 两路查询的汇合点"
+    },
+    {
+      "id": "zvec",
+      "file": "src/zvec-engine/worker.ts",
+      "lines": [533, 540],
+      "why": "RRF 融合：按 Σ1/(k+rank) 把多路排名合成单一分数"
+    }
+  ]
+}

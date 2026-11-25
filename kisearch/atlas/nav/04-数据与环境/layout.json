@@ -1,0 +1,37 @@
+{
+  "title": "配置与磁盘布局",
+  "type": "tree",
+  "svg": "views/layout.svg",
+  "summary": "默认数据根是 ~/.ki：config.yaml 管行为，kb/<scope>/ 放树、关系缓存与原文，vector/ 放 zvec 集合（含 FTS），另有 backup / chat / views.json / mcp-tokens.json / 锁文件 / 任务日志 / 导入暂存。想改行为先认这棵树，比翻文档快。",
+  "points": [
+    ["配置优先级固定", "--config > KI_CONFIG_PATH > ~/.ki/config.yaml；字段名或取值非法会直接拒绝启动，不静默取默认值。"],
+    ["kb 里不止索引", "除了 group-index 与 relations-cache，还有原文目录、group 级 assets/、governance.json、.trash/、atlas/ 与导入锁。"],
+    ["备份与向量是两套", "backup/ 存结构化快照，vector/ 是向量本体；只还原结构化数据后要按需 ki restore --rebuild-vector。"],
+    ["凭据与锁别手改", "mcp-tokens.json 是 0600 凭据，改坏了鉴权 fail-closed；mcp-*.lock 决定 restart / status 能否定位到实例。"]
+  ],
+  "docs": [
+    "docs/configuration.md",
+    "docs/backup-restore.md"
+  ],
+  "code": [
+    { "id": "ki_dir", "file": "src/lib/config.ts", "lines": [41, 42], "why": "数据根目录的默认值：所有路径都从这里派生" },
+    { "id": "config", "file": "src/lib/config.ts", "lines": [398, 410], "why": "配置加载顺序：--config → KI_CONFIG_PATH → ~/.ki/config.yaml" },
+    { "id": "kb", "file": "src/lib/config.ts", "lines": [60, 75], "why": "kb 与 backup 默认路径的推导" },
+    { "id": "group_index", "file": "src/lib/scope.ts", "lines": [100, 101], "why": "Group 树文件：scope 结构的第一份真相" },
+    { "id": "relations_cache", "file": "src/lib/scope.ts", "lines": [107, 108], "why": "关系热缓存：评分与冷热分区的落点" },
+    { "id": "local_kb", "file": "src/lib/scope.ts", "lines": [115, 120], "why": "原文目录：文件级 Markdown，未清洗" },
+    { "id": "assets", "file": "src/lib/scope.ts", "lines": [128, 132], "why": "附件目录：导入时复制进来的图片" },
+    { "id": "governance", "file": "src/lib/governance-store.ts", "lines": [65, 66], "why": "事件与阶段的落盘文件" },
+    { "id": "trash", "file": "src/lib/trash-store.ts", "lines": [108, 115], "why": "回收站根目录：删文档先进这里，可恢复" },
+    { "id": "atlas", "file": "src/lib/atlas/paths.ts", "lines": [21, 30], "why": "知识地图包的存放位置与元信息" },
+    { "id": "scope_locks", "file": "src/lib/interrupt.ts", "lines": [88, 96], "why": "导入锁与中断标记：同 scope 并发导入被拒的依据" },
+    { "id": "vector", "file": "src/lib/config.ts", "lines": [667, 668], "why": "向量目录：zvec 集合（含 FTS）都在这里" },
+    { "id": "tokens", "file": "src/lib/mcp-token.ts", "lines": [29, 30], "why": "多 Token 存储：0600，含每个 Token 的 scope 授权" },
+    { "id": "locks", "file": "src/lib/mcp-http.ts", "lines": [104, 112], "why": "HTTP 实例锁：restart / status 靠它定位进程" },
+    { "id": "tasks", "file": "src/lib/task-log.ts", "lines": [68, 72], "why": "任务日志目录：排查后台任务时先看这里" },
+    { "id": "uploads", "file": "src/lib/mcp-http-api.ts", "lines": [221, 225], "why": "HTTP 导入的暂存目录：上传先落这里再进 job" },
+    { "id": "views", "file": "src/lib/scope-view.ts", "lines": [158, 165], "why": "知识视图定义：多库聚合的成员与阈值" },
+    { "id": "chat", "file": "src/lib/config.ts", "lines": [88, 92], "why": "对话与提示词配置目录" },
+    { "id": "backup", "file": "src/lib/backup.ts", "lines": [39, 50], "why": "备份执行入口：快照结构与落点" }
+  ]
+}

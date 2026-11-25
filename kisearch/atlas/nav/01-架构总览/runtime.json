@@ -1,0 +1,101 @@
+{
+  "title": "运行时架构总览",
+  "type": "architecture",
+  "svg": "views/runtime.svg",
+  "summary": "三种接入形态最后都汇到同一个 daemon：IDE 走 stdio 时由薄桥转发到本机 HTTP，CLI 命令经 RPC 在 daemon 内排队，Web 前端同源调用 /api。HTTP 单例是常态下唯一持向量库锁的进程，业务层再往下才分叉到向量库与 JSON 索引两条路。",
+  "points": [
+    ["一个入口，两个协议", "/mcp 与 /api/* 都在 createMcpHttpServer 里分发，鉴权与只读闸门也在这一层；工具层只做协议封装与超时，不碰业务。"],
+    ["向量库只有一个持锁者", "stdio 模式不再在客户端进程开库：daemon-bridge 把 stdio 原样桥接到本机 HTTP，多 IDE 共享同一持锁进程，靠这一点避开锁冲突。"],
+    ["数据分两处落盘", "向量与 FTS 集合进 ~/.ki/vector，结构化索引与原文进 kb/<scope>/ 且 WAL 原子写；两者由不同模块写，排查时先分清是哪一层。"],
+    ["业务层是唯一分叉点", "工具层与 /api 路由都收敛到 src/ 顶层命令层（import / search / sync-relation…），再往下才分 dense 向量与 JSON 两条路。"]
+  ],
+  "docs": [
+    "docs/architecture.md",
+    "docs/mcp-http.md",
+    "docs/mcp-tools.md"
+  ],
+  "code": [
+    {
+      "id": "agents",
+      "concept": true
+    },
+    {
+      "id": "web",
+      "file": "web/src/App.tsx",
+      "lines": [24, 33],
+      "why": "SPA 入口：路由表决定 18 个页面各自挂在哪个路径下"
+    },
+    {
+      "id": "cli",
+      "file": "bin/ki.mjs",
+      "lines": [31, 60],
+      "why": "命令表：ki 的所有子命令及其脚本映射都在这一处"
+    },
+    {
+      "id": "stdio",
+      "file": "src/lib/daemon-bridge.ts",
+      "lines": [10, 14],
+      "why": "stdio 不自己开库，原样桥接到本机 HTTP 的注释与入口"
+    },
+    {
+      "id": "http",
+      "file": "src/lib/mcp-http.ts",
+      "lines": [651, 660],
+      "why": "HTTP 分发总闸：/mcp、/api、/healthz 与静态托管都在此裁决"
+    },
+    {
+      "id": "rpc",
+      "file": "src/lib/daemon-rpc.ts",
+      "lines": [189, 192],
+      "why": "CLI 命令经 net socket 进入 daemon 排队的服务入口"
+    },
+    {
+      "id": "tools",
+      "file": "src/lib/mcp-server-factory.ts",
+      "lines": [48, 60],
+      "why": "25 个 ki_* 工具的唯一注册点：stdio 与 HTTP 共用同一个构建函数"
+    },
+    {
+      "id": "apiroutes",
+      "file": "src/lib/mcp-http-api.ts",
+      "lines": [1024, 1035],
+      "why": "/api 大路由表：核心、chat、治理、视图、open-api 都从这里分流"
+    },
+    {
+      "id": "services",
+      "file": "src/lib/import.ts",
+      "lines": [747, 755],
+      "why": "业务层代表：导入编排入口，锁与幂等判定都在这个函数里"
+    },
+    {
+      "id": "kb",
+      "file": "src/lib/wal.ts",
+      "lines": [134, 140],
+      "why": "KB JSON 的原子写入：先写临时文件再替换，进程被杀也不会留半个文件"
+    },
+    {
+      "id": "adapter",
+      "file": "src/lib/vector-client.ts",
+      "lines": [1009, 1018],
+      "why": "Vector Adapter：业务层唯一该调用的向量入口，dense 检索走这里"
+    },
+    {
+      "id": "engine",
+      "file": "src/zvec-engine/engine.ts",
+      "lines": [321, 325],
+      "why": "引擎侧混合检索：语义结果与 FTS 结果在 worker 里做 RRF 融合"
+    },
+    {
+      "id": "embed",
+      "file": "src/zvec-engine/embedding/siliconflow.ts",
+      "lines": [34, 35],
+      "why": "外部 embedding 的默认端点与模型，缺 API Key 时的报错也在这里"
+    },
+    {
+      "id": "zvec",
+      "file": "src/lib/config.ts",
+      "lines": [667, 668],
+      "why": "向量目录的默认位置 ~/.ki/vector，FTS 集合也落在同目录体系下"
+    }
+  ]
+}

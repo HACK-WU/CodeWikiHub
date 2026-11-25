@@ -1,0 +1,315 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "一次知识导入：ki import",
+    "locale": "zh-CN",
+    "output": ".atlas/build/import.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:HACK-WU/kisearch.git",
+      "link_mode": "local-only",
+      "revision": "071afab7fee7bd8be00db0d5865ddfd8aa77bb82"
+    }
+  },
+  "lanes": [
+    {
+      "id": "entry",
+      "label": "入口"
+    },
+    {
+      "id": "guard",
+      "label": "防护与旁路",
+      "variant": "exception"
+    },
+    {
+      "id": "prepare",
+      "label": "文档准备与向量化"
+    },
+    {
+      "id": "store",
+      "label": "结构化落盘"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p0",
+      "label": "入口 + 锁",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p1",
+      "label": "Phase 1 · 扫描 / 清洗 / 切分",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p2",
+      "label": "Phase 2 · 向量化",
+      "fromCol": 4,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p3",
+      "label": "Phase 3-5 · 建树 / 落盘",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "groups": [
+    {
+      "id": "lock_group",
+      "label": "同 scope 串行",
+      "lane": "guard",
+      "fromCol": 1,
+      "toCol": 1,
+      "variant": "security"
+    }
+  ],
+  "mainPath": [
+    "entry",
+    "lock",
+    "scan",
+    "chunk",
+    "vectorize",
+    "groups",
+    "kb"
+  ],
+  "nodes": [
+    {
+      "id": "entry",
+      "lane": "entry",
+      "col": 0,
+      "type": "backend",
+      "label": "ki import",
+      "sublabel": "CLI 直跑 · HTTP 异步 job",
+      "tag": "两种入口",
+      "sources": [
+        {
+          "path": "src/import.ts",
+          "line": 40,
+          "end_line": 70,
+          "label": "CLI 命令定义"
+        }
+      ]
+    },
+    {
+      "id": "lock",
+      "lane": "guard",
+      "col": 1,
+      "type": "security",
+      "label": "导入锁",
+      "sublabel": ".import.lock · pid 存活检测",
+      "sources": [
+        {
+          "path": "src/lib/interrupt.ts",
+          "line": 88,
+          "end_line": 96,
+          "label": "锁文件路径"
+        }
+      ]
+    },
+    {
+      "id": "interrupt",
+      "lane": "guard",
+      "col": 3,
+      "type": "security",
+      "label": "中断标记",
+      "sublabel": "import-interrupt.json",
+      "sources": [
+        {
+          "path": "src/lib/interrupt.ts",
+          "line": 29,
+          "end_line": 40,
+          "label": "中断标记路径"
+        }
+      ]
+    },
+    {
+      "id": "assets",
+      "lane": "guard",
+      "col": 2,
+      "type": "database",
+      "label": "图片附件",
+      "sublabel": "复制到 <group>/assets/",
+      "sources": [
+        {
+          "path": "src/lib/import.ts",
+          "line": 611,
+          "end_line": 620,
+          "label": "附件收集"
+        }
+      ]
+    },
+    {
+      "id": "scan",
+      "lane": "prepare",
+      "col": 2,
+      "type": "backend",
+      "label": "扫描与清洗",
+      "sublabel": "collectMarkdownFiles",
+      "sources": [
+        {
+          "path": "src/lib/import.ts",
+          "line": 502,
+          "end_line": 510,
+          "label": "文件收集"
+        }
+      ]
+    },
+    {
+      "id": "chunk",
+      "lane": "prepare",
+      "col": 3,
+      "type": "backend",
+      "label": "切分",
+      "sublabel": "splitIntoChunks",
+      "sources": [
+        {
+          "path": "src/lib/chunker.ts",
+          "line": 183,
+          "end_line": 190,
+          "label": "切分实现"
+        }
+      ]
+    },
+    {
+      "id": "vectorize",
+      "lane": "prepare",
+      "col": 4,
+      "type": "backend",
+      "label": "向量化",
+      "sublabel": "dense + FTS-only 两种",
+      "tag": "embedding 外部依赖",
+      "sources": [
+        {
+          "path": "src/lib/batch-vectorize.ts",
+          "line": 147,
+          "end_line": 155,
+          "label": "批量向量化"
+        }
+      ]
+    },
+    {
+      "id": "groups",
+      "lane": "store",
+      "col": 4,
+      "type": "backend",
+      "label": "建 Group 树",
+      "sublabel": "phase3EnsureGroups",
+      "sources": [
+        {
+          "path": "src/lib/import.ts",
+          "line": 2808,
+          "end_line": 2820,
+          "label": "Phase 3"
+        }
+      ]
+    },
+    {
+      "id": "kb",
+      "lane": "store",
+      "col": 5,
+      "type": "database",
+      "label": "落盘",
+      "sublabel": "relations-cache · local KB · WAL",
+      "tag": "Phase 4-5",
+      "sources": [
+        {
+          "path": "src/lib/import.ts",
+          "line": 2823,
+          "end_line": 2835,
+          "label": "Phase 4 写关系缓存"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "entry-lock",
+      "from": "entry",
+      "to": "lock",
+      "label": "按 scope 加锁",
+      "variant": "emphasis"
+    },
+    {
+      "id": "lock-scan",
+      "from": "lock",
+      "to": "scan",
+      "variant": "default"
+    },
+    {
+      "id": "scan-chunk",
+      "from": "scan",
+      "to": "chunk",
+      "label": "清洗后切分",
+      "variant": "emphasis"
+    },
+    {
+      "id": "scan-assets",
+      "from": "scan",
+      "to": "assets",
+      "label": "复制引用的图片",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "chunk-vectorize",
+      "from": "chunk",
+      "to": "vectorize",
+      "label": "chunk → 向量",
+      "variant": "emphasis"
+    },
+    {
+      "id": "vectorize-groups",
+      "from": "vectorize",
+      "to": "groups",
+      "variant": "default"
+    },
+    {
+      "id": "groups-kb",
+      "from": "groups",
+      "to": "kb",
+      "label": "写关系与原文",
+      "variant": "emphasis"
+    },
+    {
+      "id": "lock-interrupt",
+      "from": "lock",
+      "to": "interrupt",
+      "label": "SIGINT / SIGTERM",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "幂等追加承载增量",
+      "items": [
+        "同 sourcePath 重导 = 覆盖更新；同名不同源 = 真冲突跳过；新文件 = 新增",
+        "重复执行同一条命令就是增量更新，不再依赖 git diff"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "覆盖导入是 scope 级清空",
+      "items": [
+        "dense 模式下 scope 已有向量会先清空再重建",
+        "跨批次导入不同 group 时，前次文件不在本次源目录内就会丢向量"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "中断怎么恢复",
+      "items": [
+        "被 kill 时写 import-interrupt.json，并同步清锁",
+        "下次打开向量库会被引导执行 ki restore --rebuild-vector"
+      ]
+    }
+  ]
+}

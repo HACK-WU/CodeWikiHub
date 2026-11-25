@@ -1,0 +1,25 @@
+{
+  "title": "一次检索与原文交付",
+  "type": "sequence",
+  "svg": "views/search.svg",
+  "summary": "query 进来后并行两路召回：语义走向量 ANN，全文走 BM25，两路在 zvec-engine 的 worker 里按排名融合，业务层拿到的是已排序结果；随后再用 memoryId 反查 KB 原文，才完成一次「原文交付」。",
+  "points": [
+    ["两路各自召回，互不阻塞", "语义路要 embedding，全文路不需要；缺 API Key 时全文路仍可用，这解释了「为什么有的环境只能全文搜」。"],
+    ["RRF 只用排名不用原始分", "Σ1/(k+rank) 让余弦距离和 BM25 分数不必换算到同一量纲，权重与 k 在 zvec-engine 的 scoring 里调。"],
+    ["原文是第二次查", "向量层只回 docId 与排名；memoryId 经 original-locator / relation-map 回到 KB，定位失败时 isFullText 会变，这是内容口径不一致的来源。"],
+    ["入口只有一个", "CLI 与 HTTP 共用 executeSearch，改召回策略不需要动两处。"]
+  ],
+  "docs": [
+    "docs/query-kb.md",
+    "docs/search-threshold.md"
+  ],
+  "code": [
+    { "id": "caller", "concept": true },
+    { "id": "search", "file": "src/search.ts", "lines": [935, 950], "why": "检索入口：参数归一化、两路召回编排都在这个函数" },
+    { "id": "vc", "file": "src/lib/vector-client.ts", "lines": [1009, 1020], "why": "Vector Adapter：业务层唯一该调的向量入口" },
+    { "id": "engine", "file": "src/zvec-engine/engine.ts", "lines": [321, 330], "why": "混合检索：语义与 FTS 两路查询在此汇合" },
+    { "id": "zvec", "file": "src/lib/config.ts", "lines": [667, 668], "why": "向量目录默认位置：dense 与 FTS 集合都在这个目录体系下" },
+    { "id": "fts", "file": "src/lib/fts-client.ts", "lines": [179, 190], "why": "全文检索：不需要 embedding 的 BM25 查询入口" },
+    { "id": "locator", "file": "src/lib/original-locator.ts", "lines": [319, 330], "why": "原文定位：memoryId → KB 原文片段与行号" }
+  ]
+}

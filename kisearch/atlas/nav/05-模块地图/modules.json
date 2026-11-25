@@ -1,0 +1,182 @@
+{
+  "title": "代码分层与专家边界",
+  "type": "tree",
+  "svg": "views/modules.svg",
+  "summary": "仓库是「薄命令层 + 厚核心层 + 两个独立子工程」。2026-11-25 已为原 5 块「无专家」补齐 7 个专家 + 5 个子专家；标 ✅ 的目录可用 expert-lookup 加载契约层，标「根已过期」的需先核对 INDEX.md。",
+  "points": [
+    [
+      "先查专家，再读码",
+      "标 ✅ 的目录用 expert-lookup 加载契约层 C0 就能照着用；本轮新增 7 个专家 + 5 个子专家，见 .module-experts/INDEX.md。"
+    ],
+    [
+      "专家包基线已统一",
+      "2026-11-25 批次 5 对既有 4 个过期专家（MCP / 关系与索引 / 可视化前端 / 向量引擎）做合并补全，全部刷到基线 0f1426b；INDEX.md 过期清单已清空。"
+    ],
+    [
+      "薄命令层的约定",
+      "src/*.ts 只做参数解析与调用，业务在 src/lib/；加命令要改 bin/ki.mjs 的命令表 + src/<cmd>.ts。"
+    ],
+    [
+      "子工程独立构建",
+      "zvec-engine 用 tsc 编译到 dist，Web 用 Vite 构建到 web/dist，ki-client 是独立发布的子包。"
+    ]
+  ],
+  "docs": [
+    "docs/README.md",
+    "docs/cli.md"
+  ],
+  "code": [
+    {
+      "id": "repo",
+      "concept": true
+    },
+    {
+      "id": "bin",
+      "file": "bin/ki.mjs",
+      "lines": [
+        31,
+        60
+      ],
+      "why": "命令表：命令名 → 脚本的映射，加命令从这里开始"
+    },
+    {
+      "id": "src_cmd",
+      "file": "src/import.ts",
+      "lines": [
+        40,
+        70
+      ],
+      "why": "命令层样例：只做参数解析与调用，不放业务"
+    },
+    {
+      "id": "lib",
+      "concept": true
+    },
+    {
+      "id": "lib_mcp",
+      "file": "src/lib/mcp-server-factory.ts",
+      "lines": [
+        48,
+        60
+      ],
+      "why": "工具注册的唯一构建点（MCP 服务专家覆盖）"
+    },
+    {
+      "id": "lib_recall",
+      "file": "src/lib/vector-client.ts",
+      "lines": [
+        1009,
+        1020
+      ],
+      "why": "向量入口（检索与向量客户端专家覆盖）"
+    },
+    {
+      "id": "lib_import",
+      "file": "src/lib/import.ts",
+      "lines": [
+        747,
+        760
+      ],
+      "why": "导入编排（知识索引导入专家覆盖）"
+    },
+    {
+      "id": "lib_rel",
+      "file": "src/lib/scoring.ts",
+      "lines": [
+        121,
+        130
+      ],
+      "why": "评分（关系与索引管理专家覆盖，但其模块根已过期）"
+    },
+    {
+      "id": "lib_store",
+      "file": "src/lib/config.ts",
+      "lines": [
+        398,
+        410
+      ],
+      "why": "配置加载（存储与配置基础专家覆盖）"
+    },
+    {
+      "id": "lib_gov",
+      "file": "src/lib/governance-http.ts",
+      "lines": [
+        589,
+        600
+      ],
+      "why": "治理路由：事件与阶段，无专家覆盖，需读码"
+    },
+    {
+      "id": "lib_chat",
+      "file": "src/lib/chat/chat-routes.ts",
+      "lines": [
+        405,
+        415
+      ],
+      "why": "对话路由：AI 对话与分析，无专家覆盖，需读码"
+    },
+    {
+      "id": "lib_ds",
+      "file": "src/lib/datasource-scheduler.ts",
+      "lines": [
+        321,
+        335
+      ],
+      "why": "数据源调度：定时同步，无专家覆盖，需读码"
+    },
+    {
+      "id": "lib_misc",
+      "file": "src/lib/open-api/index.ts",
+      "lines": [
+        114,
+        125
+      ],
+      "why": "对外 API 路由：open-api / trash / views / auth / atlas 一组，无专家覆盖"
+    },
+    {
+      "id": "zvec",
+      "file": "src/zvec-engine/engine.ts",
+      "lines": [
+        321,
+        330
+      ],
+      "why": "向量引擎入口（向量引擎专家覆盖）"
+    },
+    {
+      "id": "web",
+      "file": "web/src/App.tsx",
+      "lines": [
+        24,
+        33
+      ],
+      "why": "Web 路由入口（可视化前端专家覆盖，但基线只到 5 页）"
+    },
+    {
+      "id": "client",
+      "file": "ki-client/src/cli.ts",
+      "lines": [
+        1,
+        20
+      ],
+      "why": "远端客户端 CLI：独立发布的子包，无专家覆盖"
+    },
+    {
+      "id": "tests",
+      "file": "package.json",
+      "lines": [
+        1,
+        30
+      ],
+      "why": "测试脚本：跑法与已知失败登记见 test/known-failures.md"
+    },
+    {
+      "id": "lib_recall_kernel",
+      "file": "src/lib/recall/run-recall.ts",
+      "lines": [
+        287,
+        300
+      ],
+      "why": "回想内核专家：ki_recall 的多轮带证据回想，独立成域"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "flow",
+  "name": "核心链路",
+  "q": "一次具体操作到底经过哪些环节？",
+  "order": ["mcp-call", "import", "search"]
+}

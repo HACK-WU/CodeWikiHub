@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "代码分层与专家边界",
+    "locale": "zh-CN",
+    "output": ".atlas/build/modules.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:HACK-WU/kisearch.git",
+      "link_mode": "local-only",
+      "revision": "071afab7fee7bd8be00db0d5865ddfd8aa77bb82"
+    }
+  },
+  "layout": {
+    "direction": "right"
+  },
+  "nodes": [
+    {
+      "id": "repo",
+      "label": "kisearch 仓库",
+      "sublabel": "单仓多工程：CLI + MCP + Web + 客户端"
+    },
+    {
+      "id": "bin",
+      "parent": "repo",
+      "label": "bin/",
+      "sublabel": "命令分发 · 28 个命令",
+      "sources": [
+        {
+          "path": "bin/ki.mjs",
+          "line": 31,
+          "end_line": 60,
+          "label": "命令表"
+        }
+      ]
+    },
+    {
+      "id": "src_cmd",
+      "parent": "repo",
+      "label": "src/*.ts",
+      "sublabel": "28 个命令入口（薄层）",
+      "sources": [
+        {
+          "path": "src/import.ts",
+          "line": 40,
+          "end_line": 70,
+          "label": "命令入口示例"
+        }
+      ]
+    },
+    {
+      "id": "lib",
+      "parent": "repo",
+      "label": "src/lib/",
+      "sublabel": "核心层 · 125 个模块"
+    },
+    {
+      "id": "lib_mcp",
+      "parent": "lib",
+      "label": "mcp-tools/ + daemon-*",
+      "sublabel": "MCP 服务专家 ✅ 23 工具 / 已补全",
+      "sources": [
+        {
+          "path": "src/lib/mcp-server-factory.ts",
+          "line": 48,
+          "end_line": 60,
+          "label": "工具注册"
+        }
+      ]
+    },
+    {
+      "id": "lib_recall",
+      "parent": "lib",
+      "label": "recall/ + vector-client",
+      "sublabel": "检索专家 ✅ + 回想内核专家 ✅",
+      "sources": [
+        {
+          "path": "src/lib/vector-client.ts",
+          "line": 1009,
+          "end_line": 1020,
+          "label": "向量入口"
+        }
+      ]
+    },
+    {
+      "id": "lib_recall_kernel",
+      "parent": "lib",
+      "label": "recall/（12 文件）",
+      "sublabel": "回想内核专家 ✅ 独立域",
+      "sources": [
+        {
+          "path": "src/lib/recall/run-recall.ts",
+          "line": 287,
+          "end_line": 300,
+          "label": "多轮回想内核"
+        }
+      ]
+    },
+    {
+      "id": "lib_import",
+      "parent": "lib",
+      "label": "import* + chunker + asset-*",
+      "sublabel": "知识索引导入专家 ✅",
+      "sources": [
+        {
+          "path": "src/lib/import.ts",
+          "line": 747,
+          "end_line": 760,
+          "label": "导入编排"
+        }
+      ]
+    },
+    {
+      "id": "lib_rel",
+      "parent": "lib",
+      "label": "scoring + group-* + wiki-sync",
+      "sublabel": "关系与索引管理专家 ✅ 已合并补全",
+      "sources": [
+        {
+          "path": "src/lib/scoring.ts",
+          "line": 121,
+          "end_line": 130,
+          "label": "评分"
+        }
+      ]
+    },
+    {
+      "id": "lib_store",
+      "parent": "lib",
+      "label": "store + wal + scope + config*",
+      "sublabel": "存储与配置基础专家 ✅",
+      "sources": [
+        {
+          "path": "src/lib/config.ts",
+          "line": 398,
+          "end_line": 410,
+          "label": "配置加载"
+        }
+      ]
+    },
+    {
+      "id": "lib_gov",
+      "parent": "lib",
+      "label": "governance-* + events/",
+      "sublabel": "事件治理专家 ✅",
+      "sources": [
+        {
+          "path": "src/lib/governance-http.ts",
+          "line": 589,
+          "end_line": 600,
+          "label": "治理路由"
+        }
+      ]
+    },
+    {
+      "id": "lib_chat",
+      "parent": "lib",
+      "label": "chat/（25 文件）",
+      "sublabel": "AI 对话与追问专家 ✅",
+      "sources": [
+        {
+          "path": "src/lib/chat/chat-routes.ts",
+          "line": 405,
+          "end_line": 415,
+          "label": "对话路由"
+        }
+      ]
+    },
+    {
+      "id": "lib_ds",
+      "parent": "lib",
+      "label": "datasource-*（14 文件）",
+      "sublabel": "数据源同步专家 ✅",
+      "sources": [
+        {
+          "path": "src/lib/datasource-scheduler.ts",
+          "line": 321,
+          "end_line": 335,
+          "label": "调度器"
+        }
+      ]
+    },
+    {
+      "id": "lib_misc",
+      "parent": "lib",
+      "label": "open-api / trash / views / auth / atlas",
+      "sublabel": "开放接口 / 资产治理 2 专家 ✅",
+      "sources": [
+        {
+          "path": "src/lib/open-api/index.ts",
+          "line": 114,
+          "end_line": 125,
+          "label": "对外 API 路由"
+        }
+      ]
+    },
+    {
+      "id": "zvec",
+      "parent": "repo",
+      "label": "src/zvec-engine/",
+      "sublabel": "向量引擎专家 ✅ 16 文件 / 已补全",
+      "sources": [
+        {
+          "path": "src/zvec-engine/engine.ts",
+          "line": 321,
+          "end_line": 330,
+          "label": "引擎入口"
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "parent": "repo",
+      "label": "web/（ki-web）",
+      "sublabel": "可视化前端专家 ✅ 18 页 / 已补全",
+      "sources": [
+        {
+          "path": "web/src/App.tsx",
+          "line": 24,
+          "end_line": 33,
+          "label": "SPA 路由"
+        }
+      ]
+    },
+    {
+      "id": "client",
+      "parent": "repo",
+      "label": "ki-client/",
+      "sublabel": "远端客户端专家 ✅",
+      "sources": [
+        {
+          "path": "ki-client/src/cli.ts",
+          "line": 1,
+          "end_line": 20,
+          "label": "客户端 CLI 入口"
+        }
+      ]
+    },
+    {
+      "id": "tests",
+      "parent": "repo",
+      "label": "test/ + npm scripts",
+      "sublabel": "299 个 .test.ts，跑法见 PROJECT.md §7",
+      "sources": [
+        {
+          "path": "package.json",
+          "line": 1,
+          "end_line": 30,
+          "label": "测试脚本"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "先查专家，再读码",
+      "items": [
+        "标 ✅ 的目录先用 expert-lookup 加载契约层 C0，按契约用不用读实现",
+        "标 ❌ 的目录没有专家资产，只能读源码，读完值得补一个专家包"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "专家包基线已经很旧",
+      "items": [
+        "7 个专家包基线是 2026-08（commit 9841255 / 8adc487）",
+        "manage-index 已删除、query-group 的 CLI 已移除、工具从 13 涨到 25"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "薄命令层约定",
+      "items": [
+        "新增 7 个专家 + 5 个子专家，5 块「无专家」已全部补齐（2026-11-25）",
+        "既有 7 专家基线仍是 2026-08，INDEX.md 已登记 4 处模块根过期，未重建",
+        "src/*.ts 只做参数解析与调用，业务在 src/lib/"
+      ]
+    }
+  ]
+}

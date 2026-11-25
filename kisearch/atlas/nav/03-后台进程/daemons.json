@@ -1,0 +1,27 @@
+{
+  "title": "daemon 与异步任务",
+  "type": "architecture",
+  "svg": "views/daemons.svg",
+  "summary": "ki mcp --http --daemon 会后拉起一个常驻进程：它同时是 HTTP 单例、CLI 的 RPC 排队通道、定时数据源同步的调度器、可见性队列的消费者，也是常态下唯一持 zvec 锁的进程。三处并发闸门与三类「重启后自愈」的补偿任务都在这里。",
+  "points": [
+    ["常驻不等于守护", "--daemon 只做 detached spawn：日志不落盘、崩溃不会自动拉起；升级后改动不生效，先 ki mcp restart。"],
+    ["三层并发闸门各管一段", "向量库层靠空闲释放 + 撞锁重试错开；scope 写锁把同 scope 的 import / sync / edit 串行；操作协调器再统一分类排队。"],
+    ["重启会自己补三件事", "接上未收口的事件分析、消费可见性队列残留、把断在半路的任务标成中断。"],
+    ["定时同步由 daemon 拉起", "数据源调度器在 HTTP 分支末尾启动，不在时不会有任何拉取发生。"]
+  ],
+  "docs": [
+    "docs/mcp-http.md",
+    "docs/configuration.md"
+  ],
+  "code": [
+    { "id": "cli", "file": "bin/ki.mjs", "lines": [233, 250], "why": "daemon 判定与 detached 启动：--http + --daemon 才走常驻" },
+    { "id": "daemon", "file": "src/lib/mcp-http.ts", "lines": [1355, 1370], "why": "HTTP 单例启动：监听、落 lock、标记 web 能力" },
+    { "id": "sched", "file": "src/lib/datasource-scheduler.ts", "lines": [321, 335], "why": "调度器启动：由 daemon 启动序末尾拉起" },
+    { "id": "govresume", "file": "src/lib/mcp-http.ts", "lines": [1588, 1600], "why": "重启后接上未完成的事件分析任务" },
+    { "id": "visq", "file": "src/lib/visibility-queue.ts", "lines": [238, 250], "why": "可见性队列的启动恢复：消费上次没做完的摘补" },
+    { "id": "locks", "file": "src/lib/scope-write-lock.ts", "lines": [123, 135], "why": "同 scope 写操作串行化，避免并发导入互相踩" },
+    { "id": "tasks", "file": "src/lib/task-registry.ts", "lines": [622, 635], "why": "任务台账：谁在跑、跑到哪、上次是不是断了" },
+    { "id": "zvec", "file": "src/lib/vector-client.ts", "lines": [369, 380], "why": "向量库空闲释放锁：多实例并存靠它错开" },
+    { "id": "gitrepo", "concept": true }
+  ]
+}

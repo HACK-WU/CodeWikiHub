@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "kisearch 运行时架构",
+    "locale": "zh-CN",
+    "output": ".atlas/build/runtime.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:HACK-WU/kisearch.git",
+      "link_mode": "local-only",
+      "revision": "071afab7fee7bd8be00db0d5865ddfd8aa77bb82"
+    }
+  },
+  "components": [
+    { "id": "agents", "type": "external", "label": "AI Agent / IDE", "sublabel": "MCP 客户端", "tag": "外部", "pos": [40, 300], "size": [150, 64] },
+    { "id": "web", "type": "frontend", "label": "ki-web 前端", "sublabel": "React SPA · 18 页", "tag": "浏览器", "pos": [40, 470], "size": [150, 64],
+      "sources": [{ "path": "web/src/App.tsx", "line": 24, "end_line": 33, "label": "SPA 路由入口" }] },
+    { "id": "cli", "type": "backend", "label": "ki CLI", "sublabel": "bin/ki.mjs · 28 命令", "tag": "终端", "pos": [40, 630], "size": [150, 64],
+      "sources": [{ "path": "bin/ki.mjs", "line": 31, "end_line": 60, "label": "命令表" }] },
+    { "id": "stdio", "type": "backend", "label": "stdio 薄桥", "sublabel": "不在此进程开 zvec", "tag": "客户端进程", "pos": [280, 190], "size": [150, 64],
+      "sources": [{ "path": "src/lib/daemon-bridge.ts", "line": 10, "end_line": 14, "label": "stdio → HTTP 桥接" }] },
+    { "id": "http", "type": "backend", "label": "MCP HTTP 单例", "sublabel": ":7423 · /mcp · /api", "tag": "daemon 进程", "pos": [280, 360], "size": [160, 84],
+      "sources": [
+        { "path": "src/lib/mcp-http.ts", "line": 651, "end_line": 660, "label": "HTTP 分发" },
+        { "path": "src/lib/mcp-http.ts", "line": 814, "end_line": 820, "label": "鉴权闸门" }
+      ] },
+    { "id": "rpc", "type": "backend", "label": "CLI RPC 通道", "sublabel": "net socket JSON-RPC", "tag": "daemon 进程", "pos": [280, 620], "size": [150, 64],
+      "sources": [{ "path": "src/lib/daemon-rpc.ts", "line": 189, "end_line": 200, "label": "RPC 服务" }] },
+    { "id": "tools", "type": "backend", "label": "MCP 工具层", "sublabel": "25 个 ki_* 工具", "tag": "daemon 进程", "pos": [520, 190], "size": [150, 64],
+      "sources": [{ "path": "src/lib/mcp-server-factory.ts", "line": 48, "end_line": 60, "label": "工具注册" }] },
+    { "id": "apiroutes", "type": "backend", "label": "/api 路由群", "sublabel": "核心 · chat · 治理 · 视图", "tag": "daemon 进程", "pos": [520, 390], "size": [150, 64],
+      "sources": [{ "path": "src/lib/mcp-http-api.ts", "line": 1024, "end_line": 1035, "label": " /api 路由表" }] },
+    { "id": "services", "type": "backend", "label": "业务层", "sublabel": "import · search · 关系 · 事件", "tag": "daemon 进程", "pos": [760, 360], "size": [160, 84],
+      "sources": [
+        { "path": "src/lib/import.ts", "line": 747, "end_line": 755, "label": "导入编排" },
+        { "path": "src/search.ts", "line": 935, "end_line": 945, "label": "检索入口" }
+      ] },
+    { "id": "kb", "type": "database", "label": "KB JSON", "sublabel": "kb/<scope>/ · WAL 原子写", "tag": "磁盘", "pos": [760, 170], "size": [150, 64],
+      "sources": [
+        { "path": "src/lib/scope.ts", "line": 100, "end_line": 107, "label": "索引与关系缓存路径" },
+        { "path": "src/lib/wal.ts", "line": 134, "end_line": 140, "label": "原子写" }
+      ] },
+    { "id": "adapter", "type": "backend", "label": "Vector Adapter", "sublabel": "vector-client · dense", "tag": "daemon 进程", "pos": [760, 560], "size": [150, 64],
+      "sources": [{ "path": "src/lib/vector-client.ts", "line": 1009, "end_line": 1018, "label": "向量检索入口" }] },
+    { "id": "engine", "type": "backend", "label": "ZvecEngine", "sublabel": "worker · RRF 融合", "tag": "worker 线程", "pos": [1000, 420], "size": [150, 64],
+      "sources": [{ "path": "src/zvec-engine/engine.ts", "line": 321, "end_line": 325, "label": "混合检索" }] },
+    { "id": "embed", "type": "cloud", "label": "Embedding", "sublabel": "Qwen3-Embedding-8B", "tag": "外部 API", "pos": [1000, 170], "size": [150, 64],
+      "sources": [{ "path": "src/zvec-engine/embedding/siliconflow.ts", "line": 34, "end_line": 35, "label": "默认端点与模型" }] },
+    { "id": "zvec", "type": "database", "label": "zvec 向量库", "sublabel": "vector/ + FTS 集合", "tag": "磁盘", "pos": [1000, 620], "size": [150, 64],
+      "sources": [
+        { "path": "src/lib/config.ts", "line": 667, "end_line": 668, "label": "向量目录" },
+        { "path": "src/lib/fts-client.ts", "line": 139, "end_line": 145, "label": "FTS 写入" }
+      ] }
+  ],
+  "connections": [
+    { "id": "agents-stdio", "from": "agents", "to": "stdio", "label": "stdio MCP", "fromSide": "right", "toSide": "left" },
+    { "id": "agents-http", "from": "agents", "to": "http", "label": "HTTP", "variant": "emphasis", "fromSide": "right", "toSide": "left" },
+    { "id": "web-http", "from": "web", "to": "http", "label": "同源 /api", "fromSide": "right", "toSide": "left" },
+    { "id": "cli-rpc", "from": "cli", "to": "rpc", "label": "daemon RPC", "fromSide": "right", "toSide": "left" },
+    { "id": "stdio-http", "from": "stdio", "to": "http", "label": "代理转发", "fromSide": "bottom", "toSide": "top" },
+    { "id": "http-tools", "from": "http", "to": "tools", "label": "/mcp", "fromSide": "right", "toSide": "left" },
+    { "id": "http-apiroutes", "from": "http", "to": "apiroutes", "label": "/api", "fromSide": "right", "toSide": "left" },
+    { "id": "rpc-services", "from": "rpc", "to": "services", "label": "派发", "fromSide": "right", "toSide": "bottom" },
+    { "id": "tools-services", "from": "tools", "to": "services", "label": "工具调用", "fromSide": "right", "toSide": "left" },
+    { "id": "apiroutes-services", "from": "apiroutes", "to": "services", "label": "业务调用", "fromSide": "right", "toSide": "left" },
+    { "id": "services-kb", "from": "services", "to": "kb", "label": "WAL 原子写", "fromSide": "top", "toSide": "bottom" },
+    { "id": "services-adapter", "from": "services", "to": "adapter", "label": "dense 向量", "fromSide": "bottom", "toSide": "top" },
+    { "id": "adapter-engine", "from": "adapter", "to": "engine", "label": "向量检索", "fromSide": "right", "toSide": "left" },
+    { "id": "engine-zvec", "from": "engine", "to": "zvec", "label": "读写向量", "fromSide": "bottom", "toSide": "top" },
+    { "id": "engine-embed", "from": "engine", "to": "embed", "label": "embedding", "fromSide": "top", "toSide": "bottom" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "接入层", "items": ["IDE 走 stdio 时由薄桥转发到本机 HTTP，客户端进程不开向量库", "/mcp 与 /api 同一入口，鉴权与只读闸门在此裁决"] },
+    { "dot": "emerald", "title": "进程与锁", "items": ["HTTP 单例是常态下唯一持向量库锁的进程", "CLI 命令经 RPC 在 daemon 内排队，不各自开库", "多 IDE 共享同一 daemon，避免锁冲突"] },
+    { "dot": "rose", "title": "数据分层", "items": ["向量与 FTS 集合进 zvec 目录，按 scope 分库", "结构化索引与原文进 kb/<scope>/，WAL 原子写", "配置与 Token 在 ~/.ki，见「配置与磁盘布局」页"] }
+  ]
+}

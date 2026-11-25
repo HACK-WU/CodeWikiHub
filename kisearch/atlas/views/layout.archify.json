@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "配置与磁盘布局：~/.ki",
+    "locale": "zh-CN",
+    "output": ".atlas/build/layout.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:HACK-WU/kisearch.git",
+      "link_mode": "local-only",
+      "revision": "071afab7fee7bd8be00db0d5865ddfd8aa77bb82"
+    }
+  },
+  "layout": { "direction": "right" },
+  "nodes": [
+    { "id": "ki_dir", "label": "~/.ki", "sublabel": "数据根目录（config.dataDir 默认值）",
+      "sources": [{ "path": "src/lib/config.ts", "line": 41, "end_line": 42, "label": "默认根目录" }] },
+    { "id": "config", "label": "config.yaml", "parent": "ki_dir", "sublabel": "配置 · --config 可覆盖",
+      "sources": [{ "path": "src/lib/config.ts", "line": 398, "end_line": 410, "label": "加载顺序" }] },
+    { "id": "kb", "label": "kb/<scope>/", "parent": "ki_dir", "sublabel": "索引与原文，按 scope 隔离",
+      "sources": [{ "path": "src/lib/config.ts", "line": 60, "end_line": 75, "label": "kb 与 backup 路径" }] },
+    { "id": "group_index", "label": "group-index.json", "parent": "kb", "sublabel": "Group 树",
+      "sources": [{ "path": "src/lib/scope.ts", "line": 100, "end_line": 101, "label": "树文件路径" }] },
+    { "id": "relations_cache", "label": "relations-cache.json", "parent": "kb", "sublabel": "关系热缓存 · 评分冷热",
+      "sources": [{ "path": "src/lib/scope.ts", "line": 107, "end_line": 108, "label": "缓存文件路径" }] },
+    { "id": "local_kb", "label": "原文目录", "parent": "kb", "sublabel": "文件级 Markdown（未清洗）",
+      "sources": [{ "path": "src/lib/scope.ts", "line": 115, "end_line": 120, "label": "原文落盘位置" }] },
+    { "id": "assets", "label": "<group>/assets/", "parent": "kb", "sublabel": "导入时复制的图片附件",
+      "sources": [{ "path": "src/lib/scope.ts", "line": 128, "end_line": 132, "label": "附件目录" }] },
+    { "id": "governance", "label": "governance.json", "parent": "kb", "sublabel": "事件与阶段",
+      "sources": [{ "path": "src/lib/governance-store.ts", "line": 65, "end_line": 66, "label": "治理存储路径" }] },
+    { "id": "trash", "label": ".trash/", "parent": "kb", "sublabel": "回收站（含 _settings.json）",
+      "sources": [{ "path": "src/lib/trash-store.ts", "line": 108, "end_line": 115, "label": "回收站根目录" }] },
+    { "id": "atlas", "label": "atlas/", "parent": "kb", "sublabel": "知识地图包与归档",
+      "sources": [{ "path": "src/lib/atlas/paths.ts", "line": 21, "end_line": 30, "label": "图集目录" }] },
+    { "id": "scope_locks", "label": "锁与中断标记", "parent": "kb", "sublabel": ".import.lock · import-interrupt.json",
+      "sources": [{ "path": "src/lib/interrupt.ts", "line": 88, "end_line": 96, "label": "导入锁" }] },
+    { "id": "vector", "label": "vector/", "parent": "ki_dir", "sublabel": "zvec 集合（含 FTS）",
+      "sources": [{ "path": "src/lib/config.ts", "line": 667, "end_line": 668, "label": "向量目录" }] },
+    { "id": "backup", "label": "backup/", "parent": "ki_dir", "sublabel": "备份快照",
+      "sources": [{ "path": "src/lib/config.ts", "line": 60, "end_line": 75, "label": "备份目录" }] },
+    { "id": "chat", "label": "chat/", "parent": "ki_dir", "sublabel": "对话记录与提示词配置",
+      "sources": [{ "path": "src/lib/config.ts", "line": 88, "end_line": 92, "label": "对话目录" }] },
+    { "id": "views", "label": "views.json", "parent": "ki_dir", "sublabel": "知识视图定义",
+      "sources": [{ "path": "src/lib/scope-view.ts", "line": 158, "end_line": 165, "label": "视图文件" }] },
+    { "id": "tokens", "label": "mcp-tokens.json", "parent": "ki_dir", "sublabel": "多 Token + scope 授权（0600）",
+      "sources": [{ "path": "src/lib/mcp-token.ts", "line": 29, "end_line": 30, "label": "Token 存储" }] },
+    { "id": "locks", "label": "mcp-*.lock", "parent": "ki_dir", "sublabel": "HTTP 单例 / stdio 实例",
+      "sources": [{ "path": "src/lib/mcp-http.ts", "line": 104, "end_line": 112, "label": "HTTP 锁文件" }] },
+    { "id": "tasks", "label": ".ki-tasks/logs/", "parent": "ki_dir", "sublabel": "任务台账日志",
+      "sources": [{ "path": "src/lib/task-log.ts", "line": 68, "end_line": 72, "label": "日志目录" }] },
+    { "id": "uploads", "label": "import-uploads/", "parent": "ki_dir", "sublabel": "HTTP 导入暂存",
+      "sources": [{ "path": "src/lib/mcp-http-api.ts", "line": 221, "end_line": 225, "label": "上传暂存" }] }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "改配置的顺序", "items": ["优先级：--config > KI_CONFIG_PATH > ~/.ki/config.yaml", "字段名或取值非法直接拒绝启动，不会静默取默认值"] },
+    { "dot": "rose", "title": "备份与还原动哪两块", "items": ["backup/ 存结构化快照，vector/ 是向量本体", "还原后若向量缺失，要跑 ki restore --rebuild-vector 重建"] },
+    { "dot": "orange", "title": "别手改的东西", "items": ["mcp-tokens.json 是 0600 凭据，改坏了鉴权会 fail-closed", "relations-cache.json 由系统维护；.trash/ 是回收站，清了就找不回"] }
+  ]
+}

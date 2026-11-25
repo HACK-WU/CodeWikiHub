@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "一次检索与原文交付",
+    "locale": "zh-CN",
+    "output": ".atlas/build/search.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:HACK-WU/kisearch.git",
+      "link_mode": "local-only",
+      "revision": "071afab7fee7bd8be00db0d5865ddfd8aa77bb82"
+    }
+  },
+  "participants": [
+    { "id": "caller", "type": "external", "label": "调用方", "sublabel": "CLI / MCP 工具" },
+    { "id": "search", "type": "backend", "label": "executeSearch", "sublabel": "search.ts",
+      "sources": [{ "path": "src/search.ts", "line": 935, "end_line": 950, "label": "检索入口" }] },
+    { "id": "vc", "type": "backend", "label": "Vector Adapter", "sublabel": "vectorSearch",
+      "sources": [{ "path": "src/lib/vector-client.ts", "line": 1009, "end_line": 1020, "label": "向量检索" }] },
+    { "id": "engine", "type": "backend", "label": "ZvecEngine", "sublabel": "hybridSearch",
+      "sources": [{ "path": "src/zvec-engine/engine.ts", "line": 321, "end_line": 330, "label": "混合检索" }] },
+    { "id": "zvec", "type": "database", "label": "dense 集合", "sublabel": "~/.ki/vector",
+      "sources": [{ "path": "src/lib/config.ts", "line": 667, "end_line": 668, "label": "向量目录" }] },
+    { "id": "fts", "type": "database", "label": "FTS 集合", "sublabel": "ftsSearch · BM25",
+      "sources": [{ "path": "src/lib/fts-client.ts", "line": 179, "end_line": 190, "label": "全文检索" }] },
+    { "id": "locator", "type": "backend", "label": "原文定位", "sublabel": "original-locator",
+      "sources": [{ "path": "src/lib/original-locator.ts", "line": 319, "end_line": 330, "label": "memoryId → 原文" }] }
+  ],
+  "segments": [
+    { "from": 160, "to": 250, "label": "入口" },
+    { "from": 255, "to": 372, "label": "双路召回" },
+    { "from": 376, "to": 440, "label": "融合" },
+    { "from": 444, "to": 560, "label": "原文交付" }
+  ],
+  "messages": [
+    { "id": "query", "from": "caller", "to": "search", "y": 172, "label": "query + scope", "variant": "emphasis" },
+    { "id": "prep", "from": "search", "to": "vc", "y": 205, "label": "预处理后 vectorSearch" },
+    { "id": "hybrid", "from": "vc", "to": "engine", "y": 237, "label": "hybridSearch(queryText)" },
+    { "id": "ann", "from": "engine", "to": "zvec", "y": 269, "label": "ANN 候选", "variant": "emphasis" },
+    { "id": "ann-hits", "from": "zvec", "to": "engine", "y": 300, "label": "docId + 距离", "variant": "return" },
+    { "id": "bm25", "from": "engine", "to": "fts", "y": 332, "label": "BM25 查询", "variant": "dashed" },
+    { "id": "bm25-hits", "from": "fts", "to": "engine", "y": 363, "label": "词项命中", "variant": "return" },
+    { "id": "ranked", "from": "engine", "to": "vc", "y": 395, "label": "已融合排序", "variant": "return" },
+    { "id": "to-search", "from": "vc", "to": "search", "y": 427, "label": "命中 + 分数", "variant": "return" },
+    { "id": "locate", "from": "search", "to": "locator", "y": 459, "label": "按 memoryId 反查", "variant": "emphasis" },
+    { "id": "original", "from": "locator", "to": "search", "y": 491, "label": "原文 + isFullText", "variant": "return" },
+    { "id": "result", "from": "search", "to": "caller", "y": 523, "label": "结果集", "variant": "return",
+      "note": "向量层只回 docId；原文与结构化定位靠 memoryId 反查，这就是「搜到的内容与原文口径不一致」的来源" }
+  ],
+  "activations": [
+    { "participant": "search", "from": 168, "to": 556, "type": "backend" },
+    { "participant": "vc", "from": 200, "to": 434, "type": "backend" },
+    { "participant": "engine", "from": 232, "to": 400, "type": "backend" },
+    { "participant": "zvec", "from": 264, "to": 306, "type": "database" },
+    { "participant": "fts", "from": 327, "to": 369, "type": "database" },
+    { "participant": "locator", "from": 454, "to": 496, "type": "backend" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "两路各自召回", "items": ["语义走 embedding + ANN，全文走 BM25 词项", "任一路缺席不影响另一路，召回数量由各自参数控制"] },
+    { "dot": "emerald", "title": "RRF 不比较量纲", "items": ["按 Σ1/(k+rank) 只用排名，不用余弦距离与 BM25 原始分直接比大小", "融合发生在 zvec-engine 的 worker 线程，业务层拿到的是已排序结果"] },
+    { "dot": "rose", "title": "原文是第二次查", "items": ["向量层只给 docId 与排名", "memoryId 经 original-locator / relation-map 回到 KB 原文，定位结果决定 isFullText"] }
+  ]
+}

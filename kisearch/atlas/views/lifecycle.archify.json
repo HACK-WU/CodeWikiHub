@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "一份知识的一生",
+    "locale": "zh-CN",
+    "output": ".atlas/build/lifecycle.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:HACK-WU/kisearch.git",
+      "link_mode": "local-only",
+      "revision": "071afab7fee7bd8be00db0d5865ddfd8aa77bb82"
+    }
+  },
+  "stages": [
+    { "label": "写入" },
+    { "label": "加工" },
+    { "label": "存储" },
+    { "label": "消费" },
+    { "label": "维护" }
+  ],
+  "nodes": [
+    { "id": "import_cli", "type": "backend", "label": "ki import", "sublabel": "目录 / 单文件", "stage": 0, "row": 0, "tag": "批量",
+      "sources": [{ "path": "src/import.ts", "line": 40, "end_line": 70, "label": "导入命令" }] },
+    { "id": "store_tool", "type": "backend", "label": "ki_store", "sublabel": "单条正文", "stage": 0, "row": 1, "tag": "单条",
+      "sources": [{ "path": "src/store.ts", "line": 55, "end_line": 65, "label": "单条写入" }] },
+    { "id": "rel_tool", "type": "backend", "label": "ki sync-relation", "sublabel": "结构化关系", "stage": 0, "row": 2, "tag": "结构化",
+      "sources": [{ "path": "src/sync-relation.ts", "line": 1668, "end_line": 1680, "label": "关系回写" }] },
+    { "id": "ds_sync", "type": "backend", "label": "数据源同步", "sublabel": "定时 git 拉取", "stage": 0, "row": 3, "tag": "定时",
+      "sources": [{ "path": "src/lib/datasource-scheduled-run.ts", "line": 89, "end_line": 100, "label": "定时同步" }] },
+    { "id": "chunk", "type": "backend", "label": "清洗与切分", "sublabel": "splitIntoChunks", "stage": 1, "row": 0, "tag": "chunk",
+      "sources": [{ "path": "src/lib/chunker.ts", "line": 183, "end_line": 190, "label": "切分" }] },
+    { "id": "embed", "type": "cloud", "label": "Embedding", "sublabel": "SiliconFlow", "stage": 1, "row": 1, "tag": "外部 API",
+      "sources": [{ "path": "src/zvec-engine/embedding/siliconflow.ts", "line": 34, "end_line": 35, "label": "默认模型" }] },
+    { "id": "fts", "type": "backend", "label": "FTS 写入", "sublabel": "ftsBulkStore", "stage": 1, "row": 2, "tag": "--no-vector",
+      "sources": [{ "path": "src/lib/fts-client.ts", "line": 139, "end_line": 150, "label": "全文写入" }] },
+    { "id": "groups", "type": "backend", "label": "建 Group 树", "sublabel": "phase3EnsureGroups", "stage": 1, "row": 3, "tag": "落点",
+      "sources": [{ "path": "src/lib/import.ts", "line": 2808, "end_line": 2820, "label": "Phase 3" }] },
+    { "id": "zvec", "type": "database", "label": "zvec 集合", "sublabel": "vector/ 下按 scope", "stage": 2, "row": 1, "tag": "向量 + FTS",
+      "sources": [{ "path": "src/lib/config.ts", "line": 667, "end_line": 668, "label": "向量目录" }] },
+    { "id": "kb", "type": "database", "label": "KB JSON", "sublabel": "树 · 关系缓存 · 原文", "stage": 2, "row": 3, "tag": "WAL 原子写",
+      "sources": [{ "path": "src/lib/scope.ts", "line": 100, "end_line": 108, "label": "索引文件" }] },
+    { "id": "search", "type": "backend", "label": "ki_search", "sublabel": "混合检索", "stage": 3, "row": 0, "tag": "召回",
+      "sources": [{ "path": "src/search.ts", "line": 935, "end_line": 950, "label": "检索入口" }] },
+    { "id": "recall", "type": "backend", "label": "ki_recall", "sublabel": "多轮 grounded 回想", "stage": 3, "row": 1, "tag": "AI 用",
+      "sources": [{ "path": "src/lib/recall/run-recall.ts", "line": 287, "end_line": 300, "label": "多轮回想" }] },
+    { "id": "module_info", "type": "backend", "label": "ki_get_module_info", "sublabel": "已知路径直查", "stage": 3, "row": 2, "tag": "直查",
+      "sources": [{ "path": "src/get-module-info.ts", "line": 498, "end_line": 510, "label": "模块原文" }] },
+    { "id": "chat", "type": "backend", "label": "AI 对话 / 分析", "sublabel": "chat-routes", "stage": 3, "row": 3, "tag": "模型消费",
+      "sources": [{ "path": "src/lib/chat/chat-routes.ts", "line": 405, "end_line": 415, "label": "对话路由" }] },
+    { "id": "scoring", "type": "backend", "label": "评分与冷热", "sublabel": "calculateScore", "stage": 4, "row": 0, "tag": "使用计数",
+      "sources": [{ "path": "src/lib/scoring.ts", "line": 121, "end_line": 130, "label": "评分" }] },
+    { "id": "trash", "type": "database", "label": "回收站", "sublabel": ".trash/", "stage": 4, "row": 2, "tag": "可恢复",
+      "sources": [{ "path": "src/lib/trash-store.ts", "line": 108, "end_line": 115, "label": "回收站目录" }] },
+    { "id": "backup", "type": "database", "label": "备份快照", "sublabel": "backup/", "stage": 4, "row": 4, "tag": "还原",
+      "sources": [{ "path": "src/lib/backup.ts", "line": 39, "end_line": 50, "label": "备份执行" }] }
+  ],
+  "flows": [
+    { "id": "import-chunk", "from": "import_cli", "to": "chunk", "label": "Markdown 目录", "classification": "批量原文", "variant": "emphasis" },
+    { "id": "ds-chunk", "from": "ds_sync", "to": "chunk", "label": "拉取到的文件", "classification": "定时", "variant": "dashed" },
+    { "id": "store-kb", "from": "store_tool", "to": "kb", "label": "单条原文", "classification": "直写", "variant": "default" },
+    { "id": "rel-kb", "from": "rel_tool", "to": "kb", "label": "关系正文", "classification": "结构化", "variant": "emphasis" },
+    { "id": "chunk-embed", "from": "chunk", "to": "embed", "label": "chunk 文本", "classification": "清洗后", "variant": "emphasis" },
+    { "id": "chunk-fts", "from": "chunk", "to": "fts", "label": "清洗后文本", "classification": "FTS-only", "variant": "dashed" },
+    { "id": "chunk-groups", "from": "chunk", "to": "groups", "label": "落点路径", "classification": "树", "variant": "default" },
+    { "id": "embed-zvec", "from": "embed", "to": "zvec", "label": "向量 + docId", "classification": "dense", "variant": "emphasis" },
+    { "id": "fts-zvec", "from": "fts", "to": "zvec", "label": "ftsIds", "classification": "全文", "variant": "dashed" },
+    { "id": "groups-kb", "from": "groups", "to": "kb", "label": "树 + 关系", "classification": "索引", "variant": "emphasis" },
+    { "id": "zvec-search", "from": "zvec", "to": "search", "label": "召回候选", "classification": "读", "variant": "emphasis" },
+    { "id": "kb-search", "from": "kb", "to": "search", "label": "原文定位", "classification": "memoryId", "variant": "default" },
+    { "id": "zvec-recall", "from": "zvec", "to": "recall", "label": "多轮召回", "classification": "读", "variant": "default" },
+    { "id": "recall-chat", "from": "recall", "to": "chat", "label": "引用片段", "classification": "提示词", "variant": "emphasis" },
+    { "id": "kb-module", "from": "kb", "to": "module_info", "label": "模块原文", "classification": "直查", "variant": "default" },
+    { "id": "kb-scoring", "from": "kb", "to": "scoring", "label": "使用计数", "classification": "回写", "variant": "default" },
+    { "id": "scoring-trash", "from": "scoring", "to": "trash", "label": "长期未用", "classification": "可恢复", "variant": "dashed" },
+    { "id": "kb-backup", "from": "kb", "to": "backup", "label": "快照", "classification": "备份", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "三类落点，各管一段", "items": ["向量与 FTS 进 zvec 目录，回答「像不像」", "树 / 关系缓存 / 原文进 kb/<scope>/，回答「在哪、原文是什么」"] },
+    { "dot": "emerald", "title": "同一份知识写三次", "items": ["chunk 文本既是向量输入，也是 FTS 输入", "原文按文件级整篇存档，与向量输入刻意不同（原文不清洗）"] },
+    { "dot": "rose", "title": "维护不是删除", "items": ["评分按使用计数衰减，冷热分区影响检索权重", "回收站可恢复；备份要还原后按需 ki restore --rebuild-vector"] }
+  ]
+}

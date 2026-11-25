@@ -1,0 +1,1201 @@
+{
+ "title": "kisearch 知识地图",
+ "subtitle": "不看文档列表，也能先看清这个系统",
+ "intro": "把运行时架构、核心链路、后台进程与磁盘布局分别画成一张图；每个带代码的节点都能点开对应的源码位置。",
+ "notice": "图为内联 SVG：带代码的节点可点击，其余为概念节点。8 张视图已装配完毕；14 个专家（含 4 个 2026-11-25 合并补全）全部在册。",
+ "branch": "master",
+ "baseline": "0f1426b",
+ "generated_at": "2026-11-25 17:10",
+ "views_dir": "views",
+ "nav": [
+  {
+   "id": "arch",
+   "name": "架构总览",
+   "q": "这个系统由什么组成，谁和谁相连？",
+   "children": [
+    {
+     "id": "runtime",
+     "page": "runtime"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "name": "核心链路",
+   "q": "一次具体操作到底经过哪些环节？",
+   "children": [
+    {
+     "id": "mcp-call",
+     "page": "mcp-call"
+    },
+    {
+     "id": "import",
+     "page": "import"
+    },
+    {
+     "id": "search",
+     "page": "search"
+    }
+   ]
+  },
+  {
+   "id": "background",
+   "name": "后台进程",
+   "q": "我没操作的时候，什么东西在跑？",
+   "children": [
+    {
+     "id": "daemons",
+     "page": "daemons"
+    }
+   ]
+  },
+  {
+   "id": "data",
+   "name": "数据与环境",
+   "q": "想改行为该动哪一段？数据从哪来、到哪去？",
+   "children": [
+    {
+     "id": "layout",
+     "page": "layout"
+    },
+    {
+     "id": "lifecycle",
+     "page": "lifecycle"
+    }
+   ]
+  },
+  {
+   "id": "map",
+   "name": "模块地图",
+   "q": "这堆目录各属哪个模块，哪个专家包能查细节？",
+   "children": [
+    {
+     "id": "modules",
+     "page": "modules"
+    }
+   ]
+  }
+ ],
+ "pages": {
+  "runtime": {
+   "title": "运行时架构总览",
+   "type": "architecture",
+   "svg": "views/runtime.svg",
+   "summary": "三种接入形态最后都汇到同一个 daemon：IDE 走 stdio 时由薄桥转发到本机 HTTP，CLI 命令经 RPC 在 daemon 内排队，Web 前端同源调用 /api。HTTP 单例是常态下唯一持向量库锁的进程，业务层再往下才分叉到向量库与 JSON 索引两条路。",
+   "points": [
+    [
+     "一个入口，两个协议",
+     "/mcp 与 /api/* 都在 createMcpHttpServer 里分发，鉴权与只读闸门也在这一层；工具层只做协议封装与超时，不碰业务。"
+    ],
+    [
+     "向量库只有一个持锁者",
+     "stdio 模式不再在客户端进程开库：daemon-bridge 把 stdio 原样桥接到本机 HTTP，多 IDE 共享同一持锁进程，靠这一点避开锁冲突。"
+    ],
+    [
+     "数据分两处落盘",
+     "向量与 FTS 集合进 ~/.ki/vector，结构化索引与原文进 kb/<scope>/ 且 WAL 原子写；两者由不同模块写，排查时先分清是哪一层。"
+    ],
+    [
+     "业务层是唯一分叉点",
+     "工具层与 /api 路由都收敛到 src/ 顶层命令层（import / search / sync-relation…），再往下才分 dense 向量与 JSON 两条路。"
+    ]
+   ],
+   "docs": [
+    "docs/architecture.md",
+    "docs/mcp-http.md",
+    "docs/mcp-tools.md"
+   ],
+   "code": [
+    {
+     "id": "agents",
+     "concept": true
+    },
+    {
+     "id": "web",
+     "file": "web/src/App.tsx",
+     "lines": [
+      24,
+      33
+     ],
+     "why": "SPA 入口：路由表决定 18 个页面各自挂在哪个路径下"
+    },
+    {
+     "id": "cli",
+     "file": "bin/ki.mjs",
+     "lines": [
+      31,
+      60
+     ],
+     "why": "命令表：ki 的所有子命令及其脚本映射都在这一处"
+    },
+    {
+     "id": "stdio",
+     "file": "src/lib/daemon-bridge.ts",
+     "lines": [
+      10,
+      14
+     ],
+     "why": "stdio 不自己开库，原样桥接到本机 HTTP 的注释与入口"
+    },
+    {
+     "id": "http",
+     "file": "src/lib/mcp-http.ts",
+     "lines": [
+      651,
+      660
+     ],
+     "why": "HTTP 分发总闸：/mcp、/api、/healthz 与静态托管都在此裁决"
+    },
+    {
+     "id": "rpc",
+     "file": "src/lib/daemon-rpc.ts",
+     "lines": [
+      189,
+      192
+     ],
+     "why": "CLI 命令经 net socket 进入 daemon 排队的服务入口"
+    },
+    {
+     "id": "tools",
+     "file": "src/lib/mcp-server-factory.ts",
+     "lines": [
+      48,
+      60
+     ],
+     "why": "25 个 ki_* 工具的唯一注册点：stdio 与 HTTP 共用同一个构建函数"
+    },
+    {
+     "id": "apiroutes",
+     "file": "src/lib/mcp-http-api.ts",
+     "lines": [
+      1024,
+      1035
+     ],
+     "why": "/api 大路由表：核心、chat、治理、视图、open-api 都从这里分流"
+    },
+    {
+     "id": "services",
+     "file": "src/lib/import.ts",
+     "lines": [
+      747,
+      755
+     ],
+     "why": "业务层代表：导入编排入口，锁与幂等判定都在这个函数里"
+    },
+    {
+     "id": "kb",
+     "file": "src/lib/wal.ts",
+     "lines": [
+      134,
+      140
+     ],
+     "why": "KB JSON 的原子写入：先写临时文件再替换，进程被杀也不会留半个文件"
+    },
+    {
+     "id": "adapter",
+     "file": "src/lib/vector-client.ts",
+     "lines": [
+      1009,
+      1018
+     ],
+     "why": "Vector Adapter：业务层唯一该调用的向量入口，dense 检索走这里"
+    },
+    {
+     "id": "engine",
+     "file": "src/zvec-engine/engine.ts",
+     "lines": [
+      321,
+      325
+     ],
+     "why": "引擎侧混合检索：语义结果与 FTS 结果在 worker 里做 RRF 融合"
+    },
+    {
+     "id": "embed",
+     "file": "src/zvec-engine/embedding/siliconflow.ts",
+     "lines": [
+      34,
+      35
+     ],
+     "why": "外部 embedding 的默认端点与模型，缺 API Key 时的报错也在这里"
+    },
+    {
+     "id": "zvec",
+     "file": "src/lib/config.ts",
+     "lines": [
+      667,
+      668
+     ],
+     "why": "向量目录的默认位置 ~/.ki/vector，FTS 集合也落在同目录体系下"
+    }
+   ]
+  },
+  "import": {
+   "title": "一次知识导入",
+   "type": "workflow",
+   "svg": "views/import.svg",
+   "summary": "ki import 先把 scope 加锁，再扫描目录、清洗切分、批量向量化，然后建 Group 树、写关系缓存与原文，最后记录 source 元数据。增量不靠 diff：同一份内容重导即覆盖，重复执行同一条命令就是增量更新。",
+   "points": [
+    [
+     "幂等追加取代增量 diff",
+     "同 sourcePath 重导 = 覆盖更新，同名不同源 = 冲突跳过，新文件 = 新增；所以没有 --mode 参数，也不需要记录 commit。"
+    ],
+    [
+     "覆盖导入是 scope 级清空",
+     "dense 模式下只要 scope 已有向量，本次导入会先清空再重建；跨批次导入不同 group 时，前次文件不在本次源目录内就会丢向量。"
+    ],
+    [
+     "中断不是死局",
+     "被 SIGINT/SIGTERM 打断会写 import-interrupt.json 并清锁，下次打开向量库时被引导执行 ki restore --rebuild-vector。"
+    ],
+    [
+     "HTTP 导入的 job 在内存",
+     "服务重启后 /api/import/status 会 404，前端提示重新导入；这不是 bug，是设计上的取舍。"
+    ]
+   ],
+   "docs": [
+    "docs/import.md",
+    "docs/build-kb.md"
+   ],
+   "code": [
+    {
+     "id": "entry",
+     "file": "src/import.ts",
+     "lines": [
+      40,
+      70
+     ],
+     "why": "CLI 命令定义：ki import 的参数与 action 都在这段"
+    },
+    {
+     "id": "lock",
+     "file": "src/lib/interrupt.ts",
+     "lines": [
+      88,
+      96
+     ],
+     "why": "导入锁路径：同 scope 并发导入靠这一个文件串行"
+    },
+    {
+     "id": "interrupt",
+     "file": "src/lib/interrupt.ts",
+     "lines": [
+      29,
+      40
+     ],
+     "why": "中断标记路径：被打断时写在这里，恢复时据此引导"
+    },
+    {
+     "id": "assets",
+     "file": "src/lib/import.ts",
+     "lines": [
+      611,
+      620
+     ],
+     "why": "图片附件收集：md 里引用的本地图片复制到 group 级 assets/"
+    },
+    {
+     "id": "scan",
+     "file": "src/lib/import.ts",
+     "lines": [
+      502,
+      510
+     ],
+     "why": "文件收集：按后缀白名单扫描源目录，未命中直接 fail-loud"
+    },
+    {
+     "id": "chunk",
+     "file": "src/lib/chunker.ts",
+     "lines": [
+      183,
+      190
+     ],
+     "why": "切分实现：chunkSize / chunkOverlap 决定向量化单元"
+    },
+    {
+     "id": "vectorize",
+     "file": "src/lib/batch-vectorize.ts",
+     "lines": [
+      147,
+      155
+     ],
+     "why": "批量向量化：内容向量的唯一入口，调用外部 embedding"
+    },
+    {
+     "id": "groups",
+     "file": "src/lib/import.ts",
+     "lines": [
+      2808,
+      2820
+     ],
+     "why": "Phase 3：按落点路径把 Group 树补全"
+    },
+    {
+     "id": "kb",
+     "file": "src/lib/import.ts",
+     "lines": [
+      2823,
+      2835
+     ],
+     "why": "Phase 4：写关系缓存与原文，经 WAL 原子落盘"
+    }
+   ]
+  },
+  "mcp-call": {
+   "title": "一次 MCP 工具调用",
+   "type": "sequence",
+   "svg": "views/mcp-call.svg",
+   "summary": "以 ki_search 为例：IDE 发出 tools/call 后先过 HTTP 层的 Token 与 scope 校验，再进工具层做参数校验与超时包装，然后才落到检索业务，经 Vector Adapter 到 ZvecEngine，在 worker 里做 ANN + FTS 的 RRF 融合，命中结果沿原路返回。全程两处准入、三档超时预算。",
+   "points": [
+    [
+     "越权在 HTTP 层就被挡下",
+     "scope 不在 Token 授权集合内直接 403，业务层看不到这次调用；排查「为什么调不通」先看这一层，不要从检索逻辑找。"
+    ],
+    [
+     "工具层只做包装",
+     "参数校验、超时、错误转译在 mcp-tools 里完成，工具实现不自己计时；READ 30s / WRITE 60s / BULK 300s 三档是硬预算。"
+    ],
+    [
+     "融合发生在 worker 里",
+     "semantic 与 FTS 两路候选在 zvec-engine 的 worker 线程按 Σ1/(k+rank) 合成一个分数，业务层拿到的是已排序结果。"
+    ],
+    [
+     "原文靠 memoryId 回来",
+     "向量层只给 docId 与排名，原文与结构化定位靠 memoryId 反查，这是「搜到的内容与原文偶尔不一致」类问题的根源位置。"
+    ]
+   ],
+   "docs": [
+    "docs/mcp-tools.md",
+    "docs/agent-integration.md"
+   ],
+   "code": [
+    {
+     "id": "ide",
+     "concept": true
+    },
+    {
+     "id": "http",
+     "file": "src/lib/mcp-http.ts",
+     "lines": [
+      814,
+      830
+     ],
+     "why": "鉴权闸门：/mcp 与 /api 进来先校验 Token 与请求 scope，越权在这里被拒"
+    },
+    {
+     "id": "access",
+     "file": "src/lib/mcp-tools/tool-access.ts",
+     "lines": [
+      39,
+      50
+     ],
+     "why": "只读工具白名单：只读会话里这些工具仍可调用，新增无 scope 参数的工具要同步登记"
+    },
+    {
+     "id": "tools",
+     "file": "src/lib/mcp-tools/util.ts",
+     "lines": [
+      24,
+      34
+     ],
+     "why": "超时包装：工具不自己计时，统一交给 withTimeout，超时抛 ToolTimeoutError"
+    },
+    {
+     "id": "search",
+     "file": "src/search.ts",
+     "lines": [
+      935,
+      950
+     ],
+     "why": "检索业务入口：CLI 与 HTTP 共用同一个函数，改召回策略只需要改这里往下"
+    },
+    {
+     "id": "vc",
+     "file": "src/lib/vector-client.ts",
+     "lines": [
+      1009,
+      1020
+     ],
+     "why": "Vector Adapter：业务层唯一该调用的向量入口，负责引擎生命周期与结果整形"
+    },
+    {
+     "id": "engine",
+     "file": "src/zvec-engine/engine.ts",
+     "lines": [
+      321,
+      330
+     ],
+     "why": "混合检索：语义与 FTS 两路查询的汇合点"
+    },
+    {
+     "id": "zvec",
+     "file": "src/zvec-engine/worker.ts",
+     "lines": [
+      533,
+      540
+     ],
+     "why": "RRF 融合：按 Σ1/(k+rank) 把多路排名合成单一分数"
+    }
+   ]
+  },
+  "search": {
+   "title": "一次检索与原文交付",
+   "type": "sequence",
+   "svg": "views/search.svg",
+   "summary": "query 进来后并行两路召回：语义走向量 ANN，全文走 BM25，两路在 zvec-engine 的 worker 里按排名融合，业务层拿到的是已排序结果；随后再用 memoryId 反查 KB 原文，才完成一次「原文交付」。",
+   "points": [
+    [
+     "两路各自召回，互不阻塞",
+     "语义路要 embedding，全文路不需要；缺 API Key 时全文路仍可用，这解释了「为什么有的环境只能全文搜」。"
+    ],
+    [
+     "RRF 只用排名不用原始分",
+     "Σ1/(k+rank) 让余弦距离和 BM25 分数不必换算到同一量纲，权重与 k 在 zvec-engine 的 scoring 里调。"
+    ],
+    [
+     "原文是第二次查",
+     "向量层只回 docId 与排名；memoryId 经 original-locator / relation-map 回到 KB，定位失败时 isFullText 会变，这是内容口径不一致的来源。"
+    ],
+    [
+     "入口只有一个",
+     "CLI 与 HTTP 共用 executeSearch，改召回策略不需要动两处。"
+    ]
+   ],
+   "docs": [
+    "docs/query-kb.md",
+    "docs/search-threshold.md"
+   ],
+   "code": [
+    {
+     "id": "caller",
+     "concept": true
+    },
+    {
+     "id": "search",
+     "file": "src/search.ts",
+     "lines": [
+      935,
+      950
+     ],
+     "why": "检索入口：参数归一化、两路召回编排都在这个函数"
+    },
+    {
+     "id": "vc",
+     "file": "src/lib/vector-client.ts",
+     "lines": [
+      1009,
+      1020
+     ],
+     "why": "Vector Adapter：业务层唯一该调的向量入口"
+    },
+    {
+     "id": "engine",
+     "file": "src/zvec-engine/engine.ts",
+     "lines": [
+      321,
+      330
+     ],
+     "why": "混合检索：语义与 FTS 两路查询在此汇合"
+    },
+    {
+     "id": "zvec",
+     "file": "src/lib/config.ts",
+     "lines": [
+      667,
+      668
+     ],
+     "why": "向量目录默认位置：dense 与 FTS 集合都在这个目录体系下"
+    },
+    {
+     "id": "fts",
+     "file": "src/lib/fts-client.ts",
+     "lines": [
+      179,
+      190
+     ],
+     "why": "全文检索：不需要 embedding 的 BM25 查询入口"
+    },
+    {
+     "id": "locator",
+     "file": "src/lib/original-locator.ts",
+     "lines": [
+      319,
+      330
+     ],
+     "why": "原文定位：memoryId → KB 原文片段与行号"
+    }
+   ]
+  },
+  "daemons": {
+   "title": "daemon 与异步任务",
+   "type": "architecture",
+   "svg": "views/daemons.svg",
+   "summary": "ki mcp --http --daemon 会后拉起一个常驻进程：它同时是 HTTP 单例、CLI 的 RPC 排队通道、定时数据源同步的调度器、可见性队列的消费者，也是常态下唯一持 zvec 锁的进程。三处并发闸门与三类「重启后自愈」的补偿任务都在这里。",
+   "points": [
+    [
+     "常驻不等于守护",
+     "--daemon 只做 detached spawn：日志不落盘、崩溃不会自动拉起；升级后改动不生效，先 ki mcp restart。"
+    ],
+    [
+     "三层并发闸门各管一段",
+     "向量库层靠空闲释放 + 撞锁重试错开；scope 写锁把同 scope 的 import / sync / edit 串行；操作协调器再统一分类排队。"
+    ],
+    [
+     "重启会自己补三件事",
+     "接上未收口的事件分析、消费可见性队列残留、把断在半路的任务标成中断。"
+    ],
+    [
+     "定时同步由 daemon 拉起",
+     "数据源调度器在 HTTP 分支末尾启动，不在时不会有任何拉取发生。"
+    ]
+   ],
+   "docs": [
+    "docs/mcp-http.md",
+    "docs/configuration.md"
+   ],
+   "code": [
+    {
+     "id": "cli",
+     "file": "bin/ki.mjs",
+     "lines": [
+      233,
+      250
+     ],
+     "why": "daemon 判定与 detached 启动：--http + --daemon 才走常驻"
+    },
+    {
+     "id": "daemon",
+     "file": "src/lib/mcp-http.ts",
+     "lines": [
+      1355,
+      1370
+     ],
+     "why": "HTTP 单例启动：监听、落 lock、标记 web 能力"
+    },
+    {
+     "id": "sched",
+     "file": "src/lib/datasource-scheduler.ts",
+     "lines": [
+      321,
+      335
+     ],
+     "why": "调度器启动：由 daemon 启动序末尾拉起"
+    },
+    {
+     "id": "govresume",
+     "file": "src/lib/mcp-http.ts",
+     "lines": [
+      1588,
+      1600
+     ],
+     "why": "重启后接上未完成的事件分析任务"
+    },
+    {
+     "id": "visq",
+     "file": "src/lib/visibility-queue.ts",
+     "lines": [
+      238,
+      250
+     ],
+     "why": "可见性队列的启动恢复：消费上次没做完的摘补"
+    },
+    {
+     "id": "locks",
+     "file": "src/lib/scope-write-lock.ts",
+     "lines": [
+      123,
+      135
+     ],
+     "why": "同 scope 写操作串行化，避免并发导入互相踩"
+    },
+    {
+     "id": "tasks",
+     "file": "src/lib/task-registry.ts",
+     "lines": [
+      622,
+      635
+     ],
+     "why": "任务台账：谁在跑、跑到哪、上次是不是断了"
+    },
+    {
+     "id": "zvec",
+     "file": "src/lib/vector-client.ts",
+     "lines": [
+      369,
+      380
+     ],
+     "why": "向量库空闲释放锁：多实例并存靠它错开"
+    },
+    {
+     "id": "gitrepo",
+     "concept": true
+    }
+   ]
+  },
+  "layout": {
+   "title": "配置与磁盘布局",
+   "type": "tree",
+   "svg": "views/layout.svg",
+   "summary": "默认数据根是 ~/.ki：config.yaml 管行为，kb/<scope>/ 放树、关系缓存与原文，vector/ 放 zvec 集合（含 FTS），另有 backup / chat / views.json / mcp-tokens.json / 锁文件 / 任务日志 / 导入暂存。想改行为先认这棵树，比翻文档快。",
+   "points": [
+    [
+     "配置优先级固定",
+     "--config > KI_CONFIG_PATH > ~/.ki/config.yaml；字段名或取值非法会直接拒绝启动，不静默取默认值。"
+    ],
+    [
+     "kb 里不止索引",
+     "除了 group-index 与 relations-cache，还有原文目录、group 级 assets/、governance.json、.trash/、atlas/ 与导入锁。"
+    ],
+    [
+     "备份与向量是两套",
+     "backup/ 存结构化快照，vector/ 是向量本体；只还原结构化数据后要按需 ki restore --rebuild-vector。"
+    ],
+    [
+     "凭据与锁别手改",
+     "mcp-tokens.json 是 0600 凭据，改坏了鉴权 fail-closed；mcp-*.lock 决定 restart / status 能否定位到实例。"
+    ]
+   ],
+   "docs": [
+    "docs/configuration.md",
+    "docs/backup-restore.md"
+   ],
+   "code": [
+    {
+     "id": "ki_dir",
+     "file": "src/lib/config.ts",
+     "lines": [
+      41,
+      42
+     ],
+     "why": "数据根目录的默认值：所有路径都从这里派生"
+    },
+    {
+     "id": "config",
+     "file": "src/lib/config.ts",
+     "lines": [
+      398,
+      410
+     ],
+     "why": "配置加载顺序：--config → KI_CONFIG_PATH → ~/.ki/config.yaml"
+    },
+    {
+     "id": "kb",
+     "file": "src/lib/config.ts",
+     "lines": [
+      60,
+      75
+     ],
+     "why": "kb 与 backup 默认路径的推导"
+    },
+    {
+     "id": "group_index",
+     "file": "src/lib/scope.ts",
+     "lines": [
+      100,
+      101
+     ],
+     "why": "Group 树文件：scope 结构的第一份真相"
+    },
+    {
+     "id": "relations_cache",
+     "file": "src/lib/scope.ts",
+     "lines": [
+      107,
+      108
+     ],
+     "why": "关系热缓存：评分与冷热分区的落点"
+    },
+    {
+     "id": "local_kb",
+     "file": "src/lib/scope.ts",
+     "lines": [
+      115,
+      120
+     ],
+     "why": "原文目录：文件级 Markdown，未清洗"
+    },
+    {
+     "id": "assets",
+     "file": "src/lib/scope.ts",
+     "lines": [
+      128,
+      132
+     ],
+     "why": "附件目录：导入时复制进来的图片"
+    },
+    {
+     "id": "governance",
+     "file": "src/lib/governance-store.ts",
+     "lines": [
+      65,
+      66
+     ],
+     "why": "事件与阶段的落盘文件"
+    },
+    {
+     "id": "trash",
+     "file": "src/lib/trash-store.ts",
+     "lines": [
+      108,
+      115
+     ],
+     "why": "回收站根目录：删文档先进这里，可恢复"
+    },
+    {
+     "id": "atlas",
+     "file": "src/lib/atlas/paths.ts",
+     "lines": [
+      21,
+      30
+     ],
+     "why": "知识地图包的存放位置与元信息"
+    },
+    {
+     "id": "scope_locks",
+     "file": "src/lib/interrupt.ts",
+     "lines": [
+      88,
+      96
+     ],
+     "why": "导入锁与中断标记：同 scope 并发导入被拒的依据"
+    },
+    {
+     "id": "vector",
+     "file": "src/lib/config.ts",
+     "lines": [
+      667,
+      668
+     ],
+     "why": "向量目录：zvec 集合（含 FTS）都在这里"
+    },
+    {
+     "id": "tokens",
+     "file": "src/lib/mcp-token.ts",
+     "lines": [
+      29,
+      30
+     ],
+     "why": "多 Token 存储：0600，含每个 Token 的 scope 授权"
+    },
+    {
+     "id": "locks",
+     "file": "src/lib/mcp-http.ts",
+     "lines": [
+      104,
+      112
+     ],
+     "why": "HTTP 实例锁：restart / status 靠它定位进程"
+    },
+    {
+     "id": "tasks",
+     "file": "src/lib/task-log.ts",
+     "lines": [
+      68,
+      72
+     ],
+     "why": "任务日志目录：排查后台任务时先看这里"
+    },
+    {
+     "id": "uploads",
+     "file": "src/lib/mcp-http-api.ts",
+     "lines": [
+      221,
+      225
+     ],
+     "why": "HTTP 导入的暂存目录：上传先落这里再进 job"
+    },
+    {
+     "id": "views",
+     "file": "src/lib/scope-view.ts",
+     "lines": [
+      158,
+      165
+     ],
+     "why": "知识视图定义：多库聚合的成员与阈值"
+    },
+    {
+     "id": "chat",
+     "file": "src/lib/config.ts",
+     "lines": [
+      88,
+      92
+     ],
+     "why": "对话与提示词配置目录"
+    },
+    {
+     "id": "backup",
+     "file": "src/lib/backup.ts",
+     "lines": [
+      39,
+      50
+     ],
+     "why": "备份执行入口：快照结构与落点"
+    }
+   ]
+  },
+  "lifecycle": {
+   "title": "一份知识的一生",
+   "type": "dataflow",
+   "svg": "views/lifecycle.svg",
+   "summary": "四个写入入口（import / ki_store / sync-relation / 数据源同步）汇到同一条加工链，落成三类存储：zvec 集合回答「像不像」，KB JSON 回答「在哪、原文是什么」。消费侧分检索、回想、直查、对话四种用法，维护侧再接评分冷热、回收站与备份。",
+   "points": [
+    [
+     "一次写入写三处",
+     "chunk 文本既进向量也进 FTS，同时整篇原文按文件级存档；三者口径刻意不同，原文不清洗。"
+    ],
+    [
+     "存储各回答一个问题",
+     "向量只管相似度与排名，KB JSON 管路径、关系与原文；跨层追问题要先分清是哪一层给的答案。"
+    ],
+    [
+     "维护不是删除",
+     "评分按使用计数衰减影响权重，删除先进回收站可恢复，备份还原后可能还要重建向量。"
+    ],
+    [
+     "入口虽多，加工只有一条",
+     "四种写法最终都要过清洗切分与建树，差别只在落点与是否走向量。"
+    ]
+   ],
+   "docs": [
+    "docs/architecture.md",
+    "docs/group.md"
+   ],
+   "code": [
+    {
+     "id": "import_cli",
+     "file": "src/import.ts",
+     "lines": [
+      40,
+      70
+     ],
+     "why": "批量入口：目录 / 单文件导入"
+    },
+    {
+     "id": "store_tool",
+     "file": "src/store.ts",
+     "lines": [
+      55,
+      65
+     ],
+     "why": "单条入口：直接写一条正文，不走目录扫描"
+    },
+    {
+     "id": "rel_tool",
+     "file": "src/sync-relation.ts",
+     "lines": [
+      1668,
+      1680
+     ],
+     "why": "结构化入口：关系正文与评分回写的起点"
+    },
+    {
+     "id": "ds_sync",
+     "file": "src/lib/datasource-scheduled-run.ts",
+     "lines": [
+      89,
+      100
+     ],
+     "why": "定时入口：数据源按计划拉取后走同一条加工链"
+    },
+    {
+     "id": "chunk",
+     "file": "src/lib/chunker.ts",
+     "lines": [
+      183,
+      190
+     ],
+     "why": "加工的第一站：切分决定后面三处落点的粒度"
+    },
+    {
+     "id": "embed",
+     "file": "src/zvec-engine/embedding/siliconflow.ts",
+     "lines": [
+      34,
+      35
+     ],
+     "why": "外部 embedding：默认端点与模型，缺 Key 时会在这里报错"
+    },
+    {
+     "id": "fts",
+     "file": "src/lib/fts-client.ts",
+     "lines": [
+      139,
+      150
+     ],
+     "why": "全文写入：不走 embedding 的那条支线"
+    },
+    {
+     "id": "groups",
+     "file": "src/lib/import.ts",
+     "lines": [
+      2808,
+      2820
+     ],
+     "why": "建树：把落点路径补进 Group 树"
+    },
+    {
+     "id": "zvec",
+     "file": "src/lib/config.ts",
+     "lines": [
+      667,
+      668
+     ],
+     "why": "向量存储位置：dense 与 FTS 集合"
+    },
+    {
+     "id": "kb",
+     "file": "src/lib/scope.ts",
+     "lines": [
+      100,
+      108
+     ],
+     "why": "结构化存储：树、关系缓存与原文"
+    },
+    {
+     "id": "search",
+     "file": "src/search.ts",
+     "lines": [
+      935,
+      950
+     ],
+     "why": "检索消费：两路召回 + 原文交付"
+    },
+    {
+     "id": "recall",
+     "file": "src/lib/recall/run-recall.ts",
+     "lines": [
+      287,
+      300
+     ],
+     "why": "回想消费：多轮 grounded，供 AI 分析使用"
+    },
+    {
+     "id": "module_info",
+     "file": "src/get-module-info.ts",
+     "lines": [
+      498,
+      510
+     ],
+     "why": "直查消费：已知路径时 100% 命中，不过向量"
+    },
+    {
+     "id": "chat",
+     "file": "src/lib/chat/chat-routes.ts",
+     "lines": [
+      405,
+      415
+     ],
+     "why": "对话消费：把召回片段交给模型"
+    },
+    {
+     "id": "scoring",
+     "file": "src/lib/scoring.ts",
+     "lines": [
+      121,
+      130
+     ],
+     "why": "维护：按使用计数算分，决定检索权重与冷热分区"
+    },
+    {
+     "id": "trash",
+     "file": "src/lib/trash-store.ts",
+     "lines": [
+      108,
+      115
+     ],
+     "why": "维护：删除先进回收站，可恢复"
+    },
+    {
+     "id": "backup",
+     "file": "src/lib/backup.ts",
+     "lines": [
+      39,
+      50
+     ],
+     "why": "维护：结构化快照，还原后可重建向量"
+    }
+   ]
+  },
+  "modules": {
+   "title": "代码分层与专家边界",
+   "type": "tree",
+   "svg": "views/modules.svg",
+   "summary": "仓库是「薄命令层 + 厚核心层 + 两个独立子工程」。2026-11-25 已为原 5 块「无专家」补齐 7 个专家 + 5 个子专家；标 ✅ 的目录可用 expert-lookup 加载契约层，标「根已过期」的需先核对 INDEX.md。",
+   "points": [
+    [
+     "先查专家，再读码",
+     "标 ✅ 的目录用 expert-lookup 加载契约层 C0 就能照着用；本轮新增 7 个专家 + 5 个子专家，见 .module-experts/INDEX.md。"
+    ],
+    [
+     "专家包基线已统一",
+     "2026-11-25 批次 5 对既有 4 个过期专家（MCP / 关系与索引 / 可视化前端 / 向量引擎）做合并补全，全部刷到基线 0f1426b；INDEX.md 过期清单已清空。"
+    ],
+    [
+     "薄命令层的约定",
+     "src/*.ts 只做参数解析与调用，业务在 src/lib/；加命令要改 bin/ki.mjs 的命令表 + src/<cmd>.ts。"
+    ],
+    [
+     "子工程独立构建",
+     "zvec-engine 用 tsc 编译到 dist，Web 用 Vite 构建到 web/dist，ki-client 是独立发布的子包。"
+    ]
+   ],
+   "docs": [
+    "docs/README.md",
+    "docs/cli.md"
+   ],
+   "code": [
+    {
+     "id": "repo",
+     "concept": true
+    },
+    {
+     "id": "bin",
+     "file": "bin/ki.mjs",
+     "lines": [
+      31,
+      60
+     ],
+     "why": "命令表：命令名 → 脚本的映射，加命令从这里开始"
+    },
+    {
+     "id": "src_cmd",
+     "file": "src/import.ts",
+     "lines": [
+      40,
+      70
+     ],
+     "why": "命令层样例：只做参数解析与调用，不放业务"
+    },
+    {
+     "id": "lib",
+     "concept": true
+    },
+    {
+     "id": "lib_mcp",
+     "file": "src/lib/mcp-server-factory.ts",
+     "lines": [
+      48,
+      60
+     ],
+     "why": "工具注册的唯一构建点（MCP 服务专家覆盖）"
+    },
+    {
+     "id": "lib_recall",
+     "file": "src/lib/vector-client.ts",
+     "lines": [
+      1009,
+      1020
+     ],
+     "why": "向量入口（检索与向量客户端专家覆盖）"
+    },
+    {
+     "id": "lib_import",
+     "file": "src/lib/import.ts",
+     "lines": [
+      747,
+      760
+     ],
+     "why": "导入编排（知识索引导入专家覆盖）"
+    },
+    {
+     "id": "lib_rel",
+     "file": "src/lib/scoring.ts",
+     "lines": [
+      121,
+      130
+     ],
+     "why": "评分（关系与索引管理专家覆盖，但其模块根已过期）"
+    },
+    {
+     "id": "lib_store",
+     "file": "src/lib/config.ts",
+     "lines": [
+      398,
+      410
+     ],
+     "why": "配置加载（存储与配置基础专家覆盖）"
+    },
+    {
+     "id": "lib_gov",
+     "file": "src/lib/governance-http.ts",
+     "lines": [
+      589,
+      600
+     ],
+     "why": "治理路由：事件与阶段，无专家覆盖，需读码"
+    },
+    {
+     "id": "lib_chat",
+     "file": "src/lib/chat/chat-routes.ts",
+     "lines": [
+      405,
+      415
+     ],
+     "why": "对话路由：AI 对话与分析，无专家覆盖，需读码"
+    },
+    {
+     "id": "lib_ds",
+     "file": "src/lib/datasource-scheduler.ts",
+     "lines": [
+      321,
+      335
+     ],
+     "why": "数据源调度：定时同步，无专家覆盖，需读码"
+    },
+    {
+     "id": "lib_misc",
+     "file": "src/lib/open-api/index.ts",
+     "lines": [
+      114,
+      125
+     ],
+     "why": "对外 API 路由：open-api / trash / views / auth / atlas 一组，无专家覆盖"
+    },
+    {
+     "id": "zvec",
+     "file": "src/zvec-engine/engine.ts",
+     "lines": [
+      321,
+      330
+     ],
+     "why": "向量引擎入口（向量引擎专家覆盖）"
+    },
+    {
+     "id": "web",
+     "file": "web/src/App.tsx",
+     "lines": [
+      24,
+      33
+     ],
+     "why": "Web 路由入口（可视化前端专家覆盖，但基线只到 5 页）"
+    },
+    {
+     "id": "client",
+     "file": "ki-client/src/cli.ts",
+     "lines": [
+      1,
+      20
+     ],
+     "why": "远端客户端 CLI：独立发布的子包，无专家覆盖"
+    },
+    {
+     "id": "tests",
+     "file": "package.json",
+     "lines": [
+      1,
+      30
+     ],
+     "why": "测试脚本：跑法与已知失败登记见 test/known-failures.md"
+    },
+    {
+     "id": "lib_recall_kernel",
+     "file": "src/lib/recall/run-recall.ts",
+     "lines": [
+      287,
+      300
+     ],
+     "why": "回想内核专家：ki_recall 的多轮带证据回想，独立成域"
+    }
+   ]
+  }
+ }
+}
