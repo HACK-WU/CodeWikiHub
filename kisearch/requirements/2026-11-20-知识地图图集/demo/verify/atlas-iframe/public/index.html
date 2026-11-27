@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!--
+  验证目的：模拟 kisearch 的 /atlas 页面（产品壳），验证 iframe 承载图集包的可行性。
+  覆盖：R-01（iframe 内交互）、R-03（加载计时）、R-04（暗色观感）、R-05（Cookie 会话）。
+  这是原型，不是产品代码。
+-->
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>知识地图 · demo-verify</title>
+<style>
+  :root { --bg:#f6f7f5; --panel:#fff; --text:#17211c; --muted:#6b7770; --line:#e3e6e2; --accent:#1f7a4d; }
+  [data-theme="dark"] { --bg:#12160f; --panel:#1a201b; --text:#e8ede9; --muted:#9aa8a0; --line:#2c352e; --accent:#4fbf85; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:15px; font-weight:600; }
+  .grow { flex:1; }
+  select, button { font:inherit; color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:4px 10px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:transparent; }
+  .bar { display:flex; gap:16px; flex-wrap:wrap; padding:8px 16px; background:var(--panel); border-bottom:1px solid var(--line); font-size:12px; color:var(--muted); }
+  .bar b { color:var(--text); font-weight:500; }
+  main { height: calc(100vh - 92px); }
+  iframe { width:100%; height:100%; border:0; display:block; background:#fff; }
+  .empty { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--muted); text-align:center; padding:24px; }
+  .empty code { background:var(--panel); border:1px solid var(--line); padding:2px 6px; border-radius:4px; color:var(--text); }
+  .empty h2 { margin:0; font-size:16px; color:var(--text); }
+  .err { color:#b4241c; }
+</style>
+</head>
+<body>
+<header>
+  <h1>知识地图</h1>
+  <span class="grow"></span>
+  <select id="scope">
+    <option value="kisearch">kisearch</option>
+    <option value="empty-kb">empty-kb（空库）</option>
+    <option value="readonly-kb">readonly-kb（只读）</option>
+  </select>
+  <select id="user">
+    <option value="admin">admin（可写）</option>
+    <option value="viewer">viewer（只读）</option>
+  </select>
+  <button id="theme">切换暗色</button>
+  <input id="file" type="file" accept=".html" hidden />
+  <button class="primary" id="upload">上传图集包</button>
+  <button id="remove">卸载</button>
+</header>
+<div class="bar" id="bar"><span>状态加载中…</span></div>
+<main id="main"></main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let statusTimer = 0;
+
+async function login(user) {
+  await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user }) });
+}
+const scope = () => $('scope').value;
+
+function setBar(html) { $('bar').innerHTML = html; }
+
+async function refresh() {
+  const s = scope();
+  $('main').innerHTML = '';
+  setBar('<span>状态加载中…</span>');
+  let st;
+  try {
+    const r = await fetch(`/api/atlas/status?scope=${encodeURIComponent(s)}`);
+    st = await r.json();
+    if (!r.ok) {
+      setBar(`<span class="err">状态接口 ${r.status} · ${st.code || ''}</span>`);
+      $('main').innerHTML = `<div class="empty"><h2 class="err">无法读取图集状态</h2><p>${st.code || r.status}：${st.error || ''}</p></div>`;
+      return;
+    }
+  } catch (e) {
+    setBar(`<span class="err">网络错误：${e.message}</span>`);
+    return;
+  }
+  if (!st.exists) {
+    setBar(`<span><b>${s}</b> 尚未上传图集</span>`);
+    $('main').innerHTML = `<div class="empty">
+      <h2>这个库还没有知识地图</h2>
+      <p>1. 本地生成并打包：<code>pack_atlas.py &lt;图集目录&gt; dist/</code></p>
+      <p>2. 点右上角「上传图集包」选择 <code>dist/atlas.html</code></p>
+      <p>3. 上传成功后本页自动显示</p></div>`;
+    return;
+  }
+  setBar(`<span>标题 <b>${st.title || '-'}</b></span>
+    <span>分支 <b>${st.branch || '-'}</b> @ <b>${st.baseline || '-'}</b></span>
+    <span>生成 <b>${st.generatedAt || '-'}</b></span>
+    <span>图数 <b>${st.viewCount ?? '-'}</b></span>
+    <span>体积 <b>${(st.size / 1024).toFixed(0)} KB</b></span>
+    <span>sha <b>${(st.sha256 || '').slice(0, 8)}</b></span>
+    <span>上传 <b>${(st.uploadedAt || '').replace('T', ' ').slice(0, 19)}</b></span>`);
+  const t0 = performance.now();
+  const f = document.createElement('iframe');
+  f.src = `/api/atlas/view?scope=${encodeURIComponent(s)}`;
+  f.title = '知识地图';
+  f.sandbox = 'allow-scripts allow-same-origin allow-downloads allow-popups';
+  f.addEventListener('load', () => {
+    const dt = Math.round(performance.now() - t0);
+    window.__iframeLoadMs = dt;
+    setBar($('bar').innerHTML + `<span>iframe 加载 <b>${dt} ms</b></span>`);
+  });
+  $('main').appendChild(f);
+}
+
+$('theme').onclick = () => {
+  const el = document.documentElement;
+  el.dataset.theme = el.dataset.theme === 'dark' ? 'light' : 'dark';
+  $('theme').textContent = el.dataset.theme === 'dark' ? '切换浅色' : '切换暗色';
+};
+$('scope').onchange = refresh;
+$('user').onchange = async () => { await login($('user').value); refresh(); };
+$('remove').onclick = async () => {
+  await fetch(`/api/atlas/package?scope=${encodeURIComponent(scope())}`, { method: 'DELETE' });
+  refresh();
+};
+$('upload').onclick = () => $('file').click();
+$('file').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const buf = new Uint8Array(await file.arrayBuffer());
+  // 模拟真实分片：按 2 MB 切，逐片 POST（与 /api/import/upload 的 batchIndex/batchCount 同构）
+  const CHUNK = 2 * 1024 * 1024;
+  const total = Math.max(1, Math.ceil(buf.length / CHUNK));
+  const uploadId = 'u' + Date.now();
+  const meta = { title: file.name.replace(/\.html$/, ''), branch: 'demo-verify', baseline: 'n/a', generatedAt: new Date().toISOString().slice(0, 10), viewCount: '?' };
+  for (let i = 0; i < total; i++) {
+    const slice = buf.subarray(i * CHUNK, (i + 1) * CHUNK);
+    const b64 = btoa(String.fromCharCode(...slice)); // 原型：忽略大文件栈溢出风险
+    const r = await fetch('/api/atlas/package', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scope: scope(), meta, uploadId, batchIndex: i, batchCount: total, files: [{ name: `part-${i}`, content: b64 }] }),
+    });
+    const j = await r.json();
+    if (!r.ok && r.status !== 202) { alert(`上传失败（${r.status}）：${j.error || j.code}`); return; }
+  }
+  refresh();
+};
+
+(async () => { await login($('user').value); refresh(); })();
+</script>
+</body>
+</html>

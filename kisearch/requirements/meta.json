@@ -2096,8 +2096,8 @@
       "id": "REQ-20261113-003",
       "feature": "事件源码分析（只读）",
       "created": "2026-11-13 17:50:57",
-      "updated": "2026-11-13 17:51:43",
-      "status": "草案",
+      "updated": "2026-11-16 12:24:56",
+      "status": "实施中",
       "tags": [
         "需求",
         "事件",
@@ -2105,11 +2105,18 @@
         "AI",
         "只读工具"
       ],
-      "version": 2,
-      "depends_on": [],
+      "version": 7,
+      "depends_on": [
+        "REQ-20261113-004"
+      ],
       "changelog": [
         "初始创建",
-        "2026-11-13 17:51:43 v2: 需求文档落盘：现状盘点（数据源已支持 git）+ 方案边界（代码不入库/只读永久约束）+ R1-R10 + A1-A12 + 负向 N1-N10 + 工作量分期"
+        "2026-11-13 17:51:43 v2: 需求文档落盘：现状盘点（数据源已支持 git）+ 方案边界（代码不入库/只读永久约束）+ R1-R10 + A1-A12 + 负向 N1-N10 + 工作量分期",
+        "2026-11-16 11:41:37 v3: 重审并定稿：AI分析独立配置域(目标目录/提示词/Skill/预算/专属只读工具)、轻量上下文+ki_get_module_info按需读正文、新增事件描述区、已收口允许分析、不互斥KB写入",
+        "2026-11-16 11:58:42 v4: 完成技术设计（父文档 + S01~S05）",
+        "2026-11-16 12:00:14 v5: 完成设计评审、二次质疑与场景推演闭环并收敛竞态保护",
+        "2026-11-16 12:05:27 v6: 进入编码实施阶段（S-01 ~ S-05）",
+        "2026-11-16 12:24:56 v7: 完成 S-01~S-05 编码实施与单测/构建验证"
       ],
       "commits": [],
       "branch": null,
@@ -2117,6 +2124,42 @@
         {
           "path": "requirement.md",
           "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_AI分析独立配置与设置页_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_专属只读文件沙箱工具_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_事件描述与分析存储契约_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_异步分析Pipeline与执行_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S05_事件页前端闭环_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "review/scenario-rehearsal.md",
+          "type": "rehearsal"
         }
       ],
       "role": "standalone",
@@ -2302,6 +2345,1361 @@
       "role": "standalone",
       "parent_id": null,
       "child_ids": []
+    },
+    "2026-11-16-分类页文档列表分页": {
+      "id": "REQ-20261116-001",
+      "feature": "分类页文档列表分页",
+      "created": "2026-11-16 11:10:34",
+      "updated": "2026-11-16 11:24:41",
+      "status": "已完成",
+      "tags": [
+        "feat",
+        "web",
+        "知识治理",
+        "分页"
+      ],
+      "version": 3,
+      "depends_on": [
+        "REQ-20261113-004"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-11-16 11:17:03 v2: 分类页文档列表分页已实施并真机验收（24/24）",
+        "2026-11-16 11:24:41 v3: auto-review 修复 2 项：重复点当前筛选 tab 不再清空已选；截断提示改为常驻（不再随分页栏消失）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-16-上传导入与知识写入合并入口": {
+      "id": "REQ-20261116-002",
+      "feature": "上传导入与知识写入合并入口",
+      "created": "2026-11-16 11:56:33",
+      "updated": "2026-11-16 12:23:38",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "web",
+        "导航",
+        "信息架构"
+      ],
+      "version": 5,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-16 11:56:58 v2: 需求分析落盘（M1 一次成型档，5 条拍板已确认）",
+        "2026-11-16 11:58:11 v3: ui-designer 完成界面方案（页级 tab 复用 .ki-segmented、不新增 token；待确认 4 项）",
+        "2026-11-16 12:11:52 v4: 实施完成：侧栏两组入口合一 + 页内双 tab（URL 驱动）、常驻不卸载、切 tab 不清空；web 1211/1211、真机 24/24；build 被外部在途文件 PromptConfigLayer.tsx 阻断",
+        "2026-11-16 12:23:38 v5: auto-review + challenger：修徽标可访问名、纠正文档错误结论；Q1 切 tab 重确认目标待拍板"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/ui-design.md",
+          "type": "design"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-16-ki_ask 问答按来源分组上屏": {
+      "id": "REQ-20261116-003",
+      "feature": "ki_ask 问答按来源分组上屏",
+      "created": "2026-11-16 12:09:47",
+      "updated": "2026-11-16 12:18:23",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "web",
+        "chat",
+        "mcp"
+      ],
+      "version": 5,
+      "depends_on": [
+        "REQ-20261113-001",
+        "REQ-20261115-001"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-11-16 12:10:29 v2: 需求落盘：ki_ask 问答按来源分组上屏（推翻 C1 不进列表 / C2 背景不落盘）",
+        "2026-11-16 12:13:55 v3: 完成技术设计（父文档 + 4 个子需求）",
+        "2026-11-16 12:15:40 v4: 设计评审通过：4 阻断 + 4 警告已修（来源类型双源 / origin 构造点 / 超保留期过滤 / expired 语义）",
+        "2026-11-16 12:18:23 v5: 生成实施计划：B0 demo 落地（前端视觉先行，我的会话保真）→ B1~B4"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_数据层与保留期_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_列表与归属_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_详情与只读回放_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_前端分组与详情_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-16-事件文档入口与事件MCP工具": {
+      "id": "REQ-20261116-004",
+      "feature": "事件文档入口与事件MCP工具",
+      "created": "2026-11-16 15:36:08",
+      "updated": "2026-11-16 15:53:10",
+      "status": "设计中",
+      "tags": [
+        "feat",
+        "web",
+        "mcp",
+        "知识治理",
+        "事件"
+      ],
+      "version": 6,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-16 15:38:23 v2: 完成技术设计（3 个子需求）",
+        "2026-11-16 15:40:22 v3: 设计评审通过（1 阻断 + 6 警告已修）",
+        "2026-11-16 15:42:12 v4: 挑战者二次质疑（1 高危已修）+ 场景推演（2 处不一致已修）",
+        "2026-11-16 15:47:07 v5: 第四轮显式复评：3 阻断 + 10 警告已修复（文档内部矛盾）",
+        "2026-11-16 15:53:10 v6: 拍板 Q3：ki-path 重建同批修 transitionEvent/restore（设计 v6）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_关联文档入口与绑定防护_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_创建时参考文档_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_事件MCP工具族_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "design/scenario-rehearsal.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-16-ai-find-configurable": {
+      "id": "REQ-20261116-005",
+      "feature": "AI 查找可配置化",
+      "created": "2026-11-16 16:07:32",
+      "updated": "2026-11-16 17:35:17",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ai",
+        "governance"
+      ],
+      "version": 12,
+      "depends_on": [
+        "REQ-20261113-004"
+      ],
+      "changelog": [
+        "初始创建",
+        "2026-11-16 16:08:05 v2: 2026-11-16: 需求确认，按 PM 报告推荐口径定稿（双通道 / 跨库 sourceScope / 权限双层）",
+        "2026-11-16 16:13:14 v3: 2026-11-16: 完成技术设计（父文档 + 4 子文档），一期 S-01/S-02 可独立交付",
+        "2026-11-16 16:15:47 v4: 2026-11-16: 第 1 轮设计评审（1 阻断 + 6 警告已修复，1 疑似阻断澄清）",
+        "2026-11-16 16:16:22 v5: 2026-11-16: challenger 二次质疑（9 条：1 高危可见性 + 1 分期自洽 + 7 中低）",
+        "2026-11-16 16:19:24 v6: 2026-11-16: 按 challenger 9 条修设计（O-1 可见性分界 / O-7 一期横幅 / 其余 7 条补齐），第 2 轮增量复评 ✅ 通过",
+        "2026-11-16 16:21:12 v7: 2026-11-16: 生成实施计划（一期 B0-B5 / 二期 B6-B8）",
+        "2026-11-16 16:35:48 v8: 2026-11-16: B0 契约冻结完成（EventRefDoc.sourceScope / RefCandidate origin+scope+rankInScope?+rawScore?+visibilityReason? / RefSearchResultDto targets 等 / FindConfig 类型），build+typecheck 0，定向 60 例全绿",
+        "2026-11-16 16:42:57 v9: 2026-11-16: B1 配置域完成（find 域+软读/严存、内置 skill refs-locate、findPrompt 迁移、GET 透出 find/limits/capabilities.findDeep、find-config 5 例）；build+typecheck 0",
+        "2026-11-16 17:18:46 v10: 2026-11-16: B2 范围与跨库完成（find-targets、refs-store key 含库、refs-service 多库聚合/源库可见性/staleReason/可检索性、refs-search 保留 scope、governance-http 接 mode+targets+sourceScope、extraScopes 权限预检）；新增 multi-scope 10 例",
+        "2026-11-16 17:24:31 v11: 2026-11-16: B3 设置页前端（部分）——find 域草稿深拷、检索范围多选（含视图映射）、检索定位提示词卡、只读工具开关、一期横幅、左栏去「未接入」；web 1258/1258 + typecheck/build 0；Skill/预算/思考级别三块待补",
+        "2026-11-16 17:35:17 v12: 2026-11-16: B3 补齐（Skill 启停+依赖守卫、检索预算三输入、思考级别）+ B4 完成（弹窗跨库徽标/库内排名、默认勾选按 origin、hidden 禁勾、abort、skippedTargets/targetErrors 提示、勾选与 key 含源库、删除带 sourceScope、契约扩 tools/verify 两步）；web 1258/1258 + typecheck/build 0，后端 tsc 改动文件 0 新增"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_配置域与设置界面_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_检索范围与跨库候选_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_LLM深度查找_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_双通道入口与过程面板_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-16-数据源同步不得改变既有文档的分类与事件绑": {
+      "id": "REQ-20261116-006",
+      "feature": "数据源同步不得改变既有文档的分类与事件绑定",
+      "created": "2026-11-16 18:04:57",
+      "updated": "2026-11-17 12:44:20",
+      "status": "已确认",
+      "tags": [
+        "fix",
+        "datasource",
+        "lifecycle",
+        "event"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-16 18:05:21 v2: 建档：数据源同步覆盖时强制清空分类与 eventId，要求改为保留",
+        "2026-11-17 10:56:00 v3: 2026-11-17: PM 评审定稿（Q5 事件终态改并行 wiki / Q6 temp 保留但不生效+页面明示 / Q7 tag 纳入），补 R2 三步前置+R2b hidden 回归+R8+R9+N6-N8+验收场景 S1-S11",
+        "2026-11-17 12:44:20 v4: 2026-11-17: 实施完成并过 auto-review（code-review A 级可合入 + challenger 3 条质疑，C2 搭车变更已回退）；报告落 review/code-review.md、review/challenge-report.md"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-17-vector-delete-no-create": {
+      "id": "REQ-20261117-001",
+      "feature": "向量删除不得为不存在的 collection 创建空库",
+      "created": "2026-11-17 11:36:09",
+      "updated": "2026-11-17 11:42:42",
+      "status": "已完成",
+      "tags": [
+        "bug",
+        "向量索引",
+        "资源泄漏"
+      ],
+      "version": 3,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-17 11:36:35 v2: 立项：向量删除为不存在的 collection 创建空库",
+        "2026-11-17 11:42:42 v3: 按 A 方案实施：vectorDelete 空 collection 短路（notFoundIds 语义），relation-path-vector 守卫保留；新增 test/vector-delete-no-create.test.ts"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-18-事件参考文档支持上传文件": {
+      "id": "REQ-20261118-001",
+      "feature": "事件参考文档支持上传文件",
+      "created": "2026-11-18 10:26:26",
+      "updated": "2026-11-18 11:15:47",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 3,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-18 10:26:55 v2: 需求定稿：PM 报告 + Q1~Q7 决策固化（D1~D7）",
+        "2026-11-18 11:15:47 v3: 实现完成（未提交）：后端端点 + 前端弹窗 + 测试全绿；真机走查待 daemon 重启"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-18-ai-event-report": {
+      "id": "REQ-20261118-002",
+      "feature": "AI 自主上报事件闭环",
+      "created": "2026-11-18 13:03:00",
+      "updated": "2026-11-18 13:03:00",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "mcp",
+        "事件"
+      ],
+      "version": 1,
+      "depends_on": [],
+      "changelog": [
+        "初始创建"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-18-AI Agent 任务前上下文预取": {
+      "id": "REQ-20261118-003",
+      "feature": "AI Agent 任务前上下文预取",
+      "created": "2026-11-18 15:23:37",
+      "updated": "2026-11-18 16:05:10",
+      "status": "设计中",
+      "tags": [
+        "feat",
+        "mcp",
+        "检索",
+        "工作流"
+      ],
+      "version": 9,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-18 15:23:58 v2: 需求分析完成并落盘（M1）",
+        "2026-11-18 15:28:21 v3: 完成技术设计（4 个子需求 + 父文档）",
+        "2026-11-18 15:29:56 v4: 完成设计评审（3 阻断 + 9 警告全部修复，增量复审通过）",
+        "2026-11-18 15:35:31 v5: 设计变更：ki_recall 的 scope 改为必填（用户拍板），删除服务端默认库，新增 RECALL_SCOPE_REQUIRED",
+        "2026-11-18 15:48:17 v6: 补 V5 候选有用性验收 + alsoIn 同名提示；出实施计划（单窗口串行 4 批）",
+        "2026-11-18 15:52:46 v7: 第 5 轮全量复审：3 阻断 / 5 警告 / 2 建议，结论不通过，待修复",
+        "2026-11-18 15:54:16 v8: 第 5 轮 3🔴/5🟡/2🟢 全部修复，增量复核 ✅ 通过（10/10）",
+        "2026-11-18 16:05:10 v9: P6 完成：10 例召回语料（5 命中 / 5 未命中）+ V5 双侧判据"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_召回内核_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_ki_recall工具_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_深度通道_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_引导与文档_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        },
+        {
+          "path": "reference/recall-corpus.md",
+          "type": "reference"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-18-AI 预取与查找改走模型通道": {
+      "id": "REQ-20261118-004",
+      "feature": "AI 预取与查找改走模型通道",
+      "created": "2026-11-18 19:40:03",
+      "updated": "2026-11-18 19:46:42",
+      "status": "设计中",
+      "tags": [
+        "feat",
+        "mcp",
+        "检索",
+        "设置页"
+      ],
+      "version": 5,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-18 19:40:27 v2: 需求落盘（推翻 fast 通道，改单模型通道 + 设置页）",
+        "2026-11-18 19:43:40 v3: 完成技术设计（4 子需求）",
+        "2026-11-18 19:45:23 v4: 质疑 C1~C4 全部修复：种子 10 条、evidence 两级、5 轮/8K 预算、sr05 测试迁移",
+        "2026-11-18 19:46:42 v5: 出实施计划（单窗口串行 4 批 + 5 项前置；findDeep 归 S-04）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_召回内核_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_工具契约_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_设置页与配置_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_查找去fast_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-20-治理页视图聚合": {
+      "id": "REQ-20261120-001",
+      "feature": "治理页视图聚合",
+      "created": "2026-11-20 10:52:53",
+      "updated": "2026-11-20 14:22:43",
+      "status": "已完成",
+      "tags": [
+        "feat",
+        "web",
+        "governance",
+        "view"
+      ],
+      "version": 9,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-20 10:55:02 v2: 完成技术设计（父文档 + 4 个子需求 + 实施计划）",
+        "2026-11-20 10:56:02 v3: 设计评审通过（3 阻断 + 1 警告已修复）",
+        "2026-11-20 11:07:17 v4: S-01/S-02/S-03/S-04 代码实施完成：后端视图合并 + 写门禁 + 前端三处；12 例新测 + 回归全绿；待真机与提交",
+        "2026-11-20 11:22:38 v5: 真机验证通过（daemon 重启后）：视图 kisearch-docs /docs 293=211+82、/counts 293/45/3、6 个写端点 409 且无幽灵目录；页面三屏 + 单库回归已验（截图存 design/evidence/）。真机修 2 处：视图每库各取 limit（否则后置库不可见）、库归属列 title",
+        "2026-11-20 12:07:54 v6: 二期（S-05 事件页只读合并）实施完成：列表跨库合并+每条 scope、详情 evt_ 跨库定位（scope 回填所属库）、#N 视图下 400、typeKey=库:et_N、前端 writeBlocked 全禁；新测 10 例、真机 47 条与详情已验",
+        "2026-11-20 12:22:40 v7: 剩余项补齐：docs/search 与 diagnostics 视图分支（逐库合并 + buckets + 条目 scope），单库零变化；governance-view 测试增至 15 例全绿；真机 docs/search hits 11、diagnostics trash 4 已验",
+        "2026-11-20 12:28:21 v8: 修正：视图下事件写入口误禁（管理员也灰）→ 事件写改为落到事件所属库 eventScope，仅新建事件/类型维护保留视图禁用；弹窗与正文抽屉同改。tsc 0 错、build ✓、真机卡片按钮可点",
+        "2026-11-20 14:22:43 v9: 需求收口：一期（docs/counts/trash）+ 二期（事件页）+ 剩余项（docs/search、diagnostics）+ 视图下事件可写修正 全部实施、测试与真机验证通过，已提交"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_视图范围解析与鉴权_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_读端点合并_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_写门禁与错误契约_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_前端合并展示_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-20-AI 分析结论按类型分视角": {
+      "id": "REQ-20261120-002",
+      "feature": "AI 分析结论按事件类型分视角",
+      "created": "2026-11-20 12:11:56",
+      "updated": "2026-11-20 15:06:11",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "web",
+        "events",
+        "ai",
+        "prompt"
+      ],
+      "version": 5,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-20 12:12:10 v2: UI 方案定稿：4 视角（fault/perf/change/generic），demo 归档；确认版本 9059f2f（工作区未提交）/ 指纹 d105739f6ac890151b4059ef69ee886",
+        "2026-11-20 12:13:53 v3: 完成技术设计（单文档 14 章）：视角推断/骨架函数化/前端标签与轨道/测试矩阵；自动评审循环未跑",
+        "2026-11-20 12:28:21 v4: 设计评审：❌ 不通过（🔴2 / 疑似2 / 🟡5 / 🟢4）；阻断1=提示词骨架双源（prompt-config.ts 漏改），阻断2=labels 类型与未定义 kind 矛盾",
+        "2026-11-20 15:06:11 v5: 代码实施完成（后端 4 文件 + 前端 5 文件 + 测试 2 处）；test/events 8 文件绿、契约 27 例绿、web npm run build ✓；真机与 DOM 断言待补；未提交"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "demo/ui/analysis-view-profiles/index.html",
+          "type": "demo"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-20-知识地图图集": {
+      "id": "REQ-20261120-003",
+      "feature": "知识地图图集",
+      "created": "2026-11-20 18:15:22",
+      "updated": "2026-11-24 16:51:35",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "web",
+        "知识地图"
+      ],
+      "version": 9,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-20 18:16:05 v2: 由事件 #47 拆分出独立需求文档（一期：条目模型/分类树/浏览页/本地上传）",
+        "2026-11-20 18:19:51 v3: demo 从 temp/atlas-demo 归档到需求目录 demo/verify/atlas-demo（迁移后 HTTP 复验 200）",
+        "2026-11-24 15:18:00 v4: v4: 交付形态改为整包部署 + iframe 加载（推翻 v3 的 D8 单条上传与 D10 平台侧抽屉）；新增 R-01~R-09 条目、N1~N10 负向需求、§3.2 打包契约；清理已丢失的 demo/verify/atlas-demo 登记",
+        "2026-11-24 15:25:04 v5: v5: demo-verify 复验通过（19/19 断言：iframe 内抽屉/导出可用、分包上传+坏包拒绝、249KB vs 1266KB 首屏无差异、暗色为已知限制）；按报告回写 5 条调整项",
+        "2026-11-24 16:13:04 v6: 完成技术设计（父文档 + S01 内核/S02 只读接口/S03 CLI 上传/S04 只读页面/S05 部署 skill）；一期收敛为 CLI 上传先行、页面上传二期",
+        "2026-11-24 16:21:55 v7: 补实施计划：前置层 6 项 + 3 批串行（S-01∥S-05 → S-02∥S-03 → S-04），根砖头 S-01，不启用多窗口并行",
+        "2026-11-24 16:33:20 v8: 一期实施完成：S-01 内核（零依赖 zip + 10 步校验）/S-02 两端点+4 处登记/S-03 CLI/S-04 只读页面，真机三态与 iframe 抽屉通过",
+        "2026-11-24 16:51:35 v9: 二期完成：POST/DELETE /api/atlas/package 分片上传+卸载（套写锁、scope 取 body）、web 上传弹窗与卸载按钮；单测 8 例 + 真机全链路（202→200→DELETE）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "demo/verify/verify-report.md",
+          "type": "demo"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_存储与校验内核_design.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_HTTP只读接口_design.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_CLI上传_design.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_图集页面_design.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S05_agent部署skill_design.md",
+          "type": "design"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S06_页面上传与写接口_design.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-AI分析产物人工校正": {
+      "id": "REQ-20261123-001",
+      "feature": "AI分析产物人工校正",
+      "created": "2026-11-23 10:54:09",
+      "updated": "2026-11-23 14:59:35",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "events",
+        "ai",
+        "web"
+      ],
+      "version": 14,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 10:55:08 v2: 需求文档初稿（结论/未确认点/已确认位置三块可编辑）",
+        "2026-11-23 11:24:57 v3: PM 评审并入 —— 新增 R-13/R-14/R-16/R-17（出口修订标记、清空不置 null、视角词表、人工定稿标记）；R-01 拆一期/二期、R-07 改用 runId 闸门、R-08 口径修正（只覆盖 draft、confirmed 保留）；R-09 不做、R-10 移入验收清单；H1~H9 全部拍板",
+        "2026-11-23 11:29:07 v4: 完成交互设计与技术设计（父文档 + S01 保存内核与契约 + S02 编辑态与修订标识）；Q1~Q4 拍板；设计期修正 A1（除 running 外均可编辑，理由 R-17 与 failed 冲突）",
+        "2026-11-23 11:37:38 v5: 设计评审 2 轮通过（首轮 1 阻断 + 10 警告全部修复，复评 0/0/2）；补 R-08 重跑闸门、三条保存不变量、props 契约、保存时序图；design-review.md 落盘",
+        "2026-11-23 11:46:49 v6: 产出 IMPL_PLAN.md（判定单窗口串行：2 砖头 + 改造占比 >1/2 + 4 处共享面）；前置层 5 项 + 4 批 + 每批检查点 + 并行度说明",
+        "2026-11-23 12:03:04 v7: 开始实施 —— 前置层（editedAt/错误码 1622·1623/契约三处/PATCH 权限）+ 批1 校验内核 + 批2 写入口与闸门 + 批3 前端编辑态全部落地；批4 离线断言绿（新增 3 个测试文件 58 例），真机走查待 daemon 重启。未提交",
+        "2026-11-23 12:31:44 v8: 需求并入「追问补丁覆盖结论」（R-18~R-23，不另立编号）+ 长度口径统一为硬上限 4000（取消结论 120 / 追问回答 400 软限制）；新增设计 S03 并更新父文档、S01/S02、IMPL_PLAN（加批 5）；列出 6 处代码待同步",
+        "2026-11-23 13:06:13 v9: **结论改为不可人工编辑**（H12：只由追问补丁+确认覆盖）+ 保留 PATCH 接口只收前端入口（H13）；R-01 改写为「结论只读」、R-17 改「已人工补充」；H1/H2/H3/H4/H5 全部拍板；S02 增 §3.10 并收窄编辑器职责、S01/S03 补口径、IMPL_PLAN 加批 6",
+        "2026-11-23 14:08:33 v10: 批 6 实施完成 —— AnalysisEditor 收窄为「未确认点+位置」、编辑态结论改只读引导、只发两块；长度口径统一 4000（analysis-edit 常量/签名、runner 与 prompt-config 提示词、ask-runner 400 字、types 注释）；用例改 4000/4001 + 新增 3 条前端断言；后端 5 组测试 + web build + 真机 7 项断言全绿",
+        "2026-11-23 14:15:09 v11: daemon 重启后真机验证 —— 结论 4000 字保存成功（len=4000）、4001 字被拒（400 ANALYSIS_EDIT_INVALID「超过上限 4000 字」）；发现 `prompt-config.ts` 的默认提示词只影响未保存配置的实例（本机已存 1117 字自定义 prompt，真正生效的是 runner / ask-runner 两处代码常量）",
+        "2026-11-23 14:18:06 v12: 默认提示词与硬截断全部同步 —— prompt-config 默认文案去掉 120、runner 解析兜底 2000→4000（复用 CONCLUSION_MAX_CHARS）、ask 上下文结论预算 1200→4000；需求 §10 补记第 9/10 项并标记已实施；daemon 再次重启生效",
+        "2026-11-23 14:40:22 v13: 批 5（S03）实施完成 —— 新增 analysis-ask-patch（提取/骨架校验/diff）、ask 提示词注入该类型合法 kind、proposal SSE 事件（done 前带 turnId）、AnalysisProposalModal（差异 + 确认覆盖）、PATCH 支持 acceptedProposalTurnId 回写审计；真机两轮：第 1 轮模型自造 root_cause 被模板拦下（降级正确），修提示词后第 2 轮 valid=true → 覆盖 200 → proposalAccepted=true",
+        "2026-11-23 14:59:35 v14: 修用户实测暴露的解析缺陷 —— 旧围栏正则要求标记后换行，模型给「标记与 JSON 同行/无围栏」时既不解析也不剥离，导致 JSON 泄漏到正文且无弹框；改为「大小写不敏感定位标记 + 字符串感知括号配对 + 无论成败都剥离」，补 8 例真实形状用例（共 22 例），真机复验 valid=true / 答案无残留"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/interaction-design.md",
+          "type": "design"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_保存内核与契约_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_编辑态与修订标识_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_追问补丁与覆盖_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-追问与分析共用内核": {
+      "id": "REQ-20261123-002",
+      "feature": "追问与分析共用内核",
+      "created": "2026-11-23 10:54:09",
+      "updated": "2026-11-23 10:55:08",
+      "status": "草案",
+      "tags": [
+        "refactor",
+        "events",
+        "ai",
+        "web"
+      ],
+      "version": 2,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 10:55:08 v2: 需求文档初稿（同内核+六处参数化+追问配置化）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-MCP写工具返回文档访问链接": {
+      "id": "REQ-20261123-003",
+      "feature": "MCP写工具返回文档访问链接",
+      "created": "2026-11-23 11:38:59",
+      "updated": "2026-11-23 14:08:13",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "mcp",
+        "web",
+        "ux"
+      ],
+      "version": 8,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 12:08:47 v3: U1~U8 全部拍板：U1=C、U2=A、U3=A、U4=不加开关默认开启、U5=删除不给、U6=不含读工具、U7=__root__、U8=默认一律给；进入技术设计",
+        "2026-11-23 12:12:13 v4: 完成技术设计（父文档 + 3 子需求：取址上下文 / 写工具注入 / 引导与文档）",
+        "2026-11-23 12:17:51 v5: 完成设计评审：3 阻断 / 6 警告 / 3 建议，结论不通过（B1 子路径丢失、B2 url 归属矛盾、B3 与 U1 冲突未拍板）",
+        "2026-11-23 12:21:40 v6: 按设计评审修复：3 阻断（B1 子路径丢失 / B2 url 归属 / B3 U1 口径）+ 6 警告 + 3 建议全部落地，设计升 v2；U1 结论改为 C'（Host 默认 + publicUrl 显式覆盖）；增量再审 12/12 通过",
+        "2026-11-23 12:24:52 v7: 产出实施计划：单窗口串行 3 阶段（前置 P1~P5 → 第1批 S-01 → 第2批 S-02+S-03a+S-03b → 第3批真机验证）",
+        "2026-11-23 14:08:13 v8: 第 1/2 批编码完成 + 第 3 批真机验证通过（链接直达文档、删除无链接、失效提示可读，证据 design/evidence/）；未提交"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_取址上下文与解析规则_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_写工具结果注入_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_引导与文档_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-AI分析工具面开放写入": {
+      "id": "REQ-20261123-004",
+      "feature": "AI分析工具面开放写入",
+      "created": "2026-11-23 15:52:55",
+      "updated": "2026-11-23 16:24:07",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "events",
+        "ai",
+        "web",
+        "security"
+      ],
+      "version": 4,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 15:53:31 v2: 需求文档定稿（PM 报告 + H1~H7 拍板）",
+        "2026-11-23 16:04:24 v3: 实施 R1~R7（写入组 4 个默认关 + 执行装配 + 危险确认 + 只读库运行期提示 + 步骤标记 + 提示词纪律）；R8 前缀约束未做",
+        "2026-11-23 16:24:07 v4: R6 补齐：内置 skill 增加落点/批量判据/建组纪律/写入内容口径（9 条）；真机确认 edited=false 自动跟随升级"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-删除落回收站": {
+      "id": "REQ-20261123-005",
+      "feature": "删除落回收站",
+      "created": "2026-11-23 16:20:40",
+      "updated": "2026-11-23 16:40:33",
+      "status": "设计中",
+      "tags": [
+        "feat",
+        "mcp",
+        "web",
+        "governance"
+      ],
+      "version": 6,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 16:23:01 v2: 完成技术设计（5 个子需求）",
+        "2026-11-23 16:28:57 v3: 完成设计评审（第 1 轮 3 阻断 + 5 警告已修复，第 2 轮通过）",
+        "2026-11-23 16:29:48 v4: 完成 challenger 二次质疑（2 致命 + 3 重要 + 1 建议，待拍板是否修复）",
+        "2026-11-23 16:32:27 v5: 按 challenger 意见修复 2 致命 + 3 重要，增量评审第 3 轮通过",
+        "2026-11-23 16:40:33 v6: 产出实施计划（判定单窗口串行，前置层 5 项 + 5 批）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-AI对话图片输入": {
+      "id": "REQ-20261123-006",
+      "feature": "AI对话图片输入",
+      "created": "2026-11-23 17:17:25",
+      "updated": "2026-11-23 20:53:12",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "ux"
+      ],
+      "version": 7,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 17:24:43 v4: 拍板 Q-C：不做图片预处理，原图直传模型；A5 降级为运行时观察项",
+        "2026-11-23 17:33:04 v5: 拍板 Q-A 复用原图 / Q-D 图片不计入上下文百分比 / Q-E 界面图确认；仅余 Q-B（SVG 白名单）",
+        "2026-11-23 17:33:52 v6: Q-B 定稿：白名单 PNG/JPEG/WebP；SVG 实测被上游 400（UnidentifiedImageError）；五项全部闭合，需求定稿",
+        "2026-11-23 20:53:12 v7: 实施完成（R1~R4+R8 全闭环）：后端 removed 占位 404 → 新增上传/读取/删除三路由 + 魔数校验 + 4 个错误码 + readJsonBody 字节上限 + 会话图片存储（assets/{convId}__{id}.{ext}，会话 JSON 只存元数据）+ 上游 parts 注入（历史图降级）；前端 composer 加「+ 图片」入口/粘贴/待发缩略图 + 气泡回显 + 编辑回填原图；端到端实测模型读出图中 10:36 AM（仅存在于图内）；config 加 llm.supportsImages: true（已备份）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "demo/verify/verify-report.md",
+          "type": "demo"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-事件类型内置化与类型描述": {
+      "id": "REQ-20261123-007",
+      "feature": "事件类型内置化与类型描述",
+      "created": "2026-11-23 17:38:32",
+      "updated": "2026-11-23 18:17:54",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "events",
+        "governance",
+        "web",
+        "mcp"
+      ],
+      "version": 6,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 17:40:53 v2: 完成技术设计（3 个子需求）",
+        "2026-11-23 17:42:11 v3: 设计评审 2 轮通过（2 阻断 + 6 警告已修）",
+        "2026-11-23 17:43:23 v4: 生成实施计划：单窗口串行 3 批（文件互斥主因）",
+        "2026-11-23 17:49:53 v5: 第 1 批 S-01 类型描述字段已实施（后端+契约+MCP+前端+测试）",
+        "2026-11-23 18:17:54 v6: 第 3 批 S-03 已实施：内置 et_4 四阶段 + ki event-types migrate（幂等/dry-run/备份），已迁移 kisearch-memory 2→4 阶段"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_类型描述字段_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_内置类型补齐与认领_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_技术债内置定义与迁移_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-MCP图片可读": {
+      "id": "REQ-20261123-008",
+      "feature": "MCP图片可读",
+      "created": "2026-11-23 17:44:01",
+      "updated": "2026-11-23 20:20:41",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "integration"
+      ],
+      "version": 19,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 17:44:32 v3: 设计草案落盘：清单+按需取图、base64 成本模型、格式白名单、预算与用量条口径",
+        "2026-11-23 17:46:45 v4: 完成设计评审 v1：3 阻断（scope 注入违反约定 / 工具图片契约未定义 / 旧图降级机制缺失）+ 1 疑似 + 6 警告，结论不通过",
+        "2026-11-23 17:50:32 v5: 设计 v2 按评审修订：B1 scope 拆两侧签名 / B2 定义 kind:'images' 判别形状与序列化前分流 / B3 补 demoteOldImages 机制 / S1 ref 归一化规则（真实 KB 抽样 6 种形态）；新增现实覆盖率（consul 1370 SVG）与 SVG 栅格化待拍板项",
+        "2026-11-23 17:50:52 v6: 增量自检：修正 D3 与 §6.1/§6.3 的尺寸归位（清单不解析图片头，尺寸随取图返回）",
+        "2026-11-23 17:56:32 v7: 拍板 P1：SVG 栅格化必做。实测 resvg-js 可行（1568×743/150KB/704 tokens，中文正确、模型完整读出 4 阶段 12 课），复杂图 2.3~2.5s 同步 → 须放 worker_threads；新增依赖面与缓存设计",
+        "2026-11-23 18:03:01 v8: 设计评审 v2（增量）：前次 13 项全部已修复；新增 1 阻断（D6 上限与 §6.2 单值 ref 矛盾）+ 6 警告（kind 判别冲突/lifecycle 已占用、缓存并发出清、worker 失败面、渲染失败预检、页面推断缺证、安全缺实测）；结论仍不通过",
+        "2026-11-23 18:08:24 v9: 设计 v3 + 复审通过：B4 改 refs[] 与 D6 对齐（累计=单次生成内≤6、整次超时 20s）/ N1 kind 精确比较硬约束+回归锁 / N4 清单 512 字节预检 / N2 缓存 in-flight 去重 / N3 worker 生命周期 / N6 安全实测取证 / N5 降级为推断；design-review 复审结论 ✅ 通过",
+        "2026-11-23 18:10:09 v10: 实施计划落盘：B0~B7 共 8 批单窗口串行，每批独立可验证可回退；含门禁、风险回退表、实施前 3 项待确认",
+        "2026-11-23 18:14:15 v11: 实施前 3 项拍板写入设计与计划：Q1 不做工具图片总开关（D10）/ Q2 首批纳入 ki_event_get（B1 范围+1）/ Q3 接受前端「图片×N」占位文案、前端零改动",
+        "2026-11-23 18:50:59 v12: B0+B1 完成：新建 asset-image.ts（归一化/双锚点/预检/读字节/清单）+ 35 例单测；ki_get_module_info 单条与批量均返回 images（真机 consul/01-学习路径总览 → 1 条、双层 assets 命中）；event-get 因无正文改为 hint 引导（偏差待确认）",
+        "2026-11-23 19:21:28 v13: B2 完成：ChatTurn 支持 content parts；tool-image.ts 精确判别（=== 'images'）+ 转换 + 摘要；tool-loop 序列化前分流、computeContextChars 兼容数组；新增 ki_get_image（对外 MCP + 内部 entry 无 scope）；工具面注册（默认只读开）+ 只读白名单。真机：ai-docs 577KB PNG 读取成功、SVG 按 B2 预期被拒。端到端待 daemon 重启",
+        "2026-11-23 19:27:02 v14: B2 端到端通过：修复漏登记 TOOL_CAPABILITIES 导致工具被静默过滤（+READ_MCP_TOOLS 车道）；重启 daemon 后真机对话 ki_get_module_info→ki_get_image 两跳成功，模型描述出 README 里没有的「10:36 AM」「右侧确认气泡」等像素级信息，证明真看到图",
+        "2026-11-23 19:49:10 v15: B3 完成：@resvg/resvg-js + worker 栅格化（.mjs 入口、10s 单张超时、队列上限 8、崩溃重建、LRU 50 张/200MB、in-flight 去重）；executeGetImage allowSvg 打开；真机 consul SVG → 1568×743 PNG 首次 2346ms、二次 1ms；端到端模型描述出四栏横排/四色/箭头并指出字体 fallback 导致的重叠。另修：主代码类型检查应使用根 tsconfig（tsconfig.src.json 只含 zvec-engine）",
+        "2026-11-23 19:55:24 v16: B4 完成：CHAT_BUDGET.maxImagesPerRun=6；demoteOlderImages（push 新图前把更早的 image part 换成占位，任何时刻最多一条带图）；累计闸按次生成拒绝并报剩余额度。验证：4 例 demote 单测 + 1 例 mock 上游端到端（第 3 次请求 3 张而非 6 张 ⇒ 降级生效；3+3+1>6 被拒）；回归 multi-turn/budget/context/cancellation 全绿",
+        "2026-11-23 20:07:09 v17: B5 完成：分析域 kb-read 组加 ki_get_image（独立实现，run(args)+闭包 scope）；tool 消息支持 parts（图片与 <kb_doc> 标签共存）、序列化前分流、旧图降级 + 累计闸；落盘 response 只留摘要。测试：1 例端到端（image part=1、response 不含 base64、标签保留）；真机装配取图 2409ms → 1568×743 PNG",
+        "2026-11-23 20:08:44 v18: B6 完成：审查对外 MCP 链路（SDK 透传、HTTP 无响应截断、只读块注册与能力表均已在 B2 就位）⇒ 无需改产品代码；新增 2 例真 HTTP+真 SDK 测试（image content 形状/PNG base64/失败态 isError）；真机 daemon 走完整握手 tools/call → 2301ms、200KB 响应、image/png base64 199KB",
+        "2026-11-23 20:20:41 v19: B7 收口：docs/mcp-tools.md 补 ki_get_image 行 + get_module_info 的 images 说明 + 「图片：文档里的截图与示意图」用户视角小节（工具数由过时的 22 修正为实测 24）；回归 chat 41 文件 / events 16 文件 / mcp 系列全绿（3 例批量跑失败经单跑确认属并发会话半成品与资源冲突）；我改动文件 tsc 0 错，全仓 10 个错误均在他人文件与既有基线"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-23-MCP上传事件结论": {
+      "id": "REQ-20261123-009",
+      "feature": "MCP上传事件结论",
+      "created": "2026-11-23 18:41:51",
+      "updated": "2026-11-23 19:18:12",
+      "status": "已确认",
+      "tags": [
+        "feat",
+        "mcp",
+        "events",
+        "ai",
+        "web"
+      ],
+      "version": 5,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-23 18:41:59 v2: 完成技术设计（S01 写入内核 / S02 MCP 合并工具 / S03 前端来源展示）",
+        "2026-11-23 18:44:42 v3: 完成设计评审：2 阻断 + 10 警告全部修复，增量再审通过",
+        "2026-11-23 19:16:19 v4: challenger 二次质疑 C-1~C-3 已修复（重跑来源感知 / 跨版本位置提示 / 破坏性动作警示），C-4 C-5 转实施期验证",
+        "2026-11-23 19:18:12 v5: 输出实施计划：前置层 6 项 + 2 批（S-01 → S-02 ∥ S-03），单窗口串行"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "design",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-24-事件分析数据链路": {
+      "id": "REQ-20261124-001",
+      "feature": "事件分析数据链路",
+      "created": "2026-11-24 11:18:01",
+      "updated": "2026-11-24 12:17:18",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "events",
+        "ai",
+        "web",
+        "mcp"
+      ],
+      "version": 17,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-24 11:21:12 v4: 补充提示词三处 / 读侧归一 / MCP 工具与文档 / skill 三份副本同步的调整清单（新增 REQ-08 REQ-09）",
+        "2026-11-24 11:27:13 v10: 完成技术设计（父文档 + S01~S04）+ 设计评审 2 轮通过（2 阻断 6 警告全修）；更正需求 U8：PATCH 接受该字段供补丁采纳、UI 不开放",
+        "2026-11-24 11:30:18 v11: 输出实施计划：前置层 3 项 + 5 砖头 / 3 批（批内可并行），单窗口串行；修正 AskBlock 与 mcp-tools.md 的归属冲突",
+        "2026-11-24 11:35:02 v12: 前置层完成：data-flow.ts 归一（15 例绿，含幂等）+ AnalysisDraft/DTO 双份加 dataFlow（契约 28 例绿）+ 口径文案冻结；两端 tsc 无新增错误；进入第 1 批",
+        "2026-11-24 11:37:44 v13: auto-review 复核：补契约两处遗漏（AnalysisDraftSummaryDto / proposal）+ event-detail 精简 draft 透出 dataFlow；归一补行首全角空格转换与单行超长锁定；单测 17/17、契约 28/28、两端 tsc 无新增",
+        "2026-11-24 11:45:26 v14: 第 1 批完成：SR-01 后端接线（解析/收尾写盘/读盘归一/详情透出，17+7 例绿）+ SR-04a 前端（DataFlowBlock + 三处挂载 + CSS 62 行，守卫 11 例、tsc 0、build ✓）；复核修掉 2 处实现偏差（trim 吃缩进、步数按行数翻倍）",
+        "2026-11-24 11:57:00 v15: 第 2 批完成：SR-02 提示词（flowGuide 四档 + tail 第 8 条含降级句式，22 例绿）∥ SR-03 写入入口（补丁缺省保留 / MCP 传空清空 / 超限报错，新增 21 例，6 文件全绿）；两端 tsc 无新增、web build ✓；两处偏离设计经复核接受（追问上下文须喂当前链路、diff 渲染在 Modal）",
+        "2026-11-24 12:15:43 v16: 真机验证通过：模型按第 8 条产出 7 步链路树（504 字，含 file:line 与【根因】）；前端三块顺序/步数口径/窄屏横滑提示/复制均实测正常；MCP 通道三种语义（带→落盘、不带→清空、超 40 行→拒绝）实测通过；发现 IDE 侧 MCP 客户端持有旧 schema（需重连，非代码问题）",
+        "2026-11-24 12:17:18 v17: 批 3 完成（三批全部收口）：event-report SKILL 新增 §4.1 上传结论（含 dataFlow 四条易踩）+ §7 收口核对链路；reference 工具表增 analysis 行；用户级副本已同步（项目 .codebuddy 为软链无需复制）"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "demo/ui/data-flow-tree/index.html",
+          "type": "demo"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_产物字段与归一_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_提示词_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_写入入口_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_前端展示与文档_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-24-ki-client 取件客户端": {
+      "id": "REQ-20261124-002",
+      "feature": "ki-client 取件客户端",
+      "created": "2026-11-24 15:57:11",
+      "updated": "2026-11-24 18:13:07",
+      "status": "实施中",
+      "tags": [
+        "feat",
+        "integration"
+      ],
+      "version": 14,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-24 15:58:11 v2: 需求文档落盘（含多源配置与两仓切片）",
+        "2026-11-24 16:06:06 v3: 需求确认（Q1 downloadApi 默认开 / Q2 下载计入 read 用量 / Q3 仓名待定），进入技术设计",
+        "2026-11-24 16:10:23 v4: 父文档 + S-01 落盘；Q1/Q2 回写需求（downloadApi 默认开、下载计入独立维度）",
+        "2026-11-24 16:14:10 v5: S-02/S-03/S-04 子文档 + 实施计划落盘（单窗口串行，前置层 4 项，3 批次）",
+        "2026-11-24 16:23:16 v6: 设计评审 1 轮：3 阻断 / 4 警告已自动修复，遗留 S-1（doc 端点是否承载 hidden 提示）待确认",
+        "2026-11-24 16:23:51 v7: 评审遗留 S-1 查清定案（doc 返回体含 lifecycle/eventId/revision，不含阶段可见性）→ 评审无遗留阻断",
+        "2026-11-24 16:28:48 v8: 场景推演：5 角色 / 7 场景 / 6 设计点；发现 1 阻断（/open/v1 Bearer-only 致人用浏览器兜底路径 401）+ 4 警告 + 3 建议",
+        "2026-11-24 16:33:20 v9: 按推演修 5 处（双 URL humanUrl/apiUrl、版本协商规则、视图名错误码、读取侧无上限、R9 保留相对路径）+ 增量推演：4 项通过、新增 P9 已随修",
+        "2026-11-24 17:30:58 v10: 前置层落地：asset-mime.ts 单一来源（实现期修正，不直接 import asset-image）/ 3 个错误码 / 两条读路由 + 501 桩 / 契约骨架测试；build ✓、骨架 8 绿 9 skip、open-api-ping 18/18、asset-trash-dir 8/8",
+        "2026-11-24 17:43:19 v11: S-01 完成：mcp.http.downloadApi（schema+config+opts 三处同步）/ ping 能力位 contractVersion+capabilities / audit.ts logDownload / scope-usage 三元组 download（旧二元组兼容、不参与 heat）/ 新增 2 个测试文件；另记录 ki-client 定为 TS 实现",
+        "2026-11-24 17:58:29 v12: S-02 完成：/open/v1/asset 实现（双锚点 403 / 同语义 404 / SVG CSP / 留痕+计量接线）+ 实现期抽 asset-path.ts（避免导入内核与 SVG worker 进 HTTP 模块图）；新增 10 例契约测试全绿，import-assets 26 例回归绿",
+        "2026-11-24 18:04:14 v13: S-03 完成：/open/v1/doc 实现（member 显式拒绝 / 视图名 400 / 404 裁剪掉候选 Group 路径 / 内核动态 import 不进模块图）+ 4 例契约测试；readonly 14 绿、build ✓、tsc 9 既有",
+        "2026-11-24 18:13:07 v14: S-04 完成：ki_get_image 降级 text-only（assetUrls 双链接 apiUrl/humanUrl、requireWeb:false 与前端产物解耦、hint 覆盖 404 两态）+ docs/mcp-tools.md 重写图片小节 + mcp-get-image 测试改断言；chat tool-image 14+1 绿证明内部不受影响"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        },
+        {
+          "path": "design/DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S01_只读通道基础_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S02_附件字节端点_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S03_文档正文端点_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/S04_MCP取图降级_DESIGN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        },
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/scenario-rehearsal.md",
+          "type": "rehearsal"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-25-ki_recall 独立配置域与自选 s": {
+      "id": "REQ-20261125-001",
+      "feature": "ki_recall 独立配置域与自选 scope",
+      "created": "2026-11-25 11:26:48",
+      "updated": "2026-11-25 15:20:44",
+      "status": "实施中",
+      "tags": [
+        "feat"
+      ],
+      "version": 13,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-25 11:27:28 v2: M1 需求报告落盘（产品经理视角分析）",
+        "2026-11-25 11:38:18 v3: 口径更正：AI 查找=ki_recall 同一链路（一套配置+两个场景 skill）；登记 G1~G6 缺口与三条互斥路线，REQ-01/02/03/05/10 在 A 路线下作废",
+        "2026-11-25 11:51:07 v4: A 方案批 1-3 实施完成：G1 接线 maxToolCalls=15、G2 预算注入上下文、G5 界面标注两入口、G6 删除死 recall 域（含契约与单测）；G3/G4 与 scope 解耦保留待拍板",
+        "2026-11-25 13:05:08 v5: 批 A'：Q1 次数替代轮次（安全阀30）+ 预算文案「上限非必须」、Q2 工具卡补 ki_scope_list、Q6 移除 task-recall 内置 skill、G3 界面写明内部预算、删除陈旧配置；真机 rounds=7 验证；剩 scope 解耦 Q3/Q4/Q5",
+        "2026-11-25 13:20:40 v6: 批 3-A/B：删除 find.ranges 检索范围白名单（含前端块/契约/limits/预检）；ki_recall 支持模型自选 scope（库/视图、逐次鉴权、不回落）+ ki_scope_list 回可用目录 + scopesUsed 审计 + buildScopeNote 注入；新增 5 例回归，真机视图展开验证通过；剩 3-C 分析主链路",
+        "2026-11-25 14:11:32 v7: 批 3-C：分析链路 5 个只读工具支持模型自选 scope（authScopes 由 HTTP 层注入、逐次鉴权、视图展开、排队按实际 scope），写工具保持锁定；新增 9 例单测；daemon 已重启",
+        "2026-11-25 14:27:18 v8: 超时配置归「AI 查找」域：find.timeoutMs 默认 60s（10~300s）、config.recall.hardTimeoutMs 降级为部署 cap 取 min；前端新增超时输入框并修输入框基线同步；分析预取不覆盖次数（与配置一致）；真机 10s→11.4s 超时、60s→29.3s 成功",
+        "2026-11-25 14:48:20 v9: 修复 find 域基础提示词的编辑/恢复默认不生效（前端写了 deprecated 的 findPrompt 字段，服务端只认 find.prompt）；默认提示词新增「调用场景」节写明页面与 MCP 预取两个入口；已为本机配置执行一次恢复默认（670 字、edited=false）",
+        "2026-11-25 14:59:31 v10: 检索范围写进基础提示词（默认值≠只能查这里）+ 系统段动态清单；解析器抽 makeScopeResolver 两侧共用；AI 查找链路接 tokenScopes 支持自选；真机 13 次调用均显式传 scope",
+        "2026-11-25 15:06:46 v11: AI 查找跨库真卡点修复：候选过滤的 allowed 白名单改为按 grounded.scopesUsed 动态放行（此前换库读到的候选全被判越界）；新增 find-scope-switch 2 例回归；真机 4 次 ki_search scope=kisearch 验证跨库检索生效",
+        "2026-11-25 15:13:40 v12: scopesUsed 全链路回显：查找侧 DeepFindResult→RefSearchResult→契约，前端 FindRefPanel 显示『实际检索范围』（超出默认时点明）；真机 ki_recall 出现跨库 scopesUsed=[memory,xperts]",
+        "2026-11-25 15:20:44 v13: 分析过程面板：预取 step 的 detail.scopes 写实际检索范围，StepMetrics 加『实际检索范围』标签；前端已重建；真机 #76 recall step 显示 scopes=[kisearch-memory]"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "requirement.md",
+          "type": "requirement"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
+    },
+    "2026-11-27-AI对话源码只读查看": {
+      "id": "REQ-20261127-001",
+      "feature": "AI对话源码只读查看",
+      "created": "2026-11-27 16:38:23",
+      "updated": "2026-11-27 18:36:11",
+      "status": "已完成",
+      "tags": [
+        "feat",
+        "ai",
+        "chat",
+        "security",
+        "web"
+      ],
+      "version": 14,
+      "depends_on": [],
+      "changelog": [
+        "初始创建",
+        "2026-11-27 17:04:51 v2: 完成设计评审（0 阻断 / 8 警告 / 5 建议）",
+        "2026-11-27 17:08:24 v3: 完成增量再审：前次 8 项警告全部修复，新增 1 项已修 + 1 项建议，评审通过",
+        "2026-11-27 17:09:43 v4: 完成实施计划（2 批：S-01 根 → S-02 ∥ S-03）",
+        "2026-11-27 17:22:10 v5: S-01 实施完成：工具面 18 / 通道隔离 / fs_read 预算 / KB-first 块；构建与 chat 套件通过（2 项既有基线失败），真机待验",
+        "2026-11-27 17:31:49 v6: 完成 S-01 代码审查与二次质疑：2 项高危（OOM、敏感文件）+1 项中危（路径回传）已修复；2 项 🟡 跟进",
+        "2026-11-27 17:45:21 v7: S-02 实施完成：视图成员多根 / resolveByScopeOnly / 同 realRoot 去重 + 别名 / view-error；code-tools 31 例通过",
+        "2026-11-27 17:49:01 v8: S-02 复核：修复坏 views 下单库兜底、提示块不列 aliases；view-error 待 S-03 前端契约同步；code-tools 33 例通过",
+        "2026-11-27 17:52:39 v9: S-03 实施完成：面板文案、视图只读清单（对齐 demo/scope-rules）、时间线动作标签、GET ?scope= codeRoots；构建与 typecheck 通过",
+        "2026-11-27 17:57:16 v10: S-03 真机走查通过：隔离实例 7433 + 视图 s03-view（alpha/beta 已映射、gamma 未映射），面板分组/视图清单/文案全过，console/pageerror/4xx=0（截图 /tmp/kiwalk-s03）",
+        "2026-11-27 18:03:06 v11: S-03 收口同步：view-error 补入前端契约与文案映射，S-03 契约测试补该值",
+        "2026-11-27 18:13:03 v12: S-03 代码审查 + 真机 LLM 验证：fs_* KB→代码链路、视图 beta 选根、动作标签画面均通过；Q1/Q4/Q5 已修，Q2 视图授权口径待拍板",
+        "2026-11-27 18:31:11 v13: 收口：D1 视图授权收紧暂不做并补设计口径；发布说明补入 docs/ai-find.md；真机 LLM（单库/视图/动作标签）通过；test:all 15min 未跑完已中止，以定向套件为准",
+        "2026-11-27 18:36:11 v14: D1 已修：视图目录展示改为「显式授权视图名或成员全部在 authScopes 内」才放行；route 19/19、UI 10/10、build/typecheck 0"
+      ],
+      "commits": [],
+      "branch": null,
+      "docs": [
+        {
+          "path": "design/design-review.md",
+          "type": "review"
+        },
+        {
+          "path": "design/IMPL_PLAN.md",
+          "type": "design"
+        },
+        {
+          "path": "review/code-review.md",
+          "type": "review"
+        },
+        {
+          "path": "review/challenge-report.md",
+          "type": "review"
+        }
+      ],
+      "role": "standalone",
+      "parent_id": null,
+      "child_ids": []
     }
   },
   "id_counters": {
@@ -2325,6 +3723,14 @@
     "REQ-20261105": 1,
     "REQ-20261112": 1,
     "REQ-20261113": 4,
-    "REQ-20261115": 2
+    "REQ-20261115": 2,
+    "REQ-20261116": 6,
+    "REQ-20261117": 1,
+    "REQ-20261118": 4,
+    "REQ-20261120": 3,
+    "REQ-20261123": 9,
+    "REQ-20261124": 2,
+    "REQ-20261125": 1,
+    "REQ-20261127": 1
   }
 }

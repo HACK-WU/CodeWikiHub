@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI 分析结论 · 按事件类型分视角 demo</title>
+<!--
+  用途：验证「AI 分析结论的因果链模板只适配 bug 类事件」这一问题的解法 ——
+        按事件类型切「分析视角」，而不是所有类型共用一套故障骨架。
+
+  左右对比口径：
+    左 = 现状（线上现在长这样）：不论事件类型，固定「现象 → 直接原因 → 根本原因 → 影响面 → 建议」，
+         竖轨 + 流向箭头，唯一强调点是根本原因（紫菱形）。
+    右 = 预期：按视角换 4 件事 —— ① 标签词 ② 强调点 ③ 轨道形态 ④ 一句话总结口径。
+
+  四个视角（切换 tab 看差异）：
+    fault   bug 排查   → 与现状一致（不需要改）
+    perf    性能优化   → 复用 5 槽，强调点移到「瓶颈点」
+    change  需求实现   → 无因果可言：差距 → 成因 → 波及 → 实施，去掉竖轨与箭头
+    generic 自建类型   → 退化为要点平铺（现状 / 关键发现 / 影响面 / 建议）
+
+  视觉基线：web/src/styles/ki.css 的 --ki-* token + governance.css 的 .gov-conclusion / .gov-chain 系列，
+           未改动取值；本 demo 只新增 3 个示例级修饰：
+             .gov-chain.is-wide（长标签列宽 58 → 88px）
+             .gov-chain.is-flat（去竖轨与箭头）
+             .gov-chain__node.is-emph（强调点不再绑死 root，可落在任意节点）
+           正文里的 [[x]] 在 demo 中渲染为 product 的 code 胶囊样式（真实数据是反引号包裹）。
+
+  数据口径：fault 取真实事件 #48 的结论原文（裁剪）；其余视角为示意内容，仅用于比较「同一件事换个骨架怎么写」，
+           不代表真实分析结果。阅读顺序与真实组件一致：标题 → 一句话总结 → 节点列表。
+
+  覆盖状态：默认态 / 四视角切换 / 长标签换行 / 窄屏单列 / 暗色。
+  交互：tab 切换（← → 也能切）、主题切换；位置胶囊仅静态展示（真实产品点开是悬浮代码块）。
+-->
+<style>
+/* ══════════ token（摘自 web/src/styles/ki.css :root，未改动取值） ══════════ */
+:root {
+  color-scheme: light;
+  --ki-color-bg: #f5f6f3;
+  --ki-color-bg-secondary: #f9faf8;
+  --ki-color-surface: #ffffff;
+  --ki-color-border: #e1e7e1;
+  --ki-color-border-strong: #c8d3c9;
+  --ki-color-text: #202b27;
+  --ki-color-text-muted: #4e5f56;
+  --ki-color-text-subtle: #61716a;
+  --ki-color-primary: #2d6755;
+  --ki-color-primary-soft: #e8f3ed;
+  --ki-color-purple: #af52de;
+  --ki-color-info: #2f6f9f;
+  --ki-color-warning: #8a6208;
+  --ki-color-focus: #3e765e;
+  --ki-color-bg-muted: #f0f2ee;
+  --ki-color-hover: rgba(26, 58, 41, 0.045);
+  --ki-space-2: 8px;
+  --ki-space-3: 12px;
+  --ki-space-4: 16px;
+  --ki-space-5: 20px;
+  --ki-radius-sm: 6px;
+  --ki-radius-md: 10px;
+  --ki-radius-tag: 4px;
+  --ki-radius-track: 999px;
+  --ki-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --ki-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --ki-font-size-xs: 11px;
+  --ki-font-size-sm: 12px;
+  --ki-font-size-md: 14px;
+  --ki-shadow-1: 0 1px 3px rgba(26, 58, 41, 0.08);
+  --ki-shadow-2: 0 10px 32px rgba(26, 58, 41, 0.12), 0 1px 4px rgba(26, 58, 41, 0.06);
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ki-color-bg: #131715;
+  --ki-color-bg-secondary: #212724;
+  --ki-color-surface: #1b201d;
+  --ki-color-border: #2c332f;
+  --ki-color-border-strong: #3f4a44;
+  --ki-color-text: #e9ede8;
+  --ki-color-text-muted: #b4beb7;
+  --ki-color-text-subtle: #97a39d;
+  --ki-color-primary: #5fae8c;
+  --ki-color-primary-soft: #17322a;
+  --ki-color-purple: #bf5af2;
+  --ki-color-info: #6fb3d9;
+  --ki-color-warning: #d9ad5c;
+  --ki-color-focus: #7fd0aa;
+  --ki-color-bg-muted: #232c27;
+  --ki-color-hover: rgba(255, 255, 255, 0.06);
+  --ki-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.38);
+  --ki-shadow-2: 0 10px 32px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 24px 20px 48px;
+  background: var(--ki-color-bg);
+  color: var(--ki-color-text);
+  font-family: var(--ki-font-family);
+  font-size: var(--ki-font-size-md);
+  line-height: 1.6;
+}
+
+/* ══════════ 结论块外壳（governance.css .gov-conclusion，未改取值） ══════════ */
+.gov-conclusion {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: var(--ki-space-3);
+  border-radius: var(--ki-radius-sm);
+  background: color-mix(in srgb, var(--ki-color-purple) 6%, var(--ki-color-surface));
+  border-left: 3px solid color-mix(in srgb, var(--ki-color-purple) 50%, transparent);
+}
+.gov-conclusion--chain { gap: 8px; }
+
+.gov-chain__head { display: flex; align-items: baseline; gap: 8px; }
+.gov-chain__head-title { font-size: 11px; font-weight: 700; letter-spacing: .05em; color: var(--ki-color-purple); }
+.gov-chain__head-meta { font-size: 10.5px; color: var(--ki-color-text-subtle); white-space: nowrap; }
+.gov-chain__head-meta::before { content: "·"; margin-right: 6px; color: var(--ki-color-border); }
+.gov-chain__sum {
+  margin: 0 0 2px; font-size: 13px; font-weight: 600; line-height: 1.55;
+  color: var(--ki-color-text); text-wrap: pretty;
+}
+
+.gov-chain {
+  --gov-rail: color-mix(in srgb, var(--ki-color-text-subtle) 58%, transparent);
+  --gov-rail-strong: color-mix(in srgb, var(--ki-color-purple) 55%, transparent);
+  --gov-kind-col: 58px;
+  margin: 0; padding: 0; list-style: none;
+}
+/* demo 修饰①：长标签列宽（真实组件固定 58px，"现状与目标差距" 这类词放不下） */
+.gov-chain.is-wide { --gov-kind-col: 88px; }
+
+.gov-chain__node {
+  position: relative;
+  display: grid;
+  grid-template-columns: 12px var(--gov-kind-col) minmax(0, 1fr);
+  column-gap: 10px;
+  padding-bottom: 18px;
+}
+.gov-chain__node:last-child { padding-bottom: 0; }
+.gov-chain__node::before {
+  content: ""; position: absolute; left: 6px; top: 12px; bottom: -6px;
+  width: 2px; border-radius: 1px; background: var(--gov-rail);
+}
+.gov-chain__node:last-child::before { display: none; }
+.gov-chain__node:not(:first-child)::after {
+  content: ""; position: absolute; left: 3px; top: -8px;
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+  border-top: 5px solid var(--gov-rail);
+}
+.gov-chain__track { position: relative; }
+.gov-chain__dot {
+  position: absolute; left: -1px; top: 4px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--ki-color-surface);
+  border: 1.5px solid var(--ki-color-text-subtle);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ki-color-surface) 88%, transparent);
+}
+.gov-chain__node--cause .gov-chain__dot { background: color-mix(in srgb, var(--ki-color-text-subtle) 82%, var(--ki-color-surface)); }
+.gov-chain__node--impact .gov-chain__dot {
+  background: color-mix(in srgb, var(--ki-color-text-muted) 85%, var(--ki-color-surface));
+  border-color: transparent;
+}
+.gov-chain__node--fix .gov-chain__dot { border-color: var(--ki-color-primary); }
+
+/* demo 修饰②：强调点不再绑死 root —— 任意节点加 .is-emph 即成为全块唯一强调色 */
+.gov-chain__node.is-emph { padding-bottom: 20px; }
+.gov-chain__node.is-emph::before { background: var(--gov-rail-strong); }
+.gov-chain__node.is-emph::after { border-top-color: var(--gov-rail-strong); }
+.gov-chain__node.is-emph .gov-chain__dot {
+  left: -3px; top: 3px; width: 13px; height: 13px;
+  border: 0; border-radius: 2px;
+  background: var(--ki-color-purple);
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--ki-color-purple) 12%, var(--ki-color-surface));
+}
+.gov-chain__node.is-emph .gov-chain__kind { color: var(--ki-color-purple); }
+.gov-chain__node.is-emph .gov-chain__text { font-weight: 600; }
+
+/* demo 修饰③：无因果可言时去掉竖轨与箭头（并列关系不该画成因果链） */
+.gov-chain.is-flat .gov-chain__node { padding-bottom: 12px; }
+.gov-chain.is-flat .gov-chain__node::before,
+.gov-chain.is-flat .gov-chain__node::after { display: none; }
+
+.gov-chain__kind {
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; line-height: 1.72;
+  color: var(--ki-color-text-subtle); padding-top: 1px;
+  /* 长标签（现状与目标差距）允许折两行，不撑破网格 */
+  overflow-wrap: anywhere;
+}
+.gov-chain__text {
+  margin: 0; font-size: var(--ki-font-size-sm); line-height: 1.72;
+  color: var(--ki-color-text); text-wrap: pretty;
+}
+.gov-chain__text code, .gov-chain__branches code, .gov-chain__sum code {
+  font-family: var(--ki-font-mono); font-size: 11px;
+  padding: 1px 4px; border-radius: 3px;
+  background: var(--ki-color-bg-muted); color: var(--ki-color-text);
+}
+.gov-chain__flag {
+  margin-left: 6px; white-space: nowrap;
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
+  color: color-mix(in srgb, var(--ki-color-purple) 78%, var(--ki-color-text-subtle));
+}
+.gov-chain__ref {
+  display: inline-flex; align-items: center;
+  margin-left: 6px; padding: 0 5px;
+  border: 1px solid var(--ki-color-border); border-radius: var(--ki-radius-tag);
+  background: var(--ki-color-bg-secondary);
+  font-family: var(--ki-font-mono); font-size: 10.5px; line-height: 1.7;
+  color: var(--ki-color-text-muted); vertical-align: 1px; cursor: default;
+}
+.gov-chain__branches { margin: 6px 0 0; padding: 0; list-style: none; }
+.gov-chain__branches li {
+  position: relative; padding: 0 0 3px 18px;
+  font-size: var(--ki-font-size-sm); line-height: 1.7;
+  color: var(--ki-color-text-muted); text-wrap: pretty;
+}
+.gov-chain__branches li::before {
+  content: ""; position: absolute; left: 3px; top: -2px; bottom: 0;
+  width: 1px; background: var(--gov-rail);
+}
+.gov-chain__branches li:last-child::before { bottom: auto; height: 11px; }
+.gov-chain__branches li::after {
+  content: ""; position: absolute; left: 3px; top: 9px;
+  width: 10px; height: 1px; background: var(--gov-rail);
+}
+
+/* ══════════ demo 外壳（页面级，非产品样式） ══════════ */
+.demo-shell { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.demo-head { display: flex; align-items: flex-start; gap: 16px; }
+.demo-head h1 { margin: 0 0 6px; font-size: 20px; letter-spacing: -.01em; }
+.demo-sub { margin: 0; max-width: 76ch; font-size: 13px; color: var(--ki-color-text-muted); }
+.demo-head__actions { margin-left: auto; display: flex; gap: 8px; flex: none; }
+.demo-btn {
+  appearance: none; cursor: pointer;
+  padding: 6px 12px; border: 1px solid var(--ki-color-border); border-radius: var(--ki-radius-sm);
+  background: var(--ki-color-surface); color: var(--ki-color-text-muted);
+  font: inherit; font-size: var(--ki-font-size-sm);
+  transition: border-color 120ms, color 120ms, background 120ms;
+}
+.demo-btn:hover { border-color: var(--ki-color-border-strong); color: var(--ki-color-text); background: var(--ki-color-bg-secondary); }
+.demo-btn:focus-visible { outline: 2px solid var(--ki-color-focus); outline-offset: 1px; }
+
+.demo-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo-tab {
+  appearance: none; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 7px 12px; border: 1px solid var(--ki-color-border); border-radius: var(--ki-radius-sm);
+  background: var(--ki-color-surface); color: var(--ki-color-text-muted);
+  font: inherit; transition: border-color 120ms, background 120ms, color 120ms;
+}
+.demo-tab:hover { border-color: var(--ki-color-border-strong); }
+.demo-tab[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--ki-color-primary) 55%, var(--ki-color-border));
+  background: var(--ki-color-primary-soft);
+  color: var(--ki-color-text);
+}
+.demo-tab:focus-visible { outline: 2px solid var(--ki-color-focus); outline-offset: 1px; }
+.demo-tab__name { font-size: var(--ki-font-size-sm); font-weight: 600; }
+.demo-tab__view { font-family: var(--ki-font-mono); font-size: 10px; color: var(--ki-color-text-subtle); }
+
+.demo-note {
+  margin: 0; padding: 10px 12px;
+  border: 1px solid var(--ki-color-border); border-radius: var(--ki-radius-sm);
+  background: var(--ki-color-surface);
+  font-size: 13px; color: var(--ki-color-text-muted); text-wrap: pretty;
+}
+.demo-note strong { color: var(--ki-color-text); }
+
+.demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.demo-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.demo-col__head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ki-color-text-subtle); }
+.demo-col__tag {
+  flex: none; padding: 1px 7px; border-radius: var(--ki-radius-track);
+  font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+}
+.demo-col__tag--now { background: var(--ki-color-bg-muted); color: var(--ki-color-text-muted); }
+.demo-col__tag--next { background: var(--ki-color-primary-soft); color: var(--ki-color-primary); }
+.demo-col__foot {
+  margin: 0; font-size: 12px; line-height: 1.6; color: var(--ki-color-text-subtle);
+  padding-left: 2px; text-wrap: pretty;
+}
+
+.demo-legend { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; }
+.demo-legend h2 { margin: 0; font-size: 14px; }
+.demo-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--ki-color-surface); }
+.demo-table th, .demo-table td {
+  padding: 7px 10px; text-align: left; vertical-align: top;
+  border: 1px solid var(--ki-color-border);
+}
+.demo-table th { background: var(--ki-color-bg-secondary); font-weight: 600; color: var(--ki-color-text-muted); white-space: nowrap; }
+.demo-table code { font-family: var(--ki-font-mono); font-size: 11px; background: var(--ki-color-bg-muted); padding: 1px 4px; border-radius: 3px; }
+.demo-foot { margin: 0; font-size: 12px; color: var(--ki-color-text-subtle); }
+
+@media (max-width: 900px) {
+  .demo-grid { grid-template-columns: minmax(0, 1fr); }
+  .demo-head { flex-direction: column; }
+  .demo-head__actions { margin-left: 0; }
+}
+@media (max-width: 560px) {
+  .gov-chain__node { grid-template-columns: 12px minmax(0, 1fr); row-gap: 2px; }
+  .gov-chain__track { grid-row: 1 / span 2; }
+  .gov-chain__kind { grid-column: 2; }
+  .gov-chain__body { grid-column: 2; }
+}
+</style>
+</head>
+<body>
+<div class="demo-shell">
+  <header class="demo-head">
+    <div>
+      <h1>AI 分析结论 · 按事件类型分视角</h1>
+      <p class="demo-sub">
+        同一条分析结论，按事件类型切「视角」：换标签词、换强调点、换轨道形态、换一句话口径。
+        左＝现状（所有类型共用一套故障骨架），右＝预期。正文里带底色的片段即产品中的 code 胶囊 / 位置胶囊。
+      </p>
+    </div>
+    <div class="demo-head__actions">
+      <button class="demo-btn" id="themeBtn" type="button">暗色</button>
+    </div>
+  </header>
+
+  <div class="demo-tabs" role="tablist" aria-label="事件类型" id="tabs"></div>
+  <p class="demo-note" id="viewNote"></p>
+
+  <div class="demo-grid">
+    <section class="demo-col">
+      <div class="demo-col__head">
+        <span class="demo-col__tag demo-col__tag--now">现状</span>
+        <span>所有类型共用一套故障骨架（线上现在长这样）</span>
+      </div>
+      <div class="gov-conclusion gov-conclusion--chain" id="nowCard"></div>
+      <p class="demo-col__foot" id="nowFoot"></p>
+    </section>
+
+    <section class="demo-col">
+      <div class="demo-col__head">
+        <span class="demo-col__tag demo-col__tag--next">预期</span>
+        <span id="nextHead"></span>
+      </div>
+      <div class="gov-conclusion gov-conclusion--chain" id="nextCard"></div>
+      <p class="demo-col__foot" id="nextFoot"></p>
+    </section>
+  </div>
+
+  <section class="demo-legend">
+    <h2>这次只改 4 件事（数据结构不动：kind 仍是那 5 个语义槽）</h2>
+    <table class="demo-table">
+      <thead>
+        <tr><th>#</th><th>改动</th><th>现状</th><th>预期</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>①</td><td>标签词</td>
+          <td>固定 现象 / 直接原因 / 根本原因 / 影响面 / 建议</td>
+          <td>按视角映射（性能：瓶颈点 / 优化收益；需求：差距与成因 / 实施建议）</td>
+        </tr>
+        <tr>
+          <td>②</td><td>强调点</td>
+          <td>永远 <code>root</code>（紫菱形 + <code>← 根因</code>）</td>
+          <td>bug→根本原因、性能→瓶颈点、需求/自建→无强调</td>
+        </tr>
+        <tr>
+          <td>③</td><td>轨道形态</td>
+          <td>全部竖轨 + 流向箭头</td>
+          <td>bug/性能保留；需求/自建去掉（并列关系不画因果）</td>
+        </tr>
+        <tr>
+          <td>④</td><td>一句话口径</td>
+          <td>根因是什么、影响多大、往哪修</td>
+          <td>性能：现状多差 / 瓶颈在哪 / 能回到什么量级；需求：目标 / 落在哪 / 要连带改什么</td>
+        </tr>
+        <tr>
+          <td>—</td><td>位置胶囊（点开代码块）</td>
+          <td colspan="2">四个视角通用，不变 —— 这是已有能力，不参与本次改动</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="demo-foot">
+      另有一个实现细节在 demo 里体现了：标签变长后，产品里固定 58px 的类型列放不下「现状与目标差距」（右图列宽 88px），
+      需要列宽随视角自适应，否则会挤压正文。数据说明：bug 视角取真实事件 #48 的结论原文（裁剪），其余视角为示意内容。
+    </p>
+  </section>
+</div>
+
+<script>
+/*
+ * 数据口径：[[x]] = 行内 code（真实数据是反引号）；ref = 位置胶囊。
+ * now / next 各自一份，是为了让「同一件事换个骨架」的差异可见 ——
+ * now 恒用故障标签，next 用该视角的标签。
+ */
+var FAULT_LABELS = { symptom: '现象', cause: '直接原因', root: '根本原因', impact: '影响面', fix: '建议' };
+
+var VIEWS = [
+  {
+    id: 'fault',
+    tab: 'bug 排查',
+    view: 'fault',
+    labels: FAULT_LABELS,
+    emph: 'root',
+    flag: '根因',
+    flat: false,
+    wide: false,
+    nextHead: '与现状一致：故障因果骨架本来就对',
+    note: '<strong>bug 排查（fault）：</strong>竖轨 + 流向箭头 + 唯一强调点（根本原因）。这类事件的输出模板与语义正好对齐，<strong>本次不需要改</strong>——左右两栏内容一致。',
+    nowFoot: '与预期一致。bug 类事件的结论就该长这样。',
+    nextFoot: '维持现状：唯一要保住的是「全块只有一个强调色」这条纪律。',
+    now: {
+      summary: '未定位到可证实的运行时故障：4 处漂移都在手工维护的两份契约副本上，建议补镜像并让 HTTP 响应耦合到 DTO',
+      nodes: [
+        { kind: 'symptom', text: '观测：[[governance-contract.test.ts]] 常红，报 [[EventListItem.pinnedAt]]' },
+        { kind: 'cause', text: '两份契约副本各自被单侧修改——后端副本先加了 [[pinnedAt]]，前端副本后加了 [[thinkingChars]]', ref: 'web/src/api/governanceApi.ts:183' },
+        { kind: 'root', text: '契约层自称 SSOT，但 [[src]] 下无任何模块 import 它，改实现不会触发契约更新；副本同步全靠人工', branches: ['字段两侧都在但声明顺序不同 → 类型检查会红，但不是真缺字段', '[[EventListItem]] 在 web 侧根本没被消费（列表用 [[EventView]]）'] },
+        { kind: 'impact', text: '运行时目前未坏——置顶判定走 [[EventView.pinnedAt]]，[[thinkingChars]] 由 runner 真实写入；坏在门禁失效' },
+        { kind: 'fix', text: '按字段是否真出现在响应里补齐镜像；更长远让 HTTP 响应标注为契约 DTO 类型' }
+      ]
+    }
+  },
+  {
+    id: 'perf',
+    tab: '性能优化',
+    view: 'perf',
+    labels: { symptom: '现状表现', cause: '瓶颈点', root: '深层原因', impact: '优化收益', fix: '优化方案' },
+    emph: 'cause',
+    flag: '瓶颈',
+    flat: false,
+    wide: false,
+    nextHead: '强调点从「根本原因」移到「瓶颈点」',
+    note: '<strong>性能优化（perf）：</strong>仍然是一条因果链，5 个槽全用得上，但读者第一眼要看到的是<strong>慢在哪</strong>，不是「为什么会写成这样」。所以标签换词 + 强调点移到瓶颈点。',
+    nowFoot: '套故障词读起来像在排查一个已知故障，实际要回答的是「哪里慢、能优化多少」。',
+    nextFoot: '同一批内容，词换了、强调点换了，视线自然落在瓶颈点上。',
+    now: {
+      summary: '浏览页在 2 万篇文档时首屏 4s，瓶颈在全量返回 + 前端算筛选',
+      nodes: [
+        { kind: 'symptom', text: '知识库浏览页首屏要等约 4 秒' },
+        { kind: 'cause', text: '[[/governance/docs]] 一次返回全量，[[visibleCount]] 在前端逐篇统计', ref: 'src/lib/governance-routes.ts' },
+        { kind: 'root', text: '没有分页接口，筛选 / 计数 / 排序全在客户端' },
+        { kind: 'impact', text: '每次改筛选都重拉全量，2 万篇时单次约 1.2s' },
+        { kind: 'fix', text: '接口下推 limit / offset，计数走服务端聚合' }
+      ]
+    },
+    next: {
+      summary: '首屏 4s 的瓶颈是「全量返回 + 前端统计」，把分页与计数下沉到服务端有望回到百毫秒级（未实测）',
+      nodes: [
+        { kind: 'symptom', text: '浏览页首屏约 4s，改一次筛选再等约 1.2s' },
+        { kind: 'cause', text: '[[/governance/docs]] 无分页，一次把 2 万篇全量序列化，前端再算 [[visibleCount]]', ref: 'src/lib/governance-routes.ts' },
+        { kind: 'root', text: '没有分页契约，计数与排序只能跟着数据走到客户端' },
+        { kind: 'impact', text: '分页 + 服务端计数后首屏可降到百毫秒级，筛选不再重拉全量（需实测确认）' },
+        { kind: 'fix', text: '接口加 limit / offset 与 total；计数走聚合，前端只渲染当前页' }
+      ]
+    }
+  },
+  {
+    id: 'change',
+    tab: '需求实现',
+    view: 'change',
+    labels: { symptom: '现状与目标差距', cause: '差距与成因', impact: '改动影响面', fix: '实施建议' },
+    emph: null,
+    flag: '',
+    flat: true,
+    wide: true,
+    nextHead: '去掉竖轨与箭头：4 条是并列信息，不是因果链',
+    note: '<strong>需求实现（change）：</strong>没有「现象」也没有「根本原因」——硬套会让模型编一个出来。改为<strong>差距 → 成因 → 波及 → 实施</strong>，并去掉竖轨：并列信息画成因果链，读者会误读成「A 导致 B」。',
+    nowFoot: '错配示范：把「没做这个功能」写成「现象」、把「没人做过」写成「根本原因」——这正是模型被骨架逼出来的编造。',
+    nextFoot: '没有因果就不画因果轨；一句话总结也改成「目标 / 落在哪 / 要连带改什么」。',
+    now: {
+      summary: '需求「事件置顶」需要新增置顶字段与排序口径，落点在事件服务与列表接口',
+      nodes: [
+        { kind: 'symptom', text: '列表没有置顶能力' },
+        { kind: 'cause', text: '事件记录没有 [[pinnedAt]] 字段' },
+        { kind: 'root', text: '排序只支持时间与阶段两种' },
+        { kind: 'impact', text: '用户找不到正在推进的事件' },
+        { kind: 'fix', text: '加字段 + 接口 + 前端分区' }
+      ]
+    },
+    next: {
+      summary: '改动落在事件服务与列表接口两处，并连带影响列表 DTO、筛选口径与前端分区渲染',
+      nodes: [
+        { kind: 'symptom', text: '列表只能按时间 / 阶段排，目标是要能人工指定优先级并长期置顶' },
+        { kind: 'cause', text: '排序逻辑分散在服务端与前端两处，前端还做了二次分区', ref: 'web/src/pages/EventsPage.tsx' },
+        { kind: 'impact', text: '事件列表接口 + 列表 DTO + 前端分区渲染 + 筛选免疫口径' },
+        { kind: 'fix', text: '[[pinnedAt]] 入库 → 排序下沉服务端 → 前端只做分区展示' }
+      ]
+    }
+  },
+  {
+    id: 'generic',
+    tab: '自建类型（技术债）',
+    view: 'generic',
+    labels: { symptom: '现状', cause: '关键发现', impact: '影响面', fix: '建议' },
+    emph: null,
+    flag: '',
+    flat: true,
+    wide: true,
+    nextHead: '退化为要点平铺：现状 / 关键发现 / 影响面 / 建议',
+    note: '<strong>自建类型（generic）：</strong>技术债、文档过期这类事件根本没有因果可言。此时不要假装有因果——退化为<strong>要点列表</strong>，标签只用中性词，强调点关闭。',
+    nowFoot: '通用内容套因果叙事，读起来像「这个技术债导致了字段不一致」，其实只是字段不一致。',
+    nextFoot: '分点平铺，不暗示因果；类型能在编辑页选视角后，这类事件也能升级为 perf / change。',
+    now: {
+      summary: '重复 DTO 已确认 1 处落点，其余 2 处为疑似',
+      nodes: [
+        { kind: 'symptom', text: '三处 DTO 字段不一致' },
+        { kind: 'cause', text: '各自手写维护' },
+        { kind: 'root', text: '没有生成机制' },
+        { kind: 'impact', text: '改字段容易漏' },
+        { kind: 'fix', text: '收敛到契约层' }
+      ]
+    },
+    next: {
+      summary: '3 处重复 DTO 中只有 1 处被真实消费，收敛成本低，收益是让字段漂移在编译期暴露',
+      nodes: [
+        { kind: 'symptom', text: '3 处 DTO 字段不完全一致（[[EventListItem]] / [[AnalysisStepDto]] / [[AnalysisDraftDto]]）' },
+        { kind: 'cause', text: '只有 [[EventView]] 被列表真实消费，另两处无引用', ref: 'web/src/api/governanceApi.ts:183' },
+        { kind: 'impact', text: '字段漂移靠人工比对，本月已漏 4 次（事件 #48）' },
+        { kind: 'fix', text: '收敛到 [[governance-contract]] 导出，前端只 import 类型' }
+      ]
+    }
+  }
+];
+
+function esc(s) {
+  return String(s).replace(/[&<>]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]; });
+}
+function fmt(s) {
+  return esc(s).replace(/\[\[(.+?)\]\]/g, '<code>$1</code>');
+}
+
+function chainHtml(chain, opts) {
+  var labels = opts.labels;
+  var emph = opts.emph;
+  var flat = opts.flat;
+  var wide = opts.wide;
+  var rows = chain.nodes.map(function (n) {
+    var label = labels[n.kind] || FAULT_LABELS[n.kind] || '';
+    var isEmph = emph === n.kind;
+    var cls = 'gov-chain__node gov-chain__node--' + n.kind + (isEmph ? ' is-emph' : '');
+    var branches = n.branches && n.branches.length
+      ? '<ul class="gov-chain__branches">' + n.branches.map(function (b) { return '<li>' + fmt(b) + '</li>'; }).join('') + '</ul>'
+      : '';
+    var ref = n.ref ? '<span class="gov-chain__ref" title="真实产品点开是分析时的代码快照">' + esc(n.ref) + '</span>' : '';
+    var flag = isEmph && opts.flag ? '<span class="gov-chain__flag">← ' + opts.flag + '</span>' : '';
+    return '<li class="' + cls + '">'
+      + '<span class="gov-chain__track"><span class="gov-chain__dot"></span></span>'
+      + '<span class="gov-chain__kind">' + esc(label) + '</span>'
+      + '<div class="gov-chain__body"><p class="gov-chain__text">' + fmt(n.text) + ref + flag + '</p>' + branches + '</div>'
+      + '</li>';
+  }).join('');
+
+  var refCount = chain.nodes.filter(function (n) { return !!n.ref; }).length;
+  var meta = chain.nodes.length + ' 个节点' + (refCount > 0 ? ' · 引用 ' + refCount + ' 处' : '');
+  var olCls = 'gov-chain' + (flat ? ' is-flat' : '') + (wide ? ' is-wide' : '');
+
+  return '<div class="gov-chain__head">'
+      + '<span class="gov-chain__head-title">' + (opts.title || '分析结论') + '</span>'
+      + '<span class="gov-chain__head-meta">' + meta + '</span>'
+      + '</div>'
+      + '<p class="gov-chain__sum">' + fmt(chain.summary) + '</p>'
+      + '<ol class="' + olCls + '">' + rows + '</ol>';
+}
+
+var tabsEl = document.getElementById('tabs');
+var noteEl = document.getElementById('viewNote');
+var nowCard = document.getElementById('nowCard');
+var nextCard = document.getElementById('nextCard');
+var nowFoot = document.getElementById('nowFoot');
+var nextFoot = document.getElementById('nextFoot');
+var nextHead = document.getElementById('nextHead');
+var current = VIEWS[0].id;
+
+function renderTabs() {
+  tabsEl.innerHTML = VIEWS.map(function (v) {
+    var sel = v.id === current;
+    return '<button class="demo-tab" role="tab" type="button" data-id="' + v.id + '" aria-selected="' + (sel ? 'true' : 'false') + '" tabindex="' + (sel ? '0' : '-1') + '">'
+      + '<span class="demo-tab__name">' + esc(v.tab) + '</span>'
+      + '<span class="demo-tab__view">' + esc(v.view) + '</span>'
+      + '</button>';
+  }).join('');
+}
+
+function render() {
+  var v = VIEWS.filter(function (x) { return x.id === current; })[0] || VIEWS[0];
+
+  // 左：现状 —— 恒用故障标签 + 恒强调 root + 恒有轨
+  nowCard.innerHTML = chainHtml(v.now, { labels: FAULT_LABELS, emph: 'root', flat: false, wide: false, flag: '根因' });
+  // 右：预期 —— 该视角的标签 / 强调 / 轨道 / 列宽
+  nextCard.innerHTML = chainHtml(v.next || v.now, { labels: v.labels, emph: v.emph, flat: v.flat, wide: v.wide, flag: v.flag });
+
+  noteEl.innerHTML = v.note;
+  nowFoot.textContent = v.nowFoot;
+  nextFoot.textContent = v.nextFoot;
+  nextHead.textContent = v.nextHead;
+  renderTabs();
+}
+
+tabsEl.addEventListener('click', function (e) {
+  var btn = e.target.closest('.demo-tab');
+  if (!btn) return;
+  current = btn.dataset.id;
+  render();
+});
+
+tabsEl.addEventListener('keydown', function (e) {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  var i = VIEWS.findIndex(function (x) { return x.id === current; });
+  var next = (i + (e.key === 'ArrowRight' ? 1 : -1) + VIEWS.length) % VIEWS.length;
+  current = VIEWS[next].id;
+  render();
+  var btn = tabsEl.querySelector('[data-id="' + current + '"]');
+  if (btn) btn.focus();
+});
+
+var themeBtn = document.getElementById('themeBtn');
+themeBtn.addEventListener('click', function () {
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  themeBtn.textContent = dark ? '暗色' : '亮色';
+});
+
+render();
+</script>
+</body>
+</html>
